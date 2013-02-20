@@ -36,26 +36,32 @@ type OauthProxy struct {
 	serveMux           *http.ServeMux
 }
 
+func NewReverseProxy(url *url.URL) (path string, proxy *httputil.ReverseProxy) {
+	path = url.Path
+	url.Path = ""
+	proxy = httputil.NewSingleHostReverseProxy(url)
+
+	if *rewriteHost {
+		origFunc := proxy.Director
+		newFunc := func(req *http.Request) {
+			req.Host = url.Host
+			req.Header.Set("Host", url.Host)
+			origFunc(req)
+		}
+		proxy.Director = newFunc
+	}
+	return
+}
+
 func NewOauthProxy(proxyUrls []*url.URL, clientID string, clientSecret string, validator func(string) bool) *OauthProxy {
 	login, _ := url.Parse("https://accounts.google.com/o/oauth2/auth")
 	redeem, _ := url.Parse("https://accounts.google.com/o/oauth2/token")
 	info, _ := url.Parse("https://www.googleapis.com/oauth2/v2/userinfo")
 	serveMux := http.NewServeMux()
 	for _, u := range proxyUrls {
-		path := u.Path
-		u.Path = ""
+		path, proxy := NewReverseProxy(u)
 		log.Printf("mapping %s => %s", path, u)
-		reverseProxy := httputil.NewSingleHostReverseProxy(u)
-		if *rewriteHost {
-			origFunc := reverseProxy.Director
-			newFunc := func(req *http.Request) {
-				req.Host = u.Host
-				req.Header.Set("Host", u.Host)
-				origFunc(req)
-			}
-			reverseProxy.Director = newFunc
-		}
-		serveMux.Handle(path, reverseProxy)
+		serveMux.Handle(path, proxy)
 	}
 	return &OauthProxy{
 		CookieKey:  "_oauthproxy",
