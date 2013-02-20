@@ -326,6 +326,9 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		req.SetBasicAuth(user, "")
 		req.Header["X-Forwarded-User"] = []string{user}
 	}
+	if *passSecret != "" {
+		req.Header.Set("X-Secret", *passSecret)
+	}
 
 	p.serveMux.ServeHTTP(rw, req)
 }
