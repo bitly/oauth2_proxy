@@ -45,7 +45,17 @@ func NewOauthProxy(proxyUrls []*url.URL, clientID string, clientSecret string, v
 		path := u.Path
 		u.Path = ""
 		log.Printf("mapping %s => %s", path, u)
-		serveMux.Handle(path, httputil.NewSingleHostReverseProxy(u))
+		reverseProxy := httputil.NewSingleHostReverseProxy(u)
+		if *rewriteHost {
+			origFunc := reverseProxy.Director
+			newFunc := func(req *http.Request) {
+				req.Host = u.Host
+				req.Header.Set("Host", u.Host)
+				origFunc(req)
+			}
+			reverseProxy.Director = newFunc
+		}
+		serveMux.Handle(path, reverseProxy)
 	}
 	return &OauthProxy{
 		CookieKey:  "_oauthproxy",
