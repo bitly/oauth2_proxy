@@ -36,16 +36,31 @@ type OauthProxy struct {
 	serveMux           *http.ServeMux
 }
 
+func NewReverseProxy(url *url.URL) (path string, proxy *httputil.ReverseProxy) {
+	path = url.Path
+	url.Path = ""
+	proxy = httputil.NewSingleHostReverseProxy(url)
+
+	if *rewriteHost {
+		origFunc := proxy.Director
+		newFunc := func(req *http.Request) {
+			req.Host = url.Host
+			origFunc(req)
+		}
+		proxy.Director = newFunc
+	}
+	return
+}
+
 func NewOauthProxy(proxyUrls []*url.URL, clientID string, clientSecret string, validator func(string) bool) *OauthProxy {
 	login, _ := url.Parse("https://accounts.google.com/o/oauth2/auth")
 	redeem, _ := url.Parse("https://accounts.google.com/o/oauth2/token")
 	info, _ := url.Parse("https://www.googleapis.com/oauth2/v2/userinfo")
 	serveMux := http.NewServeMux()
 	for _, u := range proxyUrls {
-		path := u.Path
-		u.Path = ""
+		path, proxy := NewReverseProxy(u)
 		log.Printf("mapping %s => %s", path, u)
-		serveMux.Handle(path, httputil.NewSingleHostReverseProxy(u))
+		serveMux.Handle(path, proxy)
 	}
 	return &OauthProxy{
 		CookieKey:  "_oauthproxy",
@@ -325,6 +340,9 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if *passBasicAuth {
 		req.SetBasicAuth(user, "")
 		req.Header["X-Forwarded-User"] = []string{user}
+	}
+	if *passSecret != "" {
+		req.Header.Set("X-Secret", *passSecret)
 	}
 
 	p.serveMux.ServeHTTP(rw, req)

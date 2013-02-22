@@ -97,6 +97,26 @@ The command line to run `google_auth_proxy` would look like this:
 ```
 
 
+## Running on Heroku
+
+The files `Procfile` and `.godir` enable this code to run un-modified as a Heroku application,
+using config variables to control all command line options. For example, to specify
+`--cookie-secret=abcde`, set `COOKIE_SECRET=abcde`. For multiple --upstream arguments, UPSTREAM
+can be a space-separated list.
+
+You'll have to use the go buildback from `git://github.com/kr/heroku-buildpack-go.git`, for example
+using the command: `heroku create --buildpack git://github.com/kr/heroku-buildpack-go.git`
+
+With this proxy running on Heroku, the upstream needs to accept connections from almost anywhere,
+which is not how this system usually works. There is now a need to prove to the application that
+the connection is from the proxy, and not directly from an attacker. The option --pass-secret=?
+is one way to prove this with an "X-Secret" http header, but that's rather fragile, and depends
+on man-in-the-middle attacks being impossible. Currently, when running on Heroku, this proxy is
+probably only appropriate for casual, very low-value applications.
+
+If the upstream is also running on Heroku, you'll also need the option `--rewrite-host=true`.
+
+
 
 ## Endpoint Documentation
 
