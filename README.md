@@ -1,18 +1,3 @@
-google_auth_proxy heroku version
-================================
-
-An adaptation of google_auth_proxy to run as an app on the Heroku platform, with no code
-customization for the particular app - all configuration is via Heroku config variables. The
-config variables match the config options - see `Procfile` for details.
-
-Authenticating this proxy to the application behind it is not currently robust, it's actually
-rather silly, you've been warned.
-
-To run this on Heroku, you should use the go buildpack from
-`git://github.com/kr/heroku-buildpack-go.git` for example with the command:
-` heroku create --buildpack git://github.com/kr/heroku-buildpack-go.git`
-
-
 google_auth_proxy
 =================
 
@@ -110,6 +95,19 @@ The command line to run `google_auth_proxy` would look like this:
    --client-id=... \
    --client-secret=...
 ```
+
+
+## Running on Heroku
+
+The files `Procfile` and `.godir` enable this code to run un-modified as a Heroku application,
+using config variables to control all command line options. For example, to specify
+`--cookie-secret=abcde`, set `COOKIE_SECRET=abcde`.
+
+Authenticating this proxy to the application behind it is not currently robust, it's actually
+rather silly, you've been warned.
+
+You'll have to use the go buildback from `git://github.com/kr/heroku-buildpack-go.git`, for example
+using the command: `heroku create --buildpack git://github.com/kr/heroku-buildpack-go.git`
 
 
 
