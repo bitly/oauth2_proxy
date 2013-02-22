@@ -45,7 +45,6 @@ func NewReverseProxy(url *url.URL) (path string, proxy *httputil.ReverseProxy) {
 		origFunc := proxy.Director
 		newFunc := func(req *http.Request) {
 			req.Host = url.Host
-			req.Header.Set("Host", url.Host)
 			origFunc(req)
 		}
 		proxy.Director = newFunc
