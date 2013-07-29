@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,11 +17,17 @@ var (
 	showVersion             = flag.Bool("version", false, "print version string")
 	httpAddr                = flag.String("http-address", "127.0.0.1:4180", "<addr>:<port> to listen on for HTTP clients")
 	redirectUrl             = flag.String("redirect-url", "", "the OAuth Redirect URL. ie: \"https://internalapp.yourcompany.com/oauth2/callback\"")
-	clientID                = flag.String("client-id", "", "the Google OAuth Client ID: ie: \"123456.apps.googleusercontent.com\"")
-	clientSecret            = flag.String("client-secret", "", "the OAuth Client Secret")
+	clientIDFlag            = flag.String("client-id", "", "the Google OAuth Client ID: ie: \"123456.apps.googleusercontent.com\"")
+	clientSecretFlag        = flag.String("client-secret", "", "the OAuth Client Secret")
+	clientIDEnv             = os.Getenv("google_auth_client_id")
+	clientSecretEnv         = os.Getenv("google_auth_secret")
+	clientID * string       = nil
+	clientSecret * string   = nil
 	passBasicAuth           = flag.Bool("pass-basic-auth", true, "pass HTTP Basic Auth information to upstream")
 	htpasswdFile            = flag.String("htpasswd-file", "", "additionally authenticate against a htpasswd file. Entries must be created with \"htpasswd -s\" for SHA encryption")
-	cookieSecret            = flag.String("cookie-secret", "", "the seed string for secure cookies")
+	cookieSecretFlag        = flag.String("cookie-secret", "", "the seed string for secure cookies")
+	cookieSecretEnv         = os.Getenv("google_auth_cookie_secret")
+	cookieSecret * string   = nil
 	cookieDomain            = flag.String("cookie-domain", "", "an optional cookie domain to force cookies to")
 	googleAppsDomain        = flag.String("google-apps-domain", "", "authenticate against the given google apps domain")
 	authenticatedEmailsFile = flag.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
@@ -32,7 +39,26 @@ func init() {
 }
 
 func main() {
+
 	flag.Parse()
+
+	// Try to use env for secrets if no flag is set
+	if *clientIDFlag != "" {
+		clientID = clientIDFlag
+	} else {
+		clientID = &clientIDEnv
+	}
+	if *clientSecretFlag != "" {
+		clientSecret = clientSecretFlag
+	} else {
+		clientSecret = &clientSecretEnv
+	}
+	if *cookieSecretFlag != "" {
+		cookieSecret = cookieSecretFlag
+	} else {
+		cookieSecret = &cookieSecretEnv
+	}
+
 
 	if *showVersion {
 		fmt.Printf("google_auth_proxy v%s\n", VERSION)
