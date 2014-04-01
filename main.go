@@ -25,6 +25,7 @@ var (
 	cookieDomain            = flag.String("cookie-domain", "", "an optional cookie domain to force cookies to")
 	googleAppsDomain        = flag.String("google-apps-domain", "", "authenticate against the given google apps domain")
 	authenticatedEmailsFile = flag.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
+	templatePath            = flag.String("template-path", "", "directory containing sign_in.html and error.html")
 	upstreams               = StringArray{}
 )
 

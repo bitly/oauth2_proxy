@@ -49,3 +49,11 @@ func getTemplates() *template.Template {
 	}
 	return t
 }
+
+func getTemplateFiles(path string) *template.Template {
+	t, err := template.New("foo").ParseFiles(path + "/sign_in.html", path + "/error.html")
+	if err != nil {
+		log.Fatalf("failed parsing template files %s", err.Error())
+	}
+	return t
+}

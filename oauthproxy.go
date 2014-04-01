@@ -192,6 +192,9 @@ func (p *OauthProxy) ErrorPage(rw http.ResponseWriter, code int, title string, m
 	log.Printf("ErrorPage %d %s %s", code, title, message)
 	rw.WriteHeader(code)
 	templates := getTemplates()
+	if *templatePath != ""  {
+		templates = getTemplateFiles(*templatePath)
+	}
 	t := struct {
 		Title   string
 		Message string
@@ -206,6 +209,9 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	p.ClearCookie(rw, req)
 	rw.WriteHeader(code)
 	templates := getTemplates()
+	if *templatePath != ""  {
+		templates = getTemplateFiles(*templatePath)
+	}
 
 	t := struct {
 		SignInMessage string
