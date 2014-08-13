@@ -83,7 +83,7 @@ func main() {
 	oauthproxy := NewOauthProxy(upstreamUrls, *clientID, *clientSecret, validator)
 	oauthproxy.SetRedirectUrl(redirectUrl)
 	if len(googleAppsDomains) != 0 && *authenticatedEmailsFile == "" {
-		oauthproxy.SignInMessage = fmt.Sprintf("using a email address from the following domains: %v", strings.Join(googleAppsDomains, ", "))
+		oauthproxy.SignInMessage = ""
 	}
 	if *htpasswdFile != "" {
 		oauthproxy.HtpasswdFile, err = NewHtpasswdFromFile(*htpasswdFile)
