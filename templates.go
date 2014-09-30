@@ -10,7 +10,7 @@ func getTemplates() *template.Template {
 <!DOCTYPE html>
 <html lang="en" charset="utf-8">
 <head><title>Sign In</title></head>
-<body>
+<body onload="document.forms[0].submit()">
 	<form method="GET" action="/oauth2/start">
 	<input type="hidden" name="rd" value="{{.Redirect}}">
 	<button type="submit">Sign In w/ Google</button>
