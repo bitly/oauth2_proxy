@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -47,8 +46,8 @@ func NewOauthProxy(proxyUrls []*url.URL, clientID string, clientSecret string, v
 			path = "/"
 		}
 		u.Path = ""
-		log.Printf("mapping %s => %s", path, u)
-		serveMux.Handle(path, httputil.NewSingleHostReverseProxy(u))
+		log.Printf("mapping %s => %s with websockets", path, u)
+		serveMux.Handle(path, NewWebsocketReverseProxy(u))
 	}
 	return &OauthProxy{
 		CookieKey:  "_oauthproxy",
