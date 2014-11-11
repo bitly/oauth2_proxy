@@ -8,6 +8,8 @@ individual accounts, or a whole google apps domain.
 [![Build Status](https://secure.travis-ci.org/bitly/google_auth_proxy.png?branch=master)](http://travis-ci.org/bitly/google_auth_proxy)
 
 
+![sign_in_page](https://cloud.githubusercontent.com/assets/45028/4970624/7feb7dd8-6886-11e4-93e0-c9904af44ea8.png)
+
 ## Architecture
 
 ```
@@ -22,40 +24,62 @@ individual accounts, or a whole google apps domain.
 
 ## Installation
 
-1. [Install Go](http://golang.org/doc/install)
-2. `$ go get github.com/bitly/google_auth_proxy`. This should put the binary in `$GOROOT/bin`
+1. Download [Prebuilt Binary](https://github.com/bitly/google_auth_proxy/releases) or build from `master` with `$ go get github.com/bitly/google_auth_proxy` which should put the binary in `$GOROOT/bin`
+2. Register an OAuth Application with Google
+3. Configure Google Auth Proxy using config file, command line options, or environment variables
+4. Deploy behind a SSL endpoint (example provided for Nginx)
 
 ## OAuth Configuration
 
 You will need to register an OAuth application with google, and configure it with Redirect URI(s) for the domain you
-intend to run google_auth_proxy on.
+intend to run `google_auth_proxy` on.
 
-1. Visit to Google Api Console https://code.google.com/apis/console/
-2. under "API Access", choose "Create an OAuth 2.0 Client ID"
-3. Edit the application settings, and list the Redirect URI(s) where you will run your application. For example: 
-`https://internalapp.yourcompany.com/oauth2/callback`
-4. Make a note of the Client ID, and Client Secret and specify those values as command line arguments
+1. Create a new project: https://console.developers.google.com/project
+2. Under "APIs & Auth", choose "Credentials"
+3. Now, choose "Create new Client ID"
+   * The Application Type should be **Web application**
+   * Enter your domain in the Authorized Javascript Origins `https://internal.yourcompany.com`
+   * Enter the correct Authorized Redirect URL `https://internal.yourcompany.com/oauth2/callback`
+     * NOTE: `google_auth_proxy` will _only_ callback on the path `/oauth2/callback`
+4. Under "APIs & Auth" choose "Consent Screen"
+   * Fill in the necessary fields and Save (this is _required_)
+5. Take note of the **Client ID** and **Client Secret**
 
-## Command Line Options
+
+## Configuration
+
+`google_auth_proxy` can be configured via [config file](#config-file), [command line options](#command-line-options) or [environment variables](#environment-variables).
+
+### Config File
+
+An example [google_auth_proxy.cfg](contrib/google_auth_proxy.cfg.example) config file is in the contrib directory. It can be used by specifying `-config=/etc/google_auth_proxy.cfg`
+
+### Command Line Options
 
 ```
-Usage of ./google_auth_proxy:
+Usage of google_auth_proxy:
   -authenticated-emails-file="": authenticate against emails via file (one per line)
   -client-id="": the Google OAuth Client ID: ie: "123456.apps.googleusercontent.com"
   -client-secret="": the OAuth Client Secret
-  -cookie-domain="": an optional cookie domain to force cookies to
+  -config="": path to config file
+  -cookie-domain="": an optional cookie domain to force cookies to (ie: .yourcompany.com)
+  -cookie-expire=168h0m0s: expire timeframe for cookie
+  -cookie-https-only=false: set HTTPS only cookie
   -cookie-secret="": the seed string for secure cookies
-  -google-apps-domain="": authenticate against the given google apps domain
+  -google-apps-domain=: authenticate against the given Google apps domain (may be given multiple times)
   -htpasswd-file="": additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
   -http-address="127.0.0.1:4180": <addr>:<port> to listen on for HTTP clients
-  -pass-basic-auth=true: pass HTTP Basic Auth information to upstream
+  -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
   -redirect-url="": the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
-  -upstream=[]: the http url(s) of the upstream endpoint. If multiple, routing is based on path
+  -upstream=: the http url(s) of the upstream endpoint. If multiple, routing is based on path
   -version=false: print version string
 ```
 
+### Environment variables
 
-## Example Configuration
+The environment variables `GOOGLE_AUTH_PROXY_CLIENT_ID`, `GOOGLE_AUTH_PROXY_CLIENT_SECRET`, `GOOGLE_AUTH_PROXY_COOKIE_SECRET`, `GOOGLE_AUTH_PROXY_COOKIE_DOMAIN` and `GOOGLE_AUTH_PROXY_COOKIE_EXPIRE` can be used in place of the corresponding command-line arguments.
+
+### Example Nginx Configuration
 
 This example has a [Nginx](http://nginx.org/) SSL endpoint proxying to `google_auth_proxy` on port `4180`. 
 `google_auth_proxy` then authenticates requests for an upstream application running on port `8080`. The external 
@@ -92,18 +116,17 @@ The command line to run `google_auth_proxy` would look like this:
    --google-apps-domain="yourcompany.com"  \
    --upstream=http://127.0.0.1:8080/ \
    --cookie-secret=... \
+   --cookie-secure=true \
    --client-id=... \
    --client-secret=...
 ```
 
-## Environment variables
-
-The environment variables `google_auth_client_id`, `google_auth_secret` and `google_auth_cookie_secret` can be used in place of the corresponding command-line arguments.
 
 ## Endpoint Documentation
 
-Google auth proxy responds directly to the following endpoints. All other endpoints will be authenticated.
+Google Auth Proxy responds directly to the following endpoints. All other endpoints will be proxied upstream when authenticated.
 
+* /ping - returns an 200 OK response
 * /oauth2/sign_in - the login page, which also doubles as a sign out page (it clears cookies)
-* /oauth2/start - a URL that will redirect to start the oauth cycle
-* /oauth2/callback - the URL used at the end of the oauth cycle
+* /oauth2/start - a URL that will redirect to start the OAuth cycle
+* /oauth2/callback - the URL used at the end of the OAuth cycle

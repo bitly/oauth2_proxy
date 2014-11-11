@@ -8,18 +8,14 @@ import (
 	"strings"
 )
 
-func NewValidator(domain string, usersFile string) func(string) bool {
-
+func NewValidator(domains []string, usersFile string) func(string) bool {
 	validUsers := make(map[string]bool)
-	emailSuffix := ""
-	if domain != "" {
-		emailSuffix = fmt.Sprintf("@%s", domain)
-	}
 
 	if usersFile != "" {
+		log.Printf("using authenticated emails file %s", usersFile)
 		r, err := os.Open(usersFile)
 		if err != nil {
-			log.Fatalf("failed opening -authenticated-emails-file=%v, %s", usersFile, err.Error())
+			log.Fatalf("failed opening authenticated-emails-file=%q, %s", usersFile, err)
 		}
 		csv_reader := csv.NewReader(r)
 		csv_reader.Comma = ','
@@ -32,9 +28,10 @@ func NewValidator(domain string, usersFile string) func(string) bool {
 	}
 
 	validator := func(email string) bool {
-		var valid bool
-		if emailSuffix != "" {
-			valid = strings.HasSuffix(email, emailSuffix)
+		valid := false
+		for _, domain := range domains {
+			emailSuffix := fmt.Sprintf("@%s", domain)
+			valid = valid || strings.HasSuffix(email, emailSuffix)
 		}
 		if !valid {
 			_, valid = validUsers[email]

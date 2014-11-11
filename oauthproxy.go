@@ -5,65 +5,77 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/bitly/go-simplejson"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/bitly/go-simplejson"
 )
 
+const pingPath = "/ping"
 const signInPath = "/oauth2/sign_in"
 const oauthStartPath = "/oauth2/start"
 const oauthCallbackPath = "/oauth2/callback"
 
 type OauthProxy struct {
-	CookieSeed string
-	CookieKey  string
-	Validator  func(string) bool
+	CookieSeed      string
+	CookieKey       string
+	CookieDomain    string
+	CookieHttpsOnly bool
+	CookieExpire    time.Duration
+	Validator       func(string) bool
 
 	redirectUrl        *url.URL // the url to receive requests at
 	oauthRedemptionUrl *url.URL // endpoint to redeem the code
 	oauthLoginUrl      *url.URL // to redirect the user to
-	oauthUserInfoUrl   *url.URL
 	oauthScope         string
 	clientID           string
 	clientSecret       string
 	SignInMessage      string
 	HtpasswdFile       *HtpasswdFile
 	serveMux           *http.ServeMux
+	PassBasicAuth      bool
 }
 
-func NewOauthProxy(proxyUrls []*url.URL, clientID string, clientSecret string, validator func(string) bool) *OauthProxy {
+func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	login, _ := url.Parse("https://accounts.google.com/o/oauth2/auth")
 	redeem, _ := url.Parse("https://accounts.google.com/o/oauth2/token")
-	info, _ := url.Parse("https://www.googleapis.com/oauth2/v2/userinfo")
 	serveMux := http.NewServeMux()
-	for _, u := range proxyUrls {
+	for _, u := range opts.proxyUrls {
 		path := u.Path
 		u.Path = ""
-		log.Printf("mapping %s => %s with websockets", path, u)
+		log.Printf("mapping path %q => upstream %q with websockets", path, u)
 		serveMux.Handle(path, NewWebsocketReverseProxy(u))
 	}
-	return &OauthProxy{
-		CookieKey:  "_oauthproxy",
-		CookieSeed: *cookieSecret,
-		Validator:  validator,
+	redirectUrl := opts.redirectUrl
+	redirectUrl.Path = oauthCallbackPath
 
-		clientID:           clientID,
-		clientSecret:       clientSecret,
-		oauthScope:         "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+	log.Printf("OauthProxy configured for %s", opts.ClientID)
+	domain := opts.CookieDomain
+	if domain == "" {
+		domain = "<default>"
+	}
+	log.Printf("Cookie settings: https_only: %v expiry: %s domain:%s", opts.CookieHttpsOnly, opts.CookieExpire, domain)
+	return &OauthProxy{
+		CookieKey:       "_oauthproxy",
+		CookieSeed:      opts.CookieSecret,
+		CookieDomain:    opts.CookieDomain,
+		CookieHttpsOnly: opts.CookieHttpsOnly,
+		CookieExpire:    opts.CookieExpire,
+		Validator:       validator,
+
+		clientID:           opts.ClientID,
+		clientSecret:       opts.ClientSecret,
+		oauthScope:         "profile email",
 		oauthRedemptionUrl: redeem,
 		oauthLoginUrl:      login,
-		oauthUserInfoUrl:   info,
 		serveMux:           serveMux,
+		redirectUrl:        redirectUrl,
+		PassBasicAuth:      opts.PassBasicAuth,
 	}
-}
-
-func (p *OauthProxy) SetRedirectUrl(redirectUrl *url.URL) {
-	redirectUrl.Path = oauthCallbackPath
-	p.redirectUrl = redirectUrl
 }
 
 func (p *OauthProxy) GetLoginURL(redirectUrl string) string {
@@ -92,7 +104,7 @@ func apiRequest(req *http.Request) (*simplejson.Json, error) {
 	}
 	if resp.StatusCode != 200 {
 		log.Printf("got response code %d - %s", resp.StatusCode, body)
-		return nil, errors.New("api request returned 200 status code")
+		return nil, errors.New("api request returned non 200 status code")
 	}
 	data, err := simplejson.NewJson(body)
 	if err != nil {
@@ -101,9 +113,9 @@ func apiRequest(req *http.Request) (*simplejson.Json, error) {
 	return data, nil
 }
 
-func (p *OauthProxy) redeemCode(code string) (string, error) {
+func (p *OauthProxy) redeemCode(code string) (string, string, error) {
 	if code == "" {
-		return "", errors.New("missing code")
+		return "", "", errors.New("missing code")
 	}
 	params := url.Values{}
 	params.Add("redirect_uri", p.redirectUrl.String())
@@ -111,52 +123,58 @@ func (p *OauthProxy) redeemCode(code string) (string, error) {
 	params.Add("client_secret", p.clientSecret)
 	params.Add("code", code)
 	params.Add("grant_type", "authorization_code")
-	log.Printf("body is %s", params.Encode())
 	req, err := http.NewRequest("POST", p.oauthRedemptionUrl.String(), bytes.NewBufferString(params.Encode()))
 	if err != nil {
 		log.Printf("failed building request %s", err.Error())
-		return "", err
+		return "", "", err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	json, err := apiRequest(req)
 	if err != nil {
-		log.Printf("failed making request %s", err.Error())
-		return "", err
+		log.Printf("failed making request %s", err)
+		return "", "", err
 	}
 	access_token, err := json.Get("access_token").String()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return access_token, nil
+
+	idToken, err := json.Get("id_token").String()
+	if err != nil {
+		return "", "", err
+	}
+
+	// id_token is a base64 encode ID token payload
+	// https://developers.google.com/accounts/docs/OAuth2Login#obtainuserinfo
+	jwt := strings.Split(idToken, ".")
+	b, err := jwtDecodeSegment(jwt[1])
+	if err != nil {
+		return "", "", err
+	}
+	data, err := simplejson.NewJson(b)
+	if err != nil {
+		return "", "", err
+	}
+	email, err := data.Get("email").String()
+	if err != nil {
+		return "", "", err
+	}
+
+	return access_token, email, nil
 }
 
-func (p *OauthProxy) getUserInfo(token string) (string, error) {
-	params := url.Values{}
-	params.Add("access_token", token)
-	endpoint := fmt.Sprintf("%s?%s", p.oauthUserInfoUrl.String(), params.Encode())
-	log.Printf("calling %s", endpoint)
-	req, err := http.NewRequest("GET", endpoint, nil)
-	if err != nil {
-		log.Printf("failed building request %s", err.Error())
-		return "", err
+func jwtDecodeSegment(seg string) ([]byte, error) {
+	if l := len(seg) % 4; l > 0 {
+		seg += strings.Repeat("=", 4-l)
 	}
-	json, err := apiRequest(req)
-	if err != nil {
-		log.Printf("failed making request %s", err.Error())
-		return "", err
-	}
-	email, err := json.Get("email").String()
-	if err != nil {
-		log.Printf("failed getting email from response %s", err.Error())
-		return "", err
-	}
-	return email, nil
+
+	return base64.URLEncoding.DecodeString(seg)
 }
 
 func (p *OauthProxy) ClearCookie(rw http.ResponseWriter, req *http.Request) {
 	domain := strings.Split(req.Host, ":")[0]
-	if *cookieDomain != "" && strings.HasSuffix(domain, *cookieDomain) {
-		domain = *cookieDomain
+	if p.CookieDomain != "" && strings.HasSuffix(domain, p.CookieDomain) {
+		domain = p.CookieDomain
 	}
 	cookie := &http.Cookie{
 		Name:     p.CookieKey,
@@ -172,19 +190,24 @@ func (p *OauthProxy) ClearCookie(rw http.ResponseWriter, req *http.Request) {
 func (p *OauthProxy) SetCookie(rw http.ResponseWriter, req *http.Request, val string) {
 
 	domain := strings.Split(req.Host, ":")[0] // strip the port (if any)
-	if *cookieDomain != "" && strings.HasSuffix(domain, *cookieDomain) {
-		domain = *cookieDomain
+	if p.CookieDomain != "" && strings.HasSuffix(domain, p.CookieDomain) {
+		domain = p.CookieDomain
 	}
 	cookie := &http.Cookie{
 		Name:     p.CookieKey,
 		Value:    signedCookieValue(p.CookieSeed, p.CookieKey, val),
 		Path:     "/",
 		Domain:   domain,
-		Expires:  time.Now().Add(time.Duration(168) * time.Hour), // 7 days
 		HttpOnly: true,
-		// Secure: req. ... ? set if X-Scheme: https ?
+		Secure:   p.CookieHttpsOnly,
+		Expires:  time.Now().Add(p.CookieExpire),
 	}
 	http.SetCookie(rw, cookie)
+}
+
+func (p *OauthProxy) PingPage(rw http.ResponseWriter) {
+	rw.WriteHeader(http.StatusOK)
+	fmt.Fprintf(rw, "OK")
 }
 
 func (p *OauthProxy) ErrorPage(rw http.ResponseWriter, code int, title string, message string) {
@@ -210,10 +233,12 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		SignInMessage string
 		Htpasswd      bool
 		Redirect      string
+		Version       string
 	}{
 		SignInMessage: p.SignInMessage,
 		Htpasswd:      p.HtpasswdFile != nil,
 		Redirect:      req.URL.RequestURI(),
+		Version:       VERSION,
 	}
 	templates.ExecuteTemplate(rw, "sign_in.html", t)
 }
@@ -253,14 +278,20 @@ func (p *OauthProxy) GetRedirect(req *http.Request) (string, error) {
 
 func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// check if this is a redirect back at the end of oauth
-	remoteIP := req.Header.Get("X-Real-IP")
-	if remoteIP == "" {
-		remoteIP = req.RemoteAddr
+	remoteAddr := req.RemoteAddr
+	if req.Header.Get("X-Real-IP") != "" {
+		remoteAddr += fmt.Sprintf(" (%q)", req.Header.Get("X-Real-IP"))
 	}
-	log.Printf("%s %s %s", remoteIP, req.Method, req.URL.Path)
+	log.Printf("%s %s %s", remoteAddr, req.Method, req.URL.RequestURI())
 
 	var ok bool
 	var user string
+	var email string
+
+	if req.URL.Path == pingPath {
+		p.PingPage(rw)
+		return
+	}
 
 	if req.URL.Path == signInPath {
 		redirect, err := p.GetRedirect(req)
@@ -300,16 +331,9 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		token, err := p.redeemCode(req.Form.Get("code"))
+		_, email, err := p.redeemCode(req.Form.Get("code"))
 		if err != nil {
-			log.Printf("error redeeming code %s", err.Error())
-			p.ErrorPage(rw, 500, "Internal Error", err.Error())
-			return
-		}
-		// validate user
-		email, err := p.getUserInfo(token)
-		if err != nil {
-			log.Printf("error redeeming code %s", err.Error())
+			log.Printf("%s error redeeming code %s", remoteAddr, err)
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
 			return
 		}
@@ -321,7 +345,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 		// set cookie, or deny
 		if p.Validator(email) {
-			log.Printf("authenticating %s completed", email)
+			log.Printf("%s authenticating %s completed", remoteAddr, email)
 			p.SetCookie(rw, req, email)
 			http.Redirect(rw, req, redirect, 302)
 			return
@@ -334,7 +358,6 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if !ok {
 		cookie, err := req.Cookie(p.CookieKey)
 		if err == nil {
-			var email string
 			email, ok = validateCookie(cookie, p.CookieSeed)
 			user = strings.Split(email, "@")[0]
 		}
@@ -350,15 +373,16 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if !ok {
-		log.Printf("invalid cookie")
+		log.Printf("%s - invalid cookie session", remoteAddr)
 		p.SignInPage(rw, req, 403)
 		return
 	}
 
 	// At this point, the user is authenticated. proxy normally
-	if *passBasicAuth {
+	if p.PassBasicAuth {
 		req.SetBasicAuth(user, "")
 		req.Header["X-Forwarded-User"] = []string{user}
+		req.Header["X-Forwarded-Email"] = []string{email}
 	}
 
 	p.serveMux.ServeHTTP(rw, req)
