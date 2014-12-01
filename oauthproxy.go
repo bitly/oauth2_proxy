@@ -41,6 +41,10 @@ type OauthProxy struct {
 	PassBasicAuth      bool
 }
 
+func NewReverseProxy(target *url.URL) (proxy *httputil.ReverseProxy) {
+    return httputil.NewSingleHostReverseProxy(target)
+}
+
 func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	login, _ := url.Parse("https://accounts.google.com/o/oauth2/auth")
 	redeem, _ := url.Parse("https://accounts.google.com/o/oauth2/token")
@@ -49,7 +53,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 		path := u.Path
 		u.Path = ""
 		log.Printf("mapping path %q => upstream %q", path, u)
-		serveMux.Handle(path, httputil.NewSingleHostReverseProxy(u))
+		serveMux.Handle(path, NewReverseProxy(u))
 	}
 	redirectUrl := opts.redirectUrl
 	redirectUrl.Path = oauthCallbackPath
