@@ -23,6 +23,7 @@ type Options struct {
 	AuthenticatedEmailsFile string        `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	GoogleAppsDomains       []string      `flag:"google-apps-domain" cfg:"google_apps_domains"`
 	Upstreams               []string      `flag:"upstream" cfg:"upstreams"`
+	WhiteListedUrl          string        `flag:"white-listed-url" cfg:"white_listed_url"`
 
 	// internal values that are set after config validation
 	redirectUrl *url.URL

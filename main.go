@@ -26,6 +26,7 @@ func main() {
 	flagSet.String("http-address", "127.0.0.1:4180", "<addr>:<port> to listen on for HTTP clients")
 	flagSet.String("redirect-url", "", "the OAuth Redirect URL. ie: \"https://internalapp.yourcompany.com/oauth2/callback\"")
 	flagSet.Var(&upstreams, "upstream", "the http url(s) of the upstream endpoint. If multiple, routing is based on path")
+	flagSet.String("white-listed-url", "", "the path for which authentication will be skipped")
 	flagSet.Bool("pass-basic-auth", true, "pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream")
 
 	flagSet.Var(&googleAppsDomains, "google-apps-domain", "authenticate against the given Google apps domain (may be given multiple times)")
