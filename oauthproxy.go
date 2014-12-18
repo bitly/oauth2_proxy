@@ -40,7 +40,7 @@ type OauthProxy struct {
 	DisplayHtpasswdForm bool
 	serveMux            *http.ServeMux
 	PassBasicAuth       bool
-	whiteListedUrls     string
+	whiteListedUrl     string
 }
 
 func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
