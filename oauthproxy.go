@@ -26,6 +26,7 @@ type OauthProxy struct {
 	CookieKey       string
 	CookieDomain    string
 	CookieHttpsOnly bool
+	RedirectToHttps bool
 	CookieExpire    time.Duration
 	Validator       func(string) bool
 
@@ -75,6 +76,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 		oauthRedemptionUrl: redeem,
 		oauthLoginUrl:      login,
 		serveMux:           serveMux,
+		RedirectToHttps:    opts.RedirectToHttps,
 		redirectUrl:        redirectUrl,
 		PassBasicAuth:      opts.PassBasicAuth,
 	}
@@ -289,6 +291,15 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		remoteAddr += fmt.Sprintf(" (%q)", req.Header.Get("X-Real-IP"))
 	}
 	log.Printf("%s %s %s", remoteAddr, req.Method, req.URL.RequestURI())
+        if p.redirectUrl.Host == "" {
+		if p.RedirectToHttps {
+			p.redirectUrl.Scheme = "https"
+                } else {
+			p.redirectUrl.Scheme = "http"
+		}
+	        p.redirectUrl.Host = req.Host
+		log.Printf("redirect_url not set, defaulting to %s", p.redirectUrl)
+        }
 
 	var ok bool
 	var user string
