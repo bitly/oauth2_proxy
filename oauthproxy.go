@@ -40,6 +40,7 @@ type OauthProxy struct {
 	DisplayHtpasswdForm bool
 	serveMux            *http.ServeMux
 	PassBasicAuth       bool
+	whiteListedUrl     string
 }
 
 func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
@@ -76,6 +77,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 		oauthLoginUrl:      login,
 		serveMux:           serveMux,
 		redirectUrl:        redirectUrl,
+		whiteListedUrl:     opts.WhiteListedUrl,
 		PassBasicAuth:      opts.PassBasicAuth,
 	}
 }
@@ -299,6 +301,10 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if req.URL.Path == p.whiteListedUrl {
+		p.serveMux.ServeHTTP(rw, req)
+		return
+	}
 	if req.URL.Path == signInPath {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
