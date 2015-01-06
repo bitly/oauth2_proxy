@@ -69,10 +69,14 @@ func main() {
 	oauthproxy := NewOauthProxy(opts, validator)
 
 	if len(opts.GoogleAppsDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
-		if len(opts.GoogleAppsDomains) > 1 {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.GoogleAppsDomains, ", "))
+		if opts.CustomSignInMessage {
+			oauthproxy.SignInMessage = opts.CustomSignInMessage
 		} else {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.GoogleAppsDomains[0])
+			if len(opts.GoogleAppsDomains) > 1 {
+				oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.GoogleAppsDomains, ", "))
+			} else {
+				oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.GoogleAppsDomains[0])
+			}
 		}
 	}
 

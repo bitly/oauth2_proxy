@@ -23,6 +23,7 @@ type Options struct {
 	AuthenticatedEmailsFile string        `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	GoogleAppsDomains       []string      `flag:"google-apps-domain" cfg:"google_apps_domains"`
 	Upstreams               []string      `flag:"upstream" cfg:"upstreams"`
+	CustomSignInMessage     string        `flag:"sign-in-message" cfg:"sign_in_message"`
 
 	// internal values that are set after config validation
 	redirectUrl *url.URL
