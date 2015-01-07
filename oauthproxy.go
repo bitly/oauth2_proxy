@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"html/template"
 
 	"github.com/bitly/go-simplejson"
 )
@@ -236,12 +237,12 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	templates := getTemplates()
 
 	t := struct {
-		SignInMessage string
+		SignInMessage template.HTML
 		CustomLogin   bool
 		Redirect      string
 		Version       string
 	}{
-		SignInMessage: p.SignInMessage,
+		SignInMessage: template.HTML(p.SignInMessage),
 		CustomLogin:   p.displayCustomLoginForm(),
 		Redirect:      req.URL.RequestURI(),
 		Version:       VERSION,

@@ -71,6 +71,7 @@ Usage of google_auth_proxy:
   -http-address="127.0.0.1:4180": <addr>:<port> to listen on for HTTP clients
   -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
   -redirect-url="": the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
+  -sign-in-message="": set custom text or HTML to be displayed as the sign in message
   -upstream=: the http url(s) of the upstream endpoint. If multiple, routing is based on path
   -version=false: print version string
 ```

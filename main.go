@@ -40,6 +40,8 @@ func main() {
 	flagSet.Duration("cookie-expire", time.Duration(168)*time.Hour, "expire timeframe for cookie")
 	flagSet.Bool("cookie-https-only", true, "set HTTPS only cookie")
 
+	flagSet.String("sign-in-message", "", "set custom text or HTML to be displayed as the sign in message")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
@@ -69,10 +71,14 @@ func main() {
 	oauthproxy := NewOauthProxy(opts, validator)
 
 	if len(opts.GoogleAppsDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
-		if len(opts.GoogleAppsDomains) > 1 {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.GoogleAppsDomains, ", "))
+		if opts.CustomSignInMessage != "" {
+			oauthproxy.SignInMessage = opts.CustomSignInMessage
 		} else {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.GoogleAppsDomains[0])
+			if len(opts.GoogleAppsDomains) > 1 {
+				oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.GoogleAppsDomains, ", "))
+			} else {
+				oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.GoogleAppsDomains[0])
+			}
 		}
 	}
 
@@ -99,3 +105,4 @@ func main() {
 
 	log.Printf("HTTP: closing %s", listener.Addr())
 }
+
