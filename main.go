@@ -40,6 +40,8 @@ func main() {
 	flagSet.Duration("cookie-expire", time.Duration(168)*time.Hour, "expire timeframe for cookie")
 	flagSet.Bool("cookie-https-only", true, "set HTTPS only cookie")
 
+	flagSet.String("sign-in-message", "", "set custom text or HTML to be displayed as the sign in message")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
@@ -69,7 +71,7 @@ func main() {
 	oauthproxy := NewOauthProxy(opts, validator)
 
 	if len(opts.GoogleAppsDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
-		if opts.CustomSignInMessage {
+		if opts.CustomSignInMessage != "" {
 			oauthproxy.SignInMessage = opts.CustomSignInMessage
 		} else {
 			if len(opts.GoogleAppsDomains) > 1 {
@@ -103,3 +105,4 @@ func main() {
 
 	log.Printf("HTTP: closing %s", listener.Addr())
 }
+
