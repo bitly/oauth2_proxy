@@ -12,6 +12,7 @@ import (
 type Options struct {
 	HttpAddress             string        `flag:"http-address" cfg:"http_address"`
 	RedirectUrl             string        `flag:"redirect-url" cfg:"redirect_url"`
+	RedirectToHttps         bool          `flag:"redirect-to-https" cfg:"redirect-to-https"`
 	ClientID                string        `flag:"client-id" cfg:"client_id" env:"GOOGLE_AUTH_PROXY_CLIENT_ID"`
 	ClientSecret            string        `flag:"client-secret" cfg:"client_secret" env:"GOOGLE_AUTH_PROXY_CLIENT_SECRET"`
 	PassBasicAuth           bool          `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
@@ -36,6 +37,7 @@ func NewOptions() *Options {
 	return &Options{
 		HttpAddress:         "127.0.0.1:4180",
 		DisplayHtpasswdForm: true,
+		RedirectToHttps:     false,
 		CookieHttpsOnly:     true,
 		PassBasicAuth:       true,
 		CookieExpire:        time.Duration(168) * time.Hour,
