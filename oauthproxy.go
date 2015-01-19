@@ -23,12 +23,12 @@ const oauthStartPath = "/oauth2/start"
 const oauthCallbackPath = "/oauth2/callback"
 
 type OauthProxy struct {
-	CookieSeed      string
-	CookieKey       string
-	CookieDomain    string
-	CookieHttpsOnly bool
-	CookieExpire    time.Duration
-	Validator       func(string) bool
+	CookieSeed   string
+	CookieKey    string
+	CookieDomain string
+	CookieSecure bool
+	CookieExpire time.Duration
+	Validator    func(string) bool
 
 	redirectUrl         *url.URL // the url to receive requests at
 	oauthRedemptionUrl  *url.URL // endpoint to redeem the code
@@ -67,14 +67,14 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	if domain == "" {
 		domain = "<default>"
 	}
-	log.Printf("Cookie settings: https_only: %v expiry: %s domain:%s", opts.CookieHttpsOnly, opts.CookieExpire, domain)
+	log.Printf("Cookie settings: secure: %v expiry: %s domain:%s", opts.CookieSecure, opts.CookieExpire, domain)
 	return &OauthProxy{
-		CookieKey:       "_oauthproxy",
-		CookieSeed:      opts.CookieSecret,
-		CookieDomain:    opts.CookieDomain,
-		CookieHttpsOnly: opts.CookieHttpsOnly,
-		CookieExpire:    opts.CookieExpire,
-		Validator:       validator,
+		CookieKey:    "_oauthproxy",
+		CookieSeed:   opts.CookieSecret,
+		CookieDomain: opts.CookieDomain,
+		CookieSecure: opts.CookieSecure,
+		CookieExpire: opts.CookieExpire,
+		Validator:    validator,
 
 		clientID:           opts.ClientID,
 		clientSecret:       opts.ClientSecret,
@@ -214,7 +214,7 @@ func (p *OauthProxy) SetCookie(rw http.ResponseWriter, req *http.Request, val st
 		Path:     "/",
 		Domain:   domain,
 		HttpOnly: true,
-		Secure:   p.CookieHttpsOnly,
+		Secure:   p.CookieSecure,
 		Expires:  time.Now().Add(p.CookieExpire),
 	}
 	http.SetCookie(rw, cookie)
