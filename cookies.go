@@ -9,12 +9,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"log"
 )
 
 func validateCookie(cookie *http.Cookie, seed string) (string, bool) {
 	// value, timestamp, sig
 	parts := strings.Split(cookie.Value, "|")
 	if len(parts) != 3 {
+		log.Printf("Cookie %s does not have 3 parts, not valid", cookie.Name)
 		return "", false
 	}
 	sig := cookieSignature(seed, cookie.Name, parts[0], parts[1])

@@ -209,15 +209,15 @@ func (p *OauthProxy) ClearCookie(rw http.ResponseWriter, req *http.Request) {
 	http.SetCookie(rw, cookie)
 }
 
-func (p *OauthProxy) SetCookie(rw http.ResponseWriter, req *http.Request, val string) {
+func (p *OauthProxy) SetCookie(rw http.ResponseWriter, req *http.Request, name string, val string) {
 
 	domain := strings.Split(req.Host, ":")[0] // strip the port (if any)
 	if p.CookieDomain != "" && strings.HasSuffix(domain, p.CookieDomain) {
 		domain = p.CookieDomain
 	}
 	cookie := &http.Cookie{
-		Name:     p.CookieKey,
-		Value:    signedCookieValue(p.CookieSeed, p.CookieKey, val),
+		Name:     name,
+		Value:    signedCookieValue(p.CookieSeed, name, val),
 		Path:     "/",
 		Domain:   domain,
 		HttpOnly: p.CookieHttpOnly,
@@ -335,7 +335,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 		user, ok = p.ManualSignIn(rw, req)
 		if ok {
-			p.SetCookie(rw, req, user)
+			p.SetCookie(rw, req, p.CookieKey, user)
 			http.Redirect(rw, req, redirect, 302)
 		} else {
 			p.SignInPage(rw, req, 200)
@@ -383,27 +383,16 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		// set cookie, or deny
 		if p.Validator(email) {
 			log.Printf("%s authenticating %s completed", remoteAddr, email)
-			p.SetCookie(rw, req, email)
+			p.SetCookie(rw, req, p.CookieKey, email)
 
-			log.Printf("accessToken: %v", accessToken)
+			if (p.PassBasicAuth) {
+				token := &oauth2.Token{
+					AccessToken:  accessToken,
+					TokenType:    "Bearer",
+				}
 
-			token := &oauth2.Token{
-				AccessToken:  accessToken,
-				TokenType:    "Bearer",
+				p.SetCookie(rw, req, p.CookieKey+"Roles", p.GetGroupJson(email, token))
 			}
-
-			cookie := &http.Cookie{
-				Name:     p.CookieKey + "Roles",
-				Value:    signedCookieValue(p.CookieSeed, p.CookieKey + "Roles", p.GetGroupJson(email, token)),
-				Path:     "/",
-				Domain:   p.CookieDomain,
-				Expires:  time.Now().Add(time.Duration(1) * time.Hour * -1),
-				HttpOnly: p.CookieHttpOnly,
-			}
-
-			log.Printf("setting roles cookie: %s", cookie)
-
-			http.SetCookie(rw, cookie)
 
 			http.Redirect(rw, req, redirect, 302)
 			return
@@ -420,9 +409,11 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			user = strings.Split(email, "@")[0]
 		}
 
-		roleCookie, roleErr := req.Cookie(p.CookieKey + "Roles")
-		if roleErr == nil {
-			roles, ok = validateCookie(roleCookie, p.CookieSeed)
+		if (p.PassBasicAuth) {
+			roleCookie, roleErr := req.Cookie(p.CookieKey + "Roles")
+			if roleErr == nil {
+				roles, ok = validateCookie(roleCookie, p.CookieSeed)
+			}
 		}
 	}
 
@@ -447,7 +438,6 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		req.Header["X-Forwarded-User"] = []string{user}
 		req.Header["X-Forwarded-Email"] = []string{email}
 		req.Header["X-Forwarded-Roles"] = []string{roles}
-		log.Printf("Roles forwarded: %v", roles)
 	}
 
 	p.serveMux.ServeHTTP(rw, req)
@@ -462,8 +452,6 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 		Scopes:       []string{directory.AdminDirectoryGroupMemberReadonlyScope},
 	}
 
-	log.Printf("config: %v, token: %v", config, token)
-
 	ctx := context.Background()
 	c := config.Client(ctx, token)
 
@@ -471,7 +459,14 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 
 	res, err := adminService.Groups.List().UserKey(email).Do()
 	log.Printf("Got directory.Groups.List().UserKey(%s), err: %#v, %v", email, res, err)
-	b, err := json.Marshal(res.Groups)
+
+	simpleGroups := make([]string, len(res.Groups))
+
+	for g := range res.Groups {
+		simpleGroups[g] = res.Groups[g].Email
+	}
+
+	b, err := json.Marshal(simpleGroups)
 
 	log.Printf("Returning json: %v", string(b[:]))
 
