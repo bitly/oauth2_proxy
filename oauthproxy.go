@@ -394,7 +394,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				roleString, err := p.GetGroupJson(email, token)
 
 				if (!err) {
-					p.SetCookie(rw, req, p.CookieKey+"Roles",)
+					p.SetCookie(rw, req, p.CookieKey+"Roles", roleString)
 				}
 			}
 
