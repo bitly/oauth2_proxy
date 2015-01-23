@@ -310,6 +310,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	var ok bool
 	var user string
 	var email string
+	var roles string
 
 	if req.URL.Path == pingPath {
 		p.PingPage(rw)
@@ -366,6 +367,8 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		accessTokenRes, email, err := p.redeemCode(req.Form.Get("code"))
 		accessToken = accessTokenRes
 
+
+
 		if err != nil {
 			log.Printf("%s error redeeming code %s", remoteAddr, err)
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -381,6 +384,25 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if p.Validator(email) {
 			log.Printf("%s authenticating %s completed", remoteAddr, email)
 			p.SetCookie(rw, req, email)
+
+			log.Printf("accessToken: %v", accessToken)
+
+			token := &oauth2.Token{
+				AccessToken:  accessToken,
+				TokenType:    "Bearer",
+			}
+
+			cookie := &http.Cookie{
+				Name:     p.CookieKey + "Roles",
+				Value:    signedCookieValue(p.CookieSeed, p.CookieKey + "Roles", p.GetGroupJson(email, token)),
+				Path:     "/",
+				Domain:   p.CookieDomain,
+				Expires:  time.Now().Add(time.Duration(1) * time.Hour * -1),
+				HttpOnly: p.CookieHttpOnly,
+			}
+
+			http.SetCookie(rw, cookie)
+
 			http.Redirect(rw, req, redirect, 302)
 			return
 		} else {
@@ -394,6 +416,11 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			email, ok = validateCookie(cookie, p.CookieSeed)
 			user = strings.Split(email, "@")[0]
+		}
+
+		roleCookie, roleErr := req.Cookie(p.CookieKey + "Roles")
+		if roleErr == nil {
+			roles, ok = validateCookie(roleCookie, p.CookieSeed)
 		}
 	}
 
@@ -417,13 +444,8 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		req.SetBasicAuth(user, "")
 		req.Header["X-Forwarded-User"] = []string{user}
 		req.Header["X-Forwarded-Email"] = []string{email}
-
-		token := &oauth2.Token{
-			AccessToken:  accessToken,
-			TokenType:    "Bearer",
-		}
-
-		req.Header["X-User-Groups"] = []string{p.GetGroupJson(email, token)}
+		req.Header["X-Forwarded-Roles"] = []string{roles}
+		log.Printf("Roles forwarded: %v", roles)
 	}
 
 	p.serveMux.ServeHTTP(rw, req)
@@ -437,6 +459,8 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 		Endpoint:     google.Endpoint,
 		Scopes:       []string{directory.AdminDirectoryGroupMemberReadonlyScope},
 	}
+
+	log.Printf("config: %v, token: %v", config, token)
 
 	ctx := context.Background()
 	c := config.Client(ctx, token)
