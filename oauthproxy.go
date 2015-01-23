@@ -458,7 +458,6 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 	adminService, err := directory.New(c)
 
 	res, err := adminService.Groups.List().UserKey(email).Do()
-	log.Printf("Got directory.Groups.List().UserKey(%s), err: %#v, %v", email, res, err)
 
 	simpleGroups := make([]string, len(res.Groups))
 
@@ -467,8 +466,6 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 	}
 
 	b, err := json.Marshal(simpleGroups)
-
-	log.Printf("Returning json: %v", string(b[:]))
 
 	return string(b[:])
 }
