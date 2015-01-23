@@ -391,7 +391,11 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 					TokenType:    "Bearer",
 				}
 
-				p.SetCookie(rw, req, p.CookieKey+"Roles", p.GetGroupJson(email, token))
+				roleString, err := p.GetGroupJson(email, token)
+
+				if (!err) {
+					p.SetCookie(rw, req, p.CookieKey+"Roles",)
+				}
 			}
 
 			http.Redirect(rw, req, redirect, 302)
@@ -443,7 +447,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	p.serveMux.ServeHTTP(rw, req)
 }
 
-func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
+func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) (string, bool) {
 
 	config := &oauth2.Config{
 		ClientID:     p.clientID,
@@ -457,7 +461,17 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 
 	adminService, err := directory.New(c)
 
+	if err != nil {
+		log.Printf("unable to initiate directory service: %v", err)
+		return "", true
+	}
+
 	res, err := adminService.Groups.List().UserKey(email).Do()
+
+	if err != nil {
+		log.Printf("unable to call directory service: %v", err)
+		return "", true
+	}
 
 	simpleGroups := make([]string, len(res.Groups))
 
@@ -467,7 +481,7 @@ func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
 
 	b, err := json.Marshal(simpleGroups)
 
-	return string(b[:])
+	return string(b[:]), false
 }
 
 func (p *OauthProxy) CheckBasicAuth(req *http.Request) (string, bool) {
