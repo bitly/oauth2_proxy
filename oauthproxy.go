@@ -401,6 +401,8 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				HttpOnly: p.CookieHttpOnly,
 			}
 
+			log.Printf("setting roles cookie: %s", cookie)
+
 			http.SetCookie(rw, cookie)
 
 			http.Redirect(rw, req, redirect, 302)
