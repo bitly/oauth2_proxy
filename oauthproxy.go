@@ -13,8 +13,13 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"encoding/json"
 
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"github.com/bitly/go-simplejson"
+	directory "google.golang.org/api/admin/directory_v1"
 )
 
 const pingPath = "/ping"
@@ -80,7 +85,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 
 		clientID:           opts.ClientID,
 		clientSecret:       opts.ClientSecret,
-		oauthScope:         "profile email",
+		oauthScope:         "profile email " + directory.AdminDirectoryGroupReadonlyScope,
 		oauthRedemptionUrl: redeem,
 		oauthLoginUrl:      login,
 		serveMux:           serveMux,
@@ -296,6 +301,7 @@ func (p *OauthProxy) GetRedirect(req *http.Request) (string, error) {
 func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// check if this is a redirect back at the end of oauth
 	remoteAddr := req.RemoteAddr
+	accessToken := ""
 	if req.Header.Get("X-Real-IP") != "" {
 		remoteAddr += fmt.Sprintf(" (%q)", req.Header.Get("X-Real-IP"))
 	}
@@ -357,7 +363,9 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		_, email, err := p.redeemCode(req.Form.Get("code"))
+		accessTokenRes, email, err := p.redeemCode(req.Form.Get("code"))
+		accessToken = accessTokenRes
+
 		if err != nil {
 			log.Printf("%s error redeeming code %s", remoteAddr, err)
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -409,9 +417,39 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		req.SetBasicAuth(user, "")
 		req.Header["X-Forwarded-User"] = []string{user}
 		req.Header["X-Forwarded-Email"] = []string{email}
+
+		token := &oauth2.Token{
+			AccessToken:  accessToken,
+			TokenType:    "Bearer",
+		}
+
+		req.Header["X-User-Groups"] = []string{p.GetGroupJson(email, token)}
 	}
 
 	p.serveMux.ServeHTTP(rw, req)
+}
+
+func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) string {
+
+	config := &oauth2.Config{
+		ClientID:     p.clientID,
+		ClientSecret: p.clientSecret,
+		Endpoint:     google.Endpoint,
+		Scopes:       []string{directory.AdminDirectoryGroupMemberReadonlyScope},
+	}
+
+	ctx := context.Background()
+	c := config.Client(ctx, token)
+
+	adminService, err := directory.New(c)
+
+	res, err := adminService.Groups.List().UserKey(email).Do()
+	log.Printf("Got directory.Groups.List().UserKey(%s), err: %#v, %v", email, res, err)
+	b, err := json.Marshal(res.Groups)
+
+	log.Printf("Returning json: %v", string(b[:]))
+
+	return string(b[:])
 }
 
 func (p *OauthProxy) CheckBasicAuth(req *http.Request) (string, bool) {
