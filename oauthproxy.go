@@ -13,8 +13,13 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"encoding/json"
 
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"github.com/bitly/go-simplejson"
+	directory "google.golang.org/api/admin/directory_v1"
 )
 
 const pingPath = "/ping"
@@ -80,7 +85,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 
 		clientID:           opts.ClientID,
 		clientSecret:       opts.ClientSecret,
-		oauthScope:         "profile email",
+		oauthScope:         "profile email " + directory.AdminDirectoryGroupReadonlyScope,
 		oauthRedemptionUrl: redeem,
 		oauthLoginUrl:      login,
 		serveMux:           serveMux,
@@ -204,15 +209,15 @@ func (p *OauthProxy) ClearCookie(rw http.ResponseWriter, req *http.Request) {
 	http.SetCookie(rw, cookie)
 }
 
-func (p *OauthProxy) SetCookie(rw http.ResponseWriter, req *http.Request, val string) {
+func (p *OauthProxy) SetCookie(rw http.ResponseWriter, req *http.Request, name string, val string) {
 
 	domain := strings.Split(req.Host, ":")[0] // strip the port (if any)
 	if p.CookieDomain != "" && strings.HasSuffix(domain, p.CookieDomain) {
 		domain = p.CookieDomain
 	}
 	cookie := &http.Cookie{
-		Name:     p.CookieKey,
-		Value:    signedCookieValue(p.CookieSeed, p.CookieKey, val),
+		Name:     name,
+		Value:    signedCookieValue(p.CookieSeed, name, val),
 		Path:     "/",
 		Domain:   domain,
 		HttpOnly: p.CookieHttpOnly,
@@ -296,6 +301,7 @@ func (p *OauthProxy) GetRedirect(req *http.Request) (string, error) {
 func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// check if this is a redirect back at the end of oauth
 	remoteAddr := req.RemoteAddr
+	accessToken := ""
 	if req.Header.Get("X-Real-IP") != "" {
 		remoteAddr += fmt.Sprintf(" (%q)", req.Header.Get("X-Real-IP"))
 	}
@@ -304,6 +310,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	var ok bool
 	var user string
 	var email string
+	var roles string
 
 	if req.URL.Path == pingPath {
 		p.PingPage(rw)
@@ -328,7 +335,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 		user, ok = p.ManualSignIn(rw, req)
 		if ok {
-			p.SetCookie(rw, req, user)
+			p.SetCookie(rw, req, p.CookieKey, user)
 			http.Redirect(rw, req, redirect, 302)
 		} else {
 			p.SignInPage(rw, req, 200)
@@ -357,7 +364,11 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		_, email, err := p.redeemCode(req.Form.Get("code"))
+		accessTokenRes, email, err := p.redeemCode(req.Form.Get("code"))
+		accessToken = accessTokenRes
+
+
+
 		if err != nil {
 			log.Printf("%s error redeeming code %s", remoteAddr, err)
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -372,7 +383,21 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		// set cookie, or deny
 		if p.Validator(email) {
 			log.Printf("%s authenticating %s completed", remoteAddr, email)
-			p.SetCookie(rw, req, email)
+			p.SetCookie(rw, req, p.CookieKey, email)
+
+			if (p.PassBasicAuth) {
+				token := &oauth2.Token{
+					AccessToken:  accessToken,
+					TokenType:    "Bearer",
+				}
+
+				roleString, err := p.GetGroupJson(email, token)
+
+				if (!err) {
+					p.SetCookie(rw, req, p.CookieKey+"Roles", roleString)
+				}
+			}
+
 			http.Redirect(rw, req, redirect, 302)
 			return
 		} else {
@@ -386,6 +411,13 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if err == nil {
 			email, ok = validateCookie(cookie, p.CookieSeed)
 			user = strings.Split(email, "@")[0]
+		}
+
+		if (p.PassBasicAuth) {
+			roleCookie, roleErr := req.Cookie(p.CookieKey + "Roles")
+			if roleErr == nil {
+				roles, ok = validateCookie(roleCookie, p.CookieSeed)
+			}
 		}
 	}
 
@@ -409,9 +441,47 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		req.SetBasicAuth(user, "")
 		req.Header["X-Forwarded-User"] = []string{user}
 		req.Header["X-Forwarded-Email"] = []string{email}
+		req.Header["X-Forwarded-Roles"] = []string{roles}
 	}
 
 	p.serveMux.ServeHTTP(rw, req)
+}
+
+func (p *OauthProxy) GetGroupJson(email string, token *oauth2.Token) (string, bool) {
+
+	config := &oauth2.Config{
+		ClientID:     p.clientID,
+		ClientSecret: p.clientSecret,
+		Endpoint:     google.Endpoint,
+		Scopes:       []string{directory.AdminDirectoryGroupMemberReadonlyScope},
+	}
+
+	ctx := context.Background()
+	c := config.Client(ctx, token)
+
+	adminService, err := directory.New(c)
+
+	if err != nil {
+		log.Printf("unable to initiate directory service: %v", err)
+		return "", true
+	}
+
+	res, err := adminService.Groups.List().UserKey(email).Do()
+
+	if err != nil {
+		log.Printf("unable to call directory service: %v", err)
+		return "", true
+	}
+
+	simpleGroups := make([]string, len(res.Groups))
+
+	for g := range res.Groups {
+		simpleGroups[g] = res.Groups[g].Email
+	}
+
+	b, err := json.Marshal(simpleGroups)
+
+	return string(b[:]), false
 }
 
 func (p *OauthProxy) CheckBasicAuth(req *http.Request) (string, bool) {
