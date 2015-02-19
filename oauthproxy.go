@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
@@ -54,7 +53,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 		path := u.Path
 		u.Path = ""
 		log.Printf("mapping path %q => upstream %q", path, u)
-		serveMux.Handle(path, httputil.NewSingleHostReverseProxy(u))
+		serveMux.Handle(path, NewWebsocketReverseProxy(u))
 	}
 	for _, u := range opts.CompiledRegex {
 		log.Printf("compiled skip-auth-regex => %q", u)
