@@ -97,9 +97,7 @@ func (p *OauthProxy) GetLoginURL(redirectUrl string) string {
 	params.Add("scope", p.oauthScope)
 	params.Add("client_id", p.clientID)
 	params.Add("response_type", "code")
-	if strings.HasPrefix(redirectUrl, "/") {
-		params.Add("state", redirectUrl)
-	}
+	params.Add("state", redirectUrl)
 	return fmt.Sprintf("%s?%s", p.oauthLoginUrl, params.Encode())
 }
 
@@ -253,9 +251,10 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	}{
 		SignInMessage: p.SignInMessage,
 		CustomLogin:   p.displayCustomLoginForm(),
-		Redirect:      req.URL.RequestURI(),
+		Redirect:      fmt.Sprintf("https://%s%s", req.Host, req.URL.RequestURI()),
 		Version:       VERSION,
 	}
+
 	templates.ExecuteTemplate(rw, "sign_in.html", t)
 }
 
