@@ -137,7 +137,7 @@ func getTemplates() *template.Template {
 	<h2>{{.Title}}</h2>
 	<p>{{.Message}}</p>
 	<hr>
-	<p><a href="/oauth2/sign_in">Sign In</a></p>
+	<p><a href="/oauth2/sign_in?rd={{.Redirect}}">Sign In</a></p>
 </body>
 </html>{{end}}`)
 	if err != nil {

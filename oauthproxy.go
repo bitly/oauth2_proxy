@@ -224,16 +224,18 @@ func (p *OauthProxy) PingPage(rw http.ResponseWriter) {
 	fmt.Fprintf(rw, "OK")
 }
 
-func (p *OauthProxy) ErrorPage(rw http.ResponseWriter, code int, title string, message string) {
+func (p *OauthProxy) ErrorPage(rw http.ResponseWriter, req *http.Request, code int, title string, message string) {
 	log.Printf("ErrorPage %d %s %s", code, title, message)
 	rw.WriteHeader(code)
 	templates := getTemplates()
 	t := struct {
 		Title   string
 		Message string
+		Redirect string
 	}{
 		Title:   fmt.Sprintf("%d %s", code, title),
 		Message: message,
+		Redirect: req.Form.Get("state"),
 	}
 	templates.ExecuteTemplate(rw, "error.html", t)
 }
@@ -243,6 +245,11 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	rw.WriteHeader(code)
 	templates := getTemplates()
 
+	redirect := req.FormValue("rd")
+	if redirect == "" {
+		redirect = fmt.Sprintf("https://%s%s", req.Host, req.URL.RequestURI())
+	}
+
 	t := struct {
 		SignInMessage string
 		CustomLogin   bool
@@ -251,7 +258,7 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	}{
 		SignInMessage: p.SignInMessage,
 		CustomLogin:   p.displayCustomLoginForm(),
-		Redirect:      fmt.Sprintf("https://%s%s", req.Host, req.URL.RequestURI()),
+		Redirect:      redirect,
 		Version:       VERSION,
 	}
 
@@ -320,7 +327,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == signInPath {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
-			p.ErrorPage(rw, 500, "Internal Error", err.Error())
+			p.ErrorPage(rw, req, 500, "Internal Error", err.Error())
 			return
 		}
 
@@ -336,7 +343,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == oauthStartPath {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
-			p.ErrorPage(rw, 500, "Internal Error", err.Error())
+			p.ErrorPage(rw, req, 500, "Internal Error", err.Error())
 			return
 		}
 		http.Redirect(rw, req, p.GetLoginURL(redirect), 302)
@@ -346,19 +353,19 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		// finish the oauth cycle
 		err := req.ParseForm()
 		if err != nil {
-			p.ErrorPage(rw, 500, "Internal Error", err.Error())
+			p.ErrorPage(rw, req, 500, "Internal Error", err.Error())
 			return
 		}
 		errorString := req.Form.Get("error")
 		if errorString != "" {
-			p.ErrorPage(rw, 403, "Permission Denied", errorString)
+			p.ErrorPage(rw, req, 403, "Permission Denied", errorString)
 			return
 		}
 
 		_, email, err := p.redeemCode(req.Form.Get("code"))
 		if err != nil {
 			log.Printf("%s error redeeming code %s", remoteAddr, err)
-			p.ErrorPage(rw, 500, "Internal Error", err.Error())
+			p.ErrorPage(rw, req, 500, "Internal Error", err.Error())
 			return
 		}
 
@@ -374,7 +381,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			http.Redirect(rw, req, redirect, 302)
 			return
 		} else {
-			p.ErrorPage(rw, 403, "Permission Denied", "Invalid Account")
+			p.ErrorPage(rw, req, 403, "Permission Denied", "Invalid Account")
 			return
 		}
 	}
