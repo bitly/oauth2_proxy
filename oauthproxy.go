@@ -394,8 +394,11 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	authedByBasicAuth := false
+
 	if !ok {
 		user, ok = p.CheckBasicAuth(req)
+		authedByBasicAuth = ok
 		// if we want to promote basic auth requests to cookie'd requests, we could do that here
 		// not sure that would be ideal in all circumstances though
 		// if ok {
@@ -411,7 +414,11 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// At this point, the user is authenticated. proxy normally
 	if p.PassBasicAuth {
-		req.SetBasicAuth(user, "")
+		if (authedByBasicAuth) {
+			// Strip the password if the basic auth was used to identify the google_auth_proxy user
+			// otherwise, just pass the basic auth information along.
+			req.SetBasicAuth(user, "")
+		}
 		req.Header["X-Forwarded-User"] = []string{user}
 		req.Header["X-Forwarded-Email"] = []string{email}
 	}
