@@ -205,6 +205,8 @@ func (p *OauthProxy) redeemCode(host, code string) (string, string, error) {
 		return "", "", err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	b64 := base64.StdEncoding.EncodeToString([]byte(p.clientID + ":" + p.clientSecret))
+	req.Header.Set("Authorization","Basic " + b64)
 	json, err := api.Request(req)
 	if err != nil {
 		log.Printf("failed making request %s", err)
