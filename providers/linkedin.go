@@ -68,5 +68,5 @@ func (p *LinkedInProvider) GetEmailAddress(unused_auth_response *simplejson.Json
 }
 
 func (p *LinkedInProvider) ValidateToken(access_token string) bool {
-	return validateToken(p, access_token)
+	return validateToken(p, access_token, nil)
 }
