@@ -269,21 +269,13 @@ func (p *OauthProxy) ValidateToken(access_token string) bool {
 	if access_token == "" || p.oauthValidateUrl == nil {
 		return false
 	}
-
-	req, err := http.NewRequest("GET",
-		p.oauthValidateUrl.String()+"?access_token="+access_token, nil)
-	if err != nil {
-		log.Printf("failed building token validation request: %s", err)
-		return false
-	}
-
-	httpclient := &http.Client{}
-	resp, err := httpclient.Do(req)
-	if err != nil {
+	if resp, err := api.RequestUsingAccessTokenParameter(
+		p.oauthValidateUrl.String(), access_token); err != nil {
 		log.Printf("token validation request failed: %s", err)
 		return false
+	} else {
+		return resp.StatusCode == 200
 	}
-	return resp.StatusCode == 200
 }
 
 func (p *OauthProxy) ProcessCookie(rw http.ResponseWriter, req *http.Request) (email, user, access_token string, ok bool) {
