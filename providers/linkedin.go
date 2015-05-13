@@ -33,10 +33,21 @@ func NewLinkedInProvider(p *ProviderData) *LinkedInProvider {
 			Host: "www.linkedin.com",
 			Path: "/v1/people/~/email-address"}
 	}
+	if p.ValidateUrl.String() == "" {
+		p.ValidateUrl = p.ProfileUrl
+	}
 	if p.Scope == "" {
 		p.Scope = "r_emailaddress r_basicprofile"
 	}
 	return &LinkedInProvider{ProviderData: p}
+}
+
+func getLinkedInHeaders(access_token string) map[string]string {
+	headers := make(map[string]string)
+	headers["Accept"] = "application/json"
+	headers["x-li-format"] = "json"
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", access_token)
+	return headers
 }
 
 func (p *LinkedInProvider) GetEmailAddress(unused_auth_response *simplejson.Json,
@@ -49,9 +60,9 @@ func (p *LinkedInProvider) GetEmailAddress(unused_auth_response *simplejson.Json
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("x-li-format", "json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
+	for k, v := range getLinkedInHeaders(access_token) {
+		req.Header.Set(k, v)
+	}
 
 	json, err := api.Request(req)
 	if err != nil {
@@ -68,5 +79,5 @@ func (p *LinkedInProvider) GetEmailAddress(unused_auth_response *simplejson.Json
 }
 
 func (p *LinkedInProvider) ValidateToken(access_token string) bool {
-	return validateToken(p, access_token, nil)
+	return validateToken(p, access_token, getLinkedInHeaders(access_token))
 }
