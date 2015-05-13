@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/bitly/go-simplejson"
 	"github.com/bmizerany/assert"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -65,4 +66,39 @@ func TestJsonParsingError(t *testing.T) {
 	resp, err := Request(req)
 	assert.Equal(t, (*simplejson.Json)(nil), resp)
 	assert.NotEqual(t, nil, err)
+}
+
+// Parsing a URL practically never fails, so we won't cover that test case.
+func TestRequestUsingAccessTokenParameter(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			token := r.FormValue("access_token")
+			if r.URL.Path == "/" && token == "my_token" {
+				w.WriteHeader(200)
+				w.Write([]byte("some payload"))
+			} else {
+				w.WriteHeader(403)
+			}
+		}))
+	defer backend.Close()
+
+	response, err := RequestUsingAccessTokenParameter(
+		backend.URL, "my_token")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 200, response.StatusCode)
+	body, err := ioutil.ReadAll(response.Body)
+	assert.Equal(t, nil, err)
+	response.Body.Close()
+	assert.Equal(t, "some payload", string(body))
+}
+
+func TestRequestUsingAccessTokenParameterFailedResponse(t *testing.T) {
+	backend := testBackend(200, "some payload")
+	// Close the backend now to force a request failure.
+	backend.Close()
+
+	response, err := RequestUsingAccessTokenParameter(
+		backend.URL, "my_token")
+	assert.NotEqual(t, nil, err)
+	assert.Equal(t, (*http.Response)(nil), response)
 }
