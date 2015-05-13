@@ -86,11 +86,16 @@ func TestRobotsTxt(t *testing.T) {
 type TestProvider struct {
 	*providers.ProviderData
 	EmailAddress string
+	ValidToken   bool
 }
 
 func (tp *TestProvider) GetEmailAddress(unused_auth_response *simplejson.Json,
 	unused_access_token string) (string, error) {
 	return tp.EmailAddress, nil
+}
+
+func (tp *TestProvider) ValidateToken(access_token string) bool {
+	return tp.ValidToken
 }
 
 type PassAccessTokenTest struct {
