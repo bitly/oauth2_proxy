@@ -69,7 +69,7 @@ func TestJsonParsingError(t *testing.T) {
 }
 
 // Parsing a URL practically never fails, so we won't cover that test case.
-func TestRequestUsingAccessTokenParameter(t *testing.T) {
+func TestRequestUnparsedResponseUsingAccessTokenParameter(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			token := r.FormValue("access_token")
@@ -82,8 +82,8 @@ func TestRequestUsingAccessTokenParameter(t *testing.T) {
 		}))
 	defer backend.Close()
 
-	response, err := RequestUsingAccessTokenParameter(
-		backend.URL, "my_token")
+	response, err := RequestUnparsedResponse(
+		backend.URL+"?access_token=my_token", nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 200, response.StatusCode)
 	body, err := ioutil.ReadAll(response.Body)
@@ -92,13 +92,36 @@ func TestRequestUsingAccessTokenParameter(t *testing.T) {
 	assert.Equal(t, "some payload", string(body))
 }
 
-func TestRequestUsingAccessTokenParameterFailedResponse(t *testing.T) {
+func TestRequestUnparsedResponseUsingAccessTokenParameterFailedResponse(t *testing.T) {
 	backend := testBackend(200, "some payload")
 	// Close the backend now to force a request failure.
 	backend.Close()
 
-	response, err := RequestUsingAccessTokenParameter(
-		backend.URL, "my_token")
+	response, err := RequestUnparsedResponse(
+		backend.URL+"?access_token=my_token", nil)
 	assert.NotEqual(t, nil, err)
 	assert.Equal(t, (*http.Response)(nil), response)
+}
+
+func TestRequestUnparsedResponseUsingHeaders(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" && r.Header["Auth"][0] == "my_token" {
+				w.WriteHeader(200)
+				w.Write([]byte("some payload"))
+			} else {
+				w.WriteHeader(403)
+			}
+		}))
+	defer backend.Close()
+
+	headers := make(map[string]string)
+	headers["Auth"] = "my_token"
+	response, err := RequestUnparsedResponse(backend.URL, headers)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 200, response.StatusCode)
+	body, err := ioutil.ReadAll(response.Body)
+	assert.Equal(t, nil, err)
+	response.Body.Close()
+	assert.Equal(t, "some payload", string(body))
 }

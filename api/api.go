@@ -31,19 +31,22 @@ func Request(req *http.Request) (*simplejson.Json, error) {
 	return data, nil
 }
 
-func RequestUsingAccessTokenParameter(url string, access_token string) (
+func RequestUnparsedResponse(url string, headers map[string]string) (
 	response *http.Response, err error) {
-	req_url := url + "?access_token=" + access_token
-	req, err := http.NewRequest("GET", req_url, nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.New("failed building request for " +
-			req_url + ": " + err.Error())
+			url + ": " + err.Error())
+	}
+
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 
 	httpclient := &http.Client{}
 	if response, err = httpclient.Do(req); err != nil {
 		return nil, errors.New("request failed for " +
-			req_url + ": " + err.Error())
+			url + ": " + err.Error())
 	}
 	return
 }
