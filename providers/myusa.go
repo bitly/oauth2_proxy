@@ -60,5 +60,5 @@ func (p *MyUsaProvider) GetEmailAddress(auth_response *simplejson.Json,
 }
 
 func (p *MyUsaProvider) ValidateToken(access_token string) bool {
-	return false
+	return validateToken(p, access_token)
 }

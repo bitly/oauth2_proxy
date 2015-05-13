@@ -68,5 +68,5 @@ func jwtDecodeSegment(seg string) ([]byte, error) {
 }
 
 func (p *GoogleProvider) ValidateToken(access_token string) bool {
-	return false
+	return validateToken(p, access_token)
 }
