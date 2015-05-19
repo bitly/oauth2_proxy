@@ -115,8 +115,8 @@ func TestRequestUnparsedResponseUsingHeaders(t *testing.T) {
 		}))
 	defer backend.Close()
 
-	headers := make(map[string]string)
-	headers["Auth"] = "my_token"
+	headers := make(http.Header)
+	headers.Set("Auth", "my_token")
 	response, err := RequestUnparsedResponse(backend.URL, headers)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 200, response.StatusCode)

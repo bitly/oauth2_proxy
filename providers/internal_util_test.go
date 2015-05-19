@@ -29,7 +29,7 @@ type ValidateTokenTest struct {
 	backend       *httptest.Server
 	response_code int
 	provider      *ValidateTokenTestProvider
-	headers       map[string]string
+	header        http.Header
 }
 
 func NewValidateTokenTest() *ValidateTokenTest {
@@ -45,9 +45,10 @@ func NewValidateTokenTest() *ValidateTokenTest {
 			if token_param == "" {
 				missing := false
 				received_headers := r.Header
-				for k, v := range vt_test.headers {
-					received := received_headers[k]
-					if received == nil || received[0] != v {
+				for k, _ := range vt_test.header {
+					received := received_headers.Get(k)
+					expected := vt_test.header.Get(k)
+					if received == "" || received != expected {
 						missing = true
 					}
 				}
@@ -87,10 +88,10 @@ func TestValidateTokenValidToken(t *testing.T) {
 func TestValidateTokenValidTokenWithHeaders(t *testing.T) {
 	vt_test := NewValidateTokenTest()
 	defer vt_test.Close()
-	vt_test.headers = make(map[string]string)
-	vt_test.headers["Authorization"] = "Bearer foobar"
+	vt_test.header = make(http.Header)
+	vt_test.header.Set("Authorization", "Bearer foobar")
 	assert.Equal(t, true,
-		validateToken(vt_test.provider, "foobar", vt_test.headers))
+		validateToken(vt_test.provider, "foobar", vt_test.header))
 }
 
 func TestValidateTokenEmptyToken(t *testing.T) {

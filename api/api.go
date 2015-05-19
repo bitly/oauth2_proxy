@@ -31,17 +31,14 @@ func Request(req *http.Request) (*simplejson.Json, error) {
 	return data, nil
 }
 
-func RequestUnparsedResponse(url string, headers map[string]string) (
+func RequestUnparsedResponse(url string, header http.Header) (
 	response *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, errors.New("failed building request for " +
 			url + ": " + err.Error())
 	}
-
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
+	req.Header = header
 
 	httpclient := &http.Client{}
 	if response, err = httpclient.Do(req); err != nil {
