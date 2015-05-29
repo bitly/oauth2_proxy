@@ -42,7 +42,7 @@ type OauthProxy struct {
 	oauthScope          string
 	clientID            string
 	clientSecret        string
-	ProxyPath           string
+	ProxyPrefix         string
 	SignInMessage       string
 	HtpasswdFile        *HtpasswdFile
 	DisplayHtpasswdForm bool
@@ -107,7 +107,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	}
 
 	redirectUrl := opts.redirectUrl
-	redirectUrl.Path = fmt.Sprintf(oauthCallbackPathFormat, opts.ProxyPath)
+	redirectUrl.Path = fmt.Sprintf(oauthCallbackPathFormat, opts.ProxyPrefix)
 
 	log.Printf("OauthProxy configured for %s", opts.ClientID)
 	domain := opts.CookieDomain
@@ -132,7 +132,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	}
 
 	return &OauthProxy{
-		CookieKey:      "_oauthproxy",
+		CookieKey:      fmt.Sprintf("_oauthproxy_%s", opts.ProxyPrefix),
 		CookieSeed:     opts.CookieSecret,
 		CookieDomain:   opts.CookieDomain,
 		CookieSecure:   opts.CookieSecure,
@@ -143,7 +143,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 
 		clientID:         opts.ClientID,
 		clientSecret:     opts.ClientSecret,
-		ProxyPath:        opts.ProxyPath,
+		ProxyPrefix:      opts.ProxyPrefix,
 		oauthScope:       opts.provider.Data().Scope,
 		provider:         opts.provider,
 		oauthLoginUrl:    opts.provider.Data().LoginUrl,
@@ -302,7 +302,7 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	rw.WriteHeader(code)
 
 	redirect_url := req.URL.RequestURI()
-	if redirect_url == fmt.Sprintf(signInPathFormat, p.ProxyPath) {
+	if redirect_url == fmt.Sprintf(signInPathFormat, p.ProxyPrefix) {
 		redirect_url = "/"
 	}
 
@@ -312,14 +312,14 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		CustomLogin   bool
 		Redirect      string
 		Version       string
-		ProxyPath     string
+		ProxyPrefix   string
 	}{
 		ProviderName:  p.provider.Data().ProviderName,
 		SignInMessage: p.SignInMessage,
 		CustomLogin:   p.displayCustomLoginForm(),
 		Redirect:      redirect_url,
 		Version:       VERSION,
-		ProxyPath:     p.ProxyPath,
+		ProxyPrefix:   p.ProxyPrefix,
 	}
 	p.templates.ExecuteTemplate(rw, "sign_in.html", t)
 }
@@ -388,7 +388,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	}
 
-	if req.URL.Path == fmt.Sprintf(signInPathFormat, p.ProxyPath) {
+	if req.URL.Path == fmt.Sprintf(signInPathFormat, p.ProxyPrefix) {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -404,7 +404,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		return
 	}
-	if req.URL.Path == fmt.Sprintf(oauthStartPathFormat, p.ProxyPath) {
+	if req.URL.Path == fmt.Sprintf(oauthStartPathFormat, p.ProxyPrefix) {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -413,7 +413,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, p.GetLoginURL(req.Host, redirect), 302)
 		return
 	}
-	if req.URL.Path == fmt.Sprintf(oauthCallbackPathFormat, p.ProxyPath) {
+	if req.URL.Path == fmt.Sprintf(oauthCallbackPathFormat, p.ProxyPrefix) {
 		// finish the oauth cycle
 		err := req.ParseForm()
 		if err != nil {
