@@ -12,6 +12,7 @@ import (
 
 // Configuration Options that can be set by Command Line Flag, or Config File
 type Options struct {
+	ProxyPath    string `flag:"proxy-path" cfg:"proxy-path"`
 	HttpAddress  string `flag:"http-address" cfg:"http_address"`
 	RedirectUrl  string `flag:"redirect-url" cfg:"redirect_url"`
 	ClientID     string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
@@ -59,6 +60,7 @@ type Options struct {
 
 func NewOptions() *Options {
 	return &Options{
+		ProxyPath:           "oauth2",
 		HttpAddress:         "127.0.0.1:4180",
 		DisplayHtpasswdForm: true,
 		CookieHttpsOnly:     true,
