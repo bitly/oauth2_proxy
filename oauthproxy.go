@@ -19,12 +19,6 @@ import (
 	"github.com/bitly/oauth2_proxy/providers"
 )
 
-const robotsPath = "/robots.txt"
-const pingPath = "/ping"
-const signInPathFormat = "/%s/sign_in"
-const oauthStartPathFormat = "/%s/start"
-const oauthCallbackPathFormat = "/%s/callback"
-
 type OauthProxy struct {
 	CookieSeed     string
 	CookieKey      string
@@ -34,6 +28,12 @@ type OauthProxy struct {
 	CookieExpire   time.Duration
 	CookieRefresh  time.Duration
 	Validator      func(string) bool
+
+	RobotsPath         string
+	PingPath           string
+	SignInPath         string
+	OauthStartPath     string
+	OauthCallbackPath  string
 
 	redirectUrl         *url.URL // the url to receive requests at
 	provider            providers.Provider
@@ -107,7 +107,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	}
 
 	redirectUrl := opts.redirectUrl
-	redirectUrl.Path = fmt.Sprintf(oauthCallbackPathFormat, opts.ProxyPrefix)
+	redirectUrl.Path = fmt.Sprintf("%s/callback", opts.ProxyPrefix)
 
 	log.Printf("OauthProxy configured for %s", opts.ClientID)
 	domain := opts.CookieDomain
@@ -132,14 +132,20 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 	}
 
 	return &OauthProxy{
-		CookieKey:      fmt.Sprintf("_oauthproxy_%s", opts.ProxyPrefix),
-		CookieSeed:     opts.CookieSecret,
-		CookieDomain:   opts.CookieDomain,
-		CookieSecure:   opts.CookieSecure,
-		CookieHttpOnly: opts.CookieHttpOnly,
-		CookieExpire:   opts.CookieExpire,
-		CookieRefresh:  opts.CookieRefresh,
-		Validator:      validator,
+		CookieKey:         opts.CookieKey,
+		CookieSeed:        opts.CookieSecret,
+		CookieDomain:      opts.CookieDomain,
+		CookieSecure:      opts.CookieSecure,
+		CookieHttpOnly:    opts.CookieHttpOnly,
+		CookieExpire:      opts.CookieExpire,
+		CookieRefresh:     opts.CookieRefresh,
+		Validator:         validator,
+
+		RobotsPath:        "/robots.txt",
+		PingPath:          "/ping",
+		SignInPath:        fmt.Sprintf("%s/sign_in", opts.ProxyPrefix),
+		OauthStartPath:    fmt.Sprintf("%s/start", opts.ProxyPrefix),
+		OauthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
 
 		clientID:         opts.ClientID,
 		clientSecret:     opts.ClientSecret,
@@ -302,7 +308,7 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	rw.WriteHeader(code)
 
 	redirect_url := req.URL.RequestURI()
-	if redirect_url == fmt.Sprintf(signInPathFormat, p.ProxyPrefix) {
+	if redirect_url == p.SignInPath {
 		redirect_url = "/"
 	}
 
@@ -369,12 +375,12 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	var email string
 	var access_token string
 
-	if req.URL.Path == robotsPath {
+	if req.URL.Path == p.RobotsPath {
 		p.RobotsTxt(rw)
 		return
 	}
 
-	if req.URL.Path == pingPath {
+	if req.URL.Path == p.PingPath {
 		p.PingPage(rw)
 		return
 	}
@@ -388,7 +394,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	}
 
-	if req.URL.Path == fmt.Sprintf(signInPathFormat, p.ProxyPrefix) {
+	if req.URL.Path == p.SignInPath {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -404,7 +410,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		return
 	}
-	if req.URL.Path == fmt.Sprintf(oauthStartPathFormat, p.ProxyPrefix) {
+	if req.URL.Path == p.OauthStartPath {
 		redirect, err := p.GetRedirect(req)
 		if err != nil {
 			p.ErrorPage(rw, 500, "Internal Error", err.Error())
@@ -413,7 +419,7 @@ func (p *OauthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, p.GetLoginURL(req.Host, redirect), 302)
 		return
 	}
-	if req.URL.Path == fmt.Sprintf(oauthCallbackPathFormat, p.ProxyPrefix) {
+	if req.URL.Path == p.OauthCallbackPath {
 		// finish the oauth cycle
 		err := req.ParseForm()
 		if err != nil {

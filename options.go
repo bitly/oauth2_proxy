@@ -26,6 +26,7 @@ type Options struct {
 	DisplayHtpasswdForm     bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir      string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
 
+	CookieKey       string        `flag:"cookie-key" cfg:"cookie_key"`
 	CookieSecret    string        `flag:"cookie-secret" cfg:"cookie_secret" env:"OAUTH2_PROXY_COOKIE_SECRET"`
 	CookieDomain    string        `flag:"cookie-domain" cfg:"cookie_domain" env:"OAUTH2_PROXY_COOKIE_DOMAIN"`
 	CookieExpire    time.Duration `flag:"cookie-expire" cfg:"cookie_expire" env:"OAUTH2_PROXY_COOKIE_EXPIRE"`
@@ -60,9 +61,10 @@ type Options struct {
 
 func NewOptions() *Options {
 	return &Options{
-		ProxyPrefix:         "oauth2",
+		ProxyPrefix:         "/oauth2",
 		HttpAddress:         "127.0.0.1:4180",
 		DisplayHtpasswdForm: true,
+		CookieKey:           "_oauthproxy",
 		CookieHttpsOnly:     true,
 		CookieSecure:        true,
 		CookieHttpOnly:      true,
