@@ -201,6 +201,18 @@ The command line to run `oauth2_proxy` in this configuration would look like thi
    --client-secret=...
 ```
 
+## Docker deployment
+
+To build a docker image, you can do the following:-
+
+```
+docker build --force-rm=true -t oauth2_proxy
+```
+Then to run the container for a google app domain, do the following:-
+
+```
+docker run -d  --net="host" oauth2_proxy --upstream=http://127.0.0.1:8080/ --google-apps-domain=digital.justice.gov.uk --cookie-secure=true --client-id=354857898739656-sajkalskjksalkjklakkjkl.apps.googleusercontent.com --client-secret=Xajkalkjaklkja --cookie-secret=aajklaalaala
+```
 
 ## Endpoint Documentation
 
