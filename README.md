@@ -213,7 +213,7 @@ Then to run the container for a google app domain, do the following:-
 ```
 docker run -d  --net="host" oauth2_proxy \
   --upstream=http://127.0.0.1:8080/ \
-  --google-apps-domain=digital.justice.gov.uk \
+  --email-domain=digital.justice.gov.uk \
   --cookie-secure=true \
   --client-id=35485-sajkajklakkjkl.apps.googleusercontent.com \
   --client-secret=Xajkalkjaklkja \
