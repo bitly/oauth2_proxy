@@ -188,6 +188,6 @@ func (p *GitHubProvider) GetEmailAddress(body []byte, access_token string) (stri
 	return "", nil
 }
 
-func (p *GitHubProvider) ValidateToken(access_token string) bool {
-	return validateToken(p, access_token, nil)
+func (p *GitHubProvider) ValidateToken(access_token string) (bool, string) {
+	return validateToken(p, access_token, nil), ""
 }

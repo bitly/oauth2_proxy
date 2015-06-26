@@ -74,6 +74,6 @@ func (p *LinkedInProvider) GetEmailAddress(body []byte, access_token string) (st
 	return email, nil
 }
 
-func (p *LinkedInProvider) ValidateToken(access_token string) bool {
-	return validateToken(p, access_token, getLinkedInHeader(access_token))
+func (p *LinkedInProvider) ValidateToken(access_token string) (bool, string) {
+	return validateToken(p, access_token, getLinkedInHeader(access_token)), ""
 }

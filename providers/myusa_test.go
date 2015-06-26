@@ -2,7 +2,6 @@ package providers
 
 import (
 	"github.com/bmizerany/assert"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -34,17 +33,7 @@ func testMyUsaProvider(hostname string) *MyUsaProvider {
 func testMyUsaBackend(payload string) *httptest.Server {
 	path := "/api/v1/profile"
 	query := "access_token=imaginary_access_token"
-
-	return httptest.NewServer(http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			url := r.URL
-			if url.Path != path || url.RawQuery != query {
-				w.WriteHeader(404)
-			} else {
-				w.WriteHeader(200)
-				w.Write([]byte(payload))
-			}
-		}))
+	return NewTestQueryBackend(path, query, payload)
 }
 
 func TestMyUsaProviderDefaults(t *testing.T) {

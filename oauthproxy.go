@@ -249,13 +249,16 @@ func (p *OauthProxy) ProcessCookie(rw http.ResponseWriter, req *http.Request) (e
 			log.Printf("refreshing %s old session for %s (refresh after %s)", time.Now().Sub(timestamp), email, p.CookieRefresh)
 			ok = p.Validator(email)
 			log.Printf("re-validating %s valid:%v", email, ok)
-			if ok {
-				ok = p.provider.ValidateToken(access_token)
-				log.Printf("re-validating access token. valid:%v", ok)
+			if !ok {
+				return
 			}
-			if ok {
+			if ok, new_token := p.provider.ValidateToken(access_token); ok {
+				if new_token != "" {
+					value = new_token
+				}
 				p.SetCookie(rw, req, value)
 			}
+			log.Printf("re-validating access token. valid:%v", ok)
 		}
 	}
 	return

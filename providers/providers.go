@@ -4,7 +4,7 @@ type Provider interface {
 	Data() *ProviderData
 	GetEmailAddress(body []byte, access_token string) (string, error)
 	Redeem(string, string) ([]byte, string, error)
-	ValidateToken(access_token string) bool
+	ValidateToken(access_token string) (ok bool, new_token string)
 	GetLoginURL(redirectURI, finalRedirect string) string
 }
 
