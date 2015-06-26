@@ -95,11 +95,12 @@ func (p *GoogleProvider) ValidateToken(access_token string) (ok bool, new_token 
 	if ok = validateToken(p, orig_token, nil); ok == true {
 		return
 	}
+	log.Printf("original token expired; redeeming refresh token")
 	if renewed, err := p.redeemRefreshToken(refresh_token); err == nil {
 		new_token = fmt.Sprintf("%s %s", renewed, refresh_token)
 		ok = true
 	} else {
-		log.Printf("redeeming token failed: %v", err)
+		log.Printf("redeeming refresh token failed: %v", err)
 	}
 	return
 }
