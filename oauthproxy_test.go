@@ -98,8 +98,8 @@ func (tp *TestProvider) GetEmailAddress(body []byte, access_token string) (strin
 	return tp.EmailAddress, nil
 }
 
-func (tp *TestProvider) ValidateToken(access_token string) bool {
-	return tp.ValidToken
+func (tp *TestProvider) ValidateToken(access_token string) (bool, string) {
+	return tp.ValidToken, ""
 }
 
 type PassAccessTokenTest struct {

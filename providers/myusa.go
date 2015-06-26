@@ -57,6 +57,6 @@ func (p *MyUsaProvider) GetEmailAddress(body []byte, access_token string) (strin
 	return json.Get("email").String()
 }
 
-func (p *MyUsaProvider) ValidateToken(access_token string) bool {
-	return validateToken(p, access_token, nil)
+func (p *MyUsaProvider) ValidateToken(access_token string) (bool, string) {
+	return validateToken(p, access_token, nil), ""
 }

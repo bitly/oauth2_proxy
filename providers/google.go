@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -81,8 +82,26 @@ func jwtDecodeSegment(seg string) ([]byte, error) {
 	return base64.URLEncoding.DecodeString(seg)
 }
 
-func (p *GoogleProvider) ValidateToken(access_token string) bool {
-	return validateToken(p, access_token, nil)
+func (p *GoogleProvider) ValidateToken(access_token string) (ok bool, new_token string) {
+	var orig_token string
+	var refresh_token string
+
+	if components := strings.Split(access_token, " "); len(components) != 2 {
+		return
+	} else {
+		orig_token, refresh_token = components[0], components[1]
+	}
+
+	if ok = validateToken(p, orig_token, nil); ok == true {
+		return
+	}
+	if renewed, err := p.redeemRefreshToken(refresh_token); err == nil {
+		new_token = fmt.Sprintf("%s %s", renewed, refresh_token)
+		ok = true
+	} else {
+		log.Printf("redeeming token failed: %v", err)
+	}
+	return
 }
 
 func (p *GoogleProvider) Redeem(redirectUrl, code string) (body []byte, token string, err error) {
@@ -128,7 +147,7 @@ func (p *GoogleProvider) Redeem(redirectUrl, code string) (body []byte, token st
 		return
 	}
 
-	token, err = p.redeemRefreshToken(jsonResponse.RefreshToken)
+	token = fmt.Sprintf("%s %s", jsonResponse.AccessToken, jsonResponse.RefreshToken)
 	return
 }
 

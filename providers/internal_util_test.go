@@ -18,8 +18,8 @@ func (tp *ValidateTokenTestProvider) GetEmailAddress(body []byte, access_token s
 
 // Note that we're testing the internal validateToken() used to implement
 // several Provider's ValidateToken() implementations
-func (tp *ValidateTokenTestProvider) ValidateToken(access_token string) bool {
-	return false
+func (tp *ValidateTokenTestProvider) ValidateToken(access_token string) (ok bool, new_token string) {
+	return
 }
 
 type ValidateTokenTest struct {
