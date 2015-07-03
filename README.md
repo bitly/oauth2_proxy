@@ -159,8 +159,27 @@ The command line to run `oauth2_proxy` in this configuration would look like thi
    --client-secret=...
 ```
 
+2) Configure SSL Termination with Amazon ELB, Google Cloud Platform Load Balancing, etc.
 
-2) Configure SSL Termination with [Nginx](http://nginx.org/) (example config below) or Amazon ELB, or ....
+In this case, SSL termination happens on an external load balancer. Therefore you need to set the `--http-address` option like below:
+
+```bash
+./oauth2_proxy \
+   --email-domain="yourcompany.com"  \
+   --upstream=http://127.0.0.1:8080/ \
+   --tls-cert=/path/to/cert.pem \
+   --tls-key=/path/to/cert.key \
+   --cookie-secret=... \
+   --cookie-secure=true \
+   --provider=... \
+   --client-id=... \
+   --client-secret=...
+   --http-address=0.0.0.0:4180
+```
+
+The key part is using `0.0.0.0:4180` - `localhost` or `127.0.0.1` only allow traffic from the local machine.
+
+3) Configure SSL Termination with [Nginx](http://nginx.org/) (example config below), or another locally installed server.
 
 Nginx will listen on port `443` and handle SSL connections while proxying to `oauth2_proxy` on port `4180`. 
 `oauth2_proxy` which will then authenticate requests for an upstream application. The external 
