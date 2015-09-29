@@ -60,11 +60,15 @@ type Options struct {
 
 	RequestLogging bool `flag:"request-logging" cfg:"request_logging"`
 
+	SignatureKey string   `flag:"signature-key" cfg:"signature_key"`
+	UpstreamKeys []string `flag:"upstream-keys" cfg:"upstream_keys"`
+
 	// internal values that are set after config validation
 	redirectURL   *url.URL
 	proxyURLs     []*url.URL
 	CompiledRegex []*regexp.Regexp
 	provider      providers.Provider
+	upstreamKeys  map[string]string
 }
 
 func NewOptions() *Options {
@@ -83,6 +87,7 @@ func NewOptions() *Options {
 		PassHostHeader:      true,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
+		upstreamKeys:        make(map[string]string),
 	}
 }
 
@@ -175,6 +180,8 @@ func (o *Options) Validate() error {
 		}
 	}
 
+	msgs = parseSignatureKeys(o, msgs)
+
 	if len(msgs) != 0 {
 		return fmt.Errorf("Invalid configuration:\n  %s",
 			strings.Join(msgs, "\n  "))
@@ -207,6 +214,44 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 				p.SetGroupRestriction(o.GoogleGroups, o.GoogleAdminEmail, file)
 			}
 		}
+	}
+	return msgs
+}
+
+func parseSignatureKeys(o *Options, msgs []string) []string {
+	numKeys := len(o.UpstreamKeys)
+	if numKeys == 0 {
+		return msgs
+	}
+
+	hostSet := make(map[string]bool)
+	for i := 0; i != len(o.proxyUrls); i++ {
+		hostSet[o.proxyUrls[i].Host] = true
+	}
+
+	invalidSpecs := make([]string, 0)
+	invalidHosts := make([]string, 0)
+	o.upstreamKeys = make(map[string]string, numKeys)
+
+	for i := 0; i != numKeys; i++ {
+		keySpec := o.UpstreamKeys[i]
+		if hostKey := strings.Split(keySpec, "="); len(hostKey) != 2 {
+			invalidSpecs = append(invalidSpecs, keySpec)
+		} else if hostSet[hostKey[0]] == false {
+			invalidHosts = append(invalidHosts, keySpec)
+		} else {
+			o.upstreamKeys[hostKey[0]] = hostKey[1]
+		}
+	}
+
+	if len(invalidSpecs) != 0 {
+		msgs = append(msgs, "invalid upstream key specs:\n    "+
+			strings.Join(invalidSpecs, "\n    "))
+	}
+	if len(invalidHosts) != 0 {
+		msgs = append(msgs, "specs with hosts that do not match "+
+			"any defined upstreams:\n    "+
+			strings.Join(invalidHosts, "\n    "))
 	}
 	return msgs
 }

@@ -166,3 +166,46 @@ func TestCookieRefreshMustBeLessThanCookieExpire(t *testing.T) {
 	o.CookieRefresh -= time.Duration(1)
 	assert.Equal(t, nil, o.Validate())
 }
+
+func TestValidateUpstreamSignatureKeys(t *testing.T) {
+	o := testOptions()
+	assert.Equal(t, nil, o.Validate())
+
+	o.Upstreams = []string{
+		"https://foo.com:8000",
+		"https://bar.com/bar",
+		"https://baz.com",
+	}
+	o.SignatureKey = "default secret"
+	upstreamKeys := "foo.com:8000=secret0,bar.com=secret1,baz.com=secret2"
+	o.UpstreamKeys = strings.Split(upstreamKeys, ",")
+
+	assert.Equal(t, nil, o.Validate())
+	assert.Equal(t, o.upstreamKeys, map[string]string{
+		"foo.com:8000": "secret0",
+		"bar.com":      "secret1",
+		"baz.com":      "secret2",
+	})
+}
+
+func TestValidateUpstreamSignatureKeysWithErrors(t *testing.T) {
+	o := testOptions()
+	assert.Equal(t, nil, o.Validate())
+
+	o.Upstreams = []string{
+		"https://bar.com/bar",
+		"https://baz.com",
+	}
+	o.SignatureKey = "default secret"
+	upstreamKeys := "foo.com:8000=secret0,bar.com=secret1,baz.com:secret2"
+	o.UpstreamKeys = strings.Split(upstreamKeys, ",")
+
+	err := o.Validate()
+	assert.NotEqual(t, nil, err)
+	expected := errorMsg([]string{
+		"invalid upstream key specs:",
+		"  baz.com:secret2",
+		"specs with hosts that do not match any defined upstreams:",
+		"  foo.com:8000=secret0"})
+	assert.Equal(t, err.Error(), expected)
+}
