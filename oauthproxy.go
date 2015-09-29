@@ -16,6 +16,7 @@ import (
 
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/bitly/oauth2_proxy/signature"
 )
 
 type OAuthProxy struct {
@@ -52,12 +53,18 @@ type OAuthProxy struct {
 }
 
 type UpstreamProxy struct {
-	upstream string
-	handler  http.Handler
+	upstream     string
+	handler      http.Handler
+	signatureKey string
 }
 
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("GAP-Upstream-Address", u.upstream)
+	if u.signatureKey != "" {
+		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
+		sig := signature.RequestSignature(r, u.signatureKey)
+		r.Header.Set("GAP-Signature", sig)
+	}
 	u.handler.ServeHTTP(w, r)
 }
 
@@ -101,14 +108,19 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 			} else {
 				setProxyDirector(proxy)
 			}
-			serveMux.Handle(path, &UpstreamProxy{u.Host, proxy})
+			signatureKey := opts.upstreamKeys[u.Host]
+			if signatureKey == "" {
+				signatureKey = opts.SignatureKey
+			}
+			serveMux.Handle(path,
+				&UpstreamProxy{u.Host, proxy, signatureKey})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
 			}
 			log.Printf("mapping path %q => file system %q", path, u.Path)
 			proxy := NewFileServer(path, u.Path)
-			serveMux.Handle(path, &UpstreamProxy{path, proxy})
+			serveMux.Handle(path, &UpstreamProxy{path, proxy, ""})
 		default:
 			panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
 		}
