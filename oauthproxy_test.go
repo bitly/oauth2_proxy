@@ -88,6 +88,45 @@ func TestRobotsTxt(t *testing.T) {
 	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
 }
 
+type TestProvider struct {
+	*providers.ProviderData
+	EmailAddress string
+	ValidToken   bool
+}
+
+func NewTestProvider(provider_url *url.URL, email_address string) (*TestProvider){
+	return &TestProvider{
+		ProviderData: &providers.ProviderData{
+			ProviderName: "Test Provider",
+			LoginURL: &url.URL{
+				Scheme: "http",
+				Host:   provider_url.Host,
+				Path:   "/oauth/authorize",
+			},
+			RedeemURL: &url.URL{
+				Scheme: "http",
+				Host:   provider_url.Host,
+				Path:   "/oauth/token",
+			},
+			ProfileURL: &url.URL{
+				Scheme: "http",
+				Host:   provider_url.Host,
+				Path:   "/api/v1/profile",
+			},
+			Scope: "profile.email",
+		},
+		EmailAddress: email_address,
+	}
+}
+
+func (tp *TestProvider) GetEmailAddress(session *providers.SessionState) (string, error) {
+	return tp.EmailAddress, nil
+}
+
+func (tp *TestProvider) ValidateSessionState(session *providers.SessionState) bool {
+	return tp.ValidToken
+}
+
 func TestBasicAuthPassword(t *testing.T) {
 	provider_server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%#v", r)
@@ -121,29 +160,7 @@ func TestBasicAuthPassword(t *testing.T) {
 	const email_address = "michael.bland@gsa.gov"
 	const user_name = "michael.bland"
 
-	opts.provider = &TestProvider{
-		ProviderData: &providers.ProviderData{
-			ProviderName: "Test Provider",
-			LoginURL: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/oauth/authorize",
-			},
-			RedeemURL: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/oauth/token",
-			},
-			ProfileURL: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/api/v1/profile",
-			},
-			Scope: "profile.email",
-		},
-		EmailAddress: email_address,
-	}
-
+	opts.provider = NewTestProvider(provider_url, email_address)
 	proxy := NewOAuthProxy(opts, func(email string) bool {
 		return email == email_address
 	})
@@ -181,20 +198,6 @@ func TestBasicAuthPassword(t *testing.T) {
 	expectedHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(user_name+":"+opts.BasicAuthPassword))
 	assert.Equal(t, expectedHeader, rw.Body.String())
 	provider_server.Close()
-}
-
-type TestProvider struct {
-	*providers.ProviderData
-	EmailAddress string
-	ValidToken   bool
-}
-
-func (tp *TestProvider) GetEmailAddress(session *providers.SessionState) (string, error) {
-	return tp.EmailAddress, nil
-}
-
-func (tp *TestProvider) ValidateSessionState(session *providers.SessionState) bool {
-	return tp.ValidToken
 }
 
 type PassAccessTokenTest struct {
@@ -242,29 +245,7 @@ func NewPassAccessTokenTest(opts PassAccessTokenTestOptions) *PassAccessTokenTes
 	provider_url, _ := url.Parse(t.provider_server.URL)
 	const email_address = "michael.bland@gsa.gov"
 
-	t.opts.provider = &TestProvider{
-		ProviderData: &providers.ProviderData{
-			ProviderName: "Test Provider",
-			LoginURL: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/oauth/authorize",
-			},
-			RedeemURL: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/oauth/token",
-			},
-			ProfileURL: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/api/v1/profile",
-			},
-			Scope: "profile.email",
-		},
-		EmailAddress: email_address,
-	}
-
+	t.opts.provider = NewTestProvider(provider_url, email_address)
 	t.proxy = NewOAuthProxy(t.opts, func(email string) bool {
 		return email == email_address
 	})
