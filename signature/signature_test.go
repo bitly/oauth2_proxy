@@ -2,6 +2,7 @@ package signature
 
 import (
 	"bufio"
+	"crypto"
 	"net/http"
 	"strconv"
 	"strings"
@@ -9,6 +10,20 @@ import (
 
 	"github.com/bmizerany/assert"
 )
+
+func TestSupportedHashAlgorithm(t *testing.T) {
+	algorithm, err := HashAlgorithm("sha1")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, algorithm, crypto.SHA1)
+	assert.Equal(t, algorithm.Available(), true)
+}
+
+func TestUnsupportedHashAlgorithm(t *testing.T) {
+	algorithm, err := HashAlgorithm("unsupported")
+	assert.NotEqual(t, err, nil)
+	assert.Equal(t, algorithm, crypto.Hash(0))
+	assert.Equal(t, algorithm.Available(), false)
+}
 
 func newTestRequest(request ...string) (req *http.Request) {
 	reqBuf := bufio.NewReader(
@@ -51,7 +66,7 @@ func TestRequestSignaturePost(t *testing.T) {
 		"mbland",
 		"/foo/bar",
 	}, "\n"))
-	assert.Equal(t, RequestSignature(req, "foobar"),
+	assert.Equal(t, RequestSignature(req, crypto.SHA1, "foobar"),
 		"sha1 722UbRYfC6MnjtIxqEJMDPrW2mk=")
 }
 
@@ -78,7 +93,7 @@ func TestRequestSignatureGet(t *testing.T) {
 		"mbland",
 		"/foo/bar",
 	}, "\n"))
-	assert.Equal(t, RequestSignature(req, "foobar"),
+	assert.Equal(t, RequestSignature(req, crypto.SHA1, "foobar"),
 		"sha1 JBQJcmSTteQyHZXFUA9glis9BIk=")
 }
 
@@ -113,7 +128,7 @@ func TestValidateRequestInvalidFormat(t *testing.T) {
 
 func TestValidateRequestUnsupportedAlgorithm(t *testing.T) {
 	req := newGetRequest()
-	validSignature := RequestSignature(req, "foobar")
+	validSignature := RequestSignature(req, crypto.SHA1, "foobar")
 	components := strings.Split(validSignature, " ")
 	signatureWithUnsupportedAlgorithm := "unsupported " + components[1]
 	req.Header.Set("GAP-Signature", signatureWithUnsupportedAlgorithm)
@@ -125,7 +140,7 @@ func TestValidateRequestUnsupportedAlgorithm(t *testing.T) {
 
 func TestValidateRequestMatch(t *testing.T) {
 	req := newGetRequest()
-	expectedSignature := RequestSignature(req, "foobar")
+	expectedSignature := RequestSignature(req, crypto.SHA1, "foobar")
 	req.Header.Set("GAP-Signature", expectedSignature)
 	result, header, computed := ValidateRequest(req, "foobar")
 	assert.Equal(t, result, MATCH)
@@ -135,8 +150,8 @@ func TestValidateRequestMatch(t *testing.T) {
 
 func TestValidateRequestMismatch(t *testing.T) {
 	req := newGetRequest()
-	foobarSignature := RequestSignature(req, "foobar")
-	barbazSignature := RequestSignature(req, "barbaz")
+	foobarSignature := RequestSignature(req, crypto.SHA1, "foobar")
+	barbazSignature := RequestSignature(req, crypto.SHA1, "barbaz")
 	req.Header.Set("GAP-Signature", foobarSignature)
 	result, header, computed := ValidateRequest(req, "barbaz")
 	assert.Equal(t, result, MISMATCH)

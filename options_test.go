@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto"
 	"net/url"
 	"strings"
 	"testing"
@@ -176,15 +177,18 @@ func TestValidateUpstreamSignatureKeys(t *testing.T) {
 		"https://bar.com/bar",
 		"https://baz.com",
 	}
-	o.SignatureKey = "default secret"
-	upstreamKeys := "foo.com:8000=secret0,bar.com=secret1,baz.com=secret2"
-	o.UpstreamKeys = strings.Split(upstreamKeys, ",")
+	o.SignatureKey = "sha1:default secret"
+	o.UpstreamKeys = []string{
+		"foo.com:8000=sha1:secret0",
+		"bar.com=sha1:secret1",
+		"baz.com=sha1:secret2",
+	}
 
 	assert.Equal(t, nil, o.Validate())
-	assert.Equal(t, o.upstreamKeys, map[string]string{
-		"foo.com:8000": "secret0",
-		"bar.com":      "secret1",
-		"baz.com":      "secret2",
+	assert.Equal(t, o.upstreamKeys, map[string]*SignatureData{
+		"foo.com:8000": &SignatureData{crypto.SHA1, "secret0"},
+		"bar.com":      &SignatureData{crypto.SHA1, "secret1"},
+		"baz.com":      &SignatureData{crypto.SHA1, "secret2"},
 	})
 }
 
@@ -195,17 +199,33 @@ func TestValidateUpstreamSignatureKeysWithErrors(t *testing.T) {
 	o.Upstreams = []string{
 		"https://bar.com/bar",
 		"https://baz.com",
+		"https://quux.com",
+		"https://xyzzy.com",
 	}
-	o.SignatureKey = "default secret"
-	upstreamKeys := "foo.com:8000=secret0,bar.com=secret1,baz.com:secret2"
-	o.UpstreamKeys = strings.Split(upstreamKeys, ",")
+	o.SignatureKey = "unsupported:default secret"
+	o.UpstreamKeys = []string{
+		"foo.com:8000=sha1:secret0",
+		"bar.com=secret1",
+		"baz.com:sha1:secret2",
+		"quux.com=sha1:secret3",
+		"quux.com=sha1:secret4",
+		"xyzzy.com=unsupported:secret5",
+	}
 
 	err := o.Validate()
 	assert.NotEqual(t, nil, err)
 	expected := errorMsg([]string{
+		"unsupported signature hash algorithm: " +
+			"unsupported:default secret",
 		"invalid upstream key specs:",
-		"  baz.com:secret2",
+		"  invalid signature hash:key spec: bar.com=secret1",
+		"  baz.com:sha1:secret2",
+		"  unsupported signature hash algorithm: " +
+			"xyzzy.com=unsupported:secret5",
 		"specs with hosts that do not match any defined upstreams:",
-		"  foo.com:8000=secret0"})
+		"  foo.com:8000=sha1:secret0",
+		"specs that duplicate other host specs:",
+		"  quux.com=sha1:secret4",
+	})
 	assert.Equal(t, err.Error(), expected)
 }

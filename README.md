@@ -260,14 +260,16 @@ request information and the request body](./signature/signature.go).
 If no secret key is defined for an upstream, the default `signature_key` will
 be used; and if no `signature_key` is set, no signature will be applied.
 
-`upstream_keys` should be specified per-host, including the port number,
-of the form `hostname=upstream_secret_key`, e.g.:
+`signature_key` must be of the form `algorithm:secretkey`. `upstream_keys`
+should be specified per-host, including the port number, of the form
+`hostname=algorithm:upstream_secret_key`, e.g.:
 
 ```
+signature_key = sha1:secret0
 upstream_keys = [
-  foo.com=secret0,
-  bar.com:8080=secret1,
-  baz.com=secret2,
+  foo.com=sha1:secret1,
+  bar.com:8080=sha1:secret2,
+  baz.com=sha1:secret3,
 ]
 ```
 

@@ -1,13 +1,27 @@
 package signature
 
 import (
+	"crypto"
 	"crypto/hmac"
-	"crypto/sha1"
 	"encoding/base64"
 	"net/http"
 	"strconv"
 	"strings"
 )
+
+var supportedAlgorithms map[string]crypto.Hash
+var algorithmName map[crypto.Hash]string
+
+func init() {
+	supportedAlgorithms = map[string]crypto.Hash{
+		"sha1": crypto.SHA1,
+	}
+
+	algorithmName = make(map[crypto.Hash]string)
+	for name, algorithm := range supportedAlgorithms {
+		algorithmName[algorithm] = name
+	}
+}
 
 // The string to sign is based on the following request elements, inspired by:
 // http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html
@@ -28,8 +42,24 @@ func StringToSign(req *http.Request) string {
 	}, "\n")
 }
 
-func RequestSignature(req *http.Request, secretKey string) string {
-	h := hmac.New(sha1.New, []byte(secretKey))
+type unsupportedAlgorithm struct {
+	algorithm string
+}
+
+func (e unsupportedAlgorithm) Error() string {
+	return "unsupported request signature algorithm: " + e.algorithm
+}
+
+func HashAlgorithm(algorithm string) (result crypto.Hash, err error) {
+	if result = supportedAlgorithms[algorithm]; result == crypto.Hash(0) {
+		err = unsupportedAlgorithm{algorithm}
+	}
+	return
+}
+
+func RequestSignature(req *http.Request, hashAlgorithm crypto.Hash,
+	secretKey string) string {
+	h := hmac.New(hashAlgorithm.New, []byte(secretKey))
 	h.Write([]byte(StringToSign(req)))
 
 	if req.ContentLength != -1 && req.Body != nil {
@@ -40,7 +70,8 @@ func RequestSignature(req *http.Request, secretKey string) string {
 
 	var sig []byte
 	sig = h.Sum(sig)
-	return "sha1 " + base64.URLEncoding.EncodeToString(sig)
+	return algorithmName[hashAlgorithm] + " " +
+		base64.URLEncoding.EncodeToString(sig)
 }
 
 type ValidationResult int
@@ -71,13 +102,13 @@ func ValidateRequest(request *http.Request, key string) (
 		return
 	}
 
-	algorithm := components[0]
-	if algorithm != "sha1" {
+	algorithm, err := HashAlgorithm(components[0])
+	if err != nil {
 		result = UNSUPPORTED_ALGORITHM
 		return
 	}
 
-	computedSignature = RequestSignature(request, key)
+	computedSignature = RequestSignature(request, algorithm, key)
 	if hmac.Equal([]byte(headerSignature), []byte(computedSignature)) {
 		result = MATCH
 	} else {

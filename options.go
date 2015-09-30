@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto"
 	"fmt"
 	"net/url"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/bitly/oauth2_proxy/signature"
 )
 
 // Configuration Options that can be set by Command Line Flag, or Config File
@@ -68,7 +70,13 @@ type Options struct {
 	proxyURLs     []*url.URL
 	CompiledRegex []*regexp.Regexp
 	provider      providers.Provider
-	upstreamKeys  map[string]string
+	signatureData *SignatureData
+	upstreamKeys  map[string]*SignatureData
+}
+
+type SignatureData struct {
+	hash crypto.Hash
+	key  string
 }
 
 func NewOptions() *Options {
@@ -87,7 +95,7 @@ func NewOptions() *Options {
 		PassHostHeader:      true,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
-		upstreamKeys:        make(map[string]string),
+		upstreamKeys:        make(map[string]*SignatureData),
 	}
 }
 
@@ -219,6 +227,12 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 }
 
 func parseSignatureKeys(o *Options, msgs []string) []string {
+	var specErr string
+	o.signatureData, specErr = parseSignatureSpec(o.SignatureKey)
+	if specErr != "" {
+		msgs = append(msgs, specErr+": "+o.SignatureKey)
+	}
+
 	numKeys := len(o.UpstreamKeys)
 	if numKeys == 0 {
 		return msgs
@@ -231,16 +245,28 @@ func parseSignatureKeys(o *Options, msgs []string) []string {
 
 	invalidSpecs := make([]string, 0)
 	invalidHosts := make([]string, 0)
-	o.upstreamKeys = make(map[string]string, numKeys)
+	duplicateHosts := make([]string, 0)
 
 	for i := 0; i != numKeys; i++ {
 		keySpec := o.UpstreamKeys[i]
-		if hostKey := strings.Split(keySpec, "="); len(hostKey) != 2 {
+		hostKey := strings.Split(keySpec, "=")
+		if len(hostKey) != 2 {
 			invalidSpecs = append(invalidSpecs, keySpec)
-		} else if hostSet[hostKey[0]] == false {
+			continue
+		}
+
+		host, spec := hostKey[0], hostKey[1]
+		if hostSet[host] == false {
 			invalidHosts = append(invalidHosts, keySpec)
+		} else if o.upstreamKeys[host] != nil {
+			duplicateHosts = append(duplicateHosts, keySpec)
+		}
+
+		if sigData, specErr := parseSignatureSpec(spec); specErr != "" {
+			invalidSpecs = append(invalidSpecs, specErr+": "+
+				keySpec)
 		} else {
-			o.upstreamKeys[hostKey[0]] = hostKey[1]
+			o.upstreamKeys[host] = sigData
 		}
 	}
 
@@ -253,5 +279,28 @@ func parseSignatureKeys(o *Options, msgs []string) []string {
 			"any defined upstreams:\n    "+
 			strings.Join(invalidHosts, "\n    "))
 	}
+	if len(duplicateHosts) != 0 {
+		msgs = append(msgs,
+			"specs that duplicate other host specs:\n    "+
+				strings.Join(duplicateHosts, "\n    "))
+	}
 	return msgs
+}
+
+func parseSignatureSpec(data string) (result *SignatureData, err string) {
+	if data == "" {
+		return nil, ""
+	}
+
+	components := strings.Split(data, ":")
+	if len(components) != 2 {
+		return nil, "invalid signature hash:key spec"
+	}
+
+	algorithm, secretKey := components[0], components[1]
+	if hash, err := signature.HashAlgorithm(algorithm); err != nil {
+		return nil, "unsupported signature hash algorithm"
+	} else {
+		return &SignatureData{hash, secretKey}, ""
+	}
 }

@@ -53,16 +53,17 @@ type OAuthProxy struct {
 }
 
 type UpstreamProxy struct {
-	upstream     string
-	handler      http.Handler
-	signatureKey string
+	upstream  string
+	handler   http.Handler
+	signature *SignatureData
 }
 
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("GAP-Upstream-Address", u.upstream)
-	if u.signatureKey != "" {
+	if u.signature != nil {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
-		sig := signature.RequestSignature(r, u.signatureKey)
+		sig := signature.RequestSignature(r, u.signature.hash,
+			u.signature.key)
 		r.Header.Set("GAP-Signature", sig)
 	}
 	u.handler.ServeHTTP(w, r)
@@ -108,19 +109,19 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 			} else {
 				setProxyDirector(proxy)
 			}
-			signatureKey := opts.upstreamKeys[u.Host]
-			if signatureKey == "" {
-				signatureKey = opts.SignatureKey
+			signatureData := opts.upstreamKeys[u.Host]
+			if signatureData == nil {
+				signatureData = opts.signatureData
 			}
 			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, signatureKey})
+				&UpstreamProxy{u.Host, proxy, signatureData})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
 			}
 			log.Printf("mapping path %q => file system %q", path, u.Path)
 			proxy := NewFileServer(path, u.Path)
-			serveMux.Handle(path, &UpstreamProxy{path, proxy, ""})
+			serveMux.Handle(path, &UpstreamProxy{path, proxy, nil})
 		default:
 			panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
 		}
