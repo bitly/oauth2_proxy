@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/base64"
 	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/bitly/oauth2_proxy/signature"
 	"github.com/bmizerany/assert"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -94,7 +96,7 @@ type TestProvider struct {
 	ValidToken   bool
 }
 
-func NewTestProvider(provider_url *url.URL, email_address string) (*TestProvider){
+func NewTestProvider(provider_url *url.URL, email_address string) *TestProvider {
 	return &TestProvider{
 		ProviderData: &providers.ProviderData{
 			ProviderName: "Test Provider",
@@ -590,4 +592,136 @@ func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, test.rw.Code)
 	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
 	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
+}
+
+type SignatureValidator struct {
+	key string
+}
+
+func (v *SignatureValidator) Validate(w http.ResponseWriter, r *http.Request) {
+	result, headerSig, computedSig := signature.ValidateRequest(r, v.key)
+	if result == signature.NO_SIGNATURE {
+		w.Write([]byte("no signature received"))
+	} else if result == signature.MATCH {
+		w.Write([]byte("signatures match"))
+	} else if result == signature.MISMATCH {
+		w.Write([]byte("signatures do not match:" +
+			"\n  received: " + headerSig +
+			"\n  computed: " + computedSig))
+	} else {
+		panic("Unknown result value: " + result.String())
+	}
+}
+
+type SignatureTest struct {
+	opts          *Options
+	upstream      *httptest.Server
+	upstream_host string
+	provider      *httptest.Server
+	header        http.Header
+	rw            *httptest.ResponseRecorder
+	validator     *SignatureValidator
+}
+
+func NewSignatureTest() *SignatureTest {
+	opts := NewOptions()
+	opts.CookieSecret = "cookie secret"
+	opts.ClientID = "client ID"
+	opts.ClientSecret = "client secret"
+	opts.EmailDomains = []string{"acm.org"}
+
+	validator := &SignatureValidator{}
+	upstream := httptest.NewServer(http.HandlerFunc(validator.Validate))
+	upstream_url, _ := url.Parse(upstream.URL)
+	opts.Upstreams = append(opts.Upstreams, upstream.URL)
+
+	providerHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"access_token": "my_auth_token"}`))
+	}
+	provider := httptest.NewServer(http.HandlerFunc(providerHandler))
+	provider_url, _ := url.Parse(provider.URL)
+	opts.provider = NewTestProvider(provider_url, "mbland@acm.org")
+
+	return &SignatureTest{
+		opts,
+		upstream,
+		upstream_url.Host,
+		provider,
+		make(http.Header),
+		httptest.NewRecorder(),
+		validator,
+	}
+}
+
+func (st *SignatureTest) Close() {
+	st.provider.Close()
+	st.upstream.Close()
+}
+
+func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
+	err := st.opts.Validate()
+	if err != nil {
+		panic(err)
+	}
+	proxy := NewOAuthProxy(st.opts, func(email string) bool { return true })
+
+	var bodyBuf io.ReadCloser
+	if body != "" {
+		bodyBuf = ioutil.NopCloser(strings.NewReader(body))
+	}
+	req, err := http.NewRequest(method, "/foo/bar", bodyBuf)
+	if err != nil {
+		panic(err)
+	}
+	req.Header = st.header
+
+	state := &providers.SessionState{
+		Email: "mbland@acm.org", AccessToken: "my_access_token"}
+	value, err := proxy.provider.CookieForSession(state, proxy.CookieCipher)
+	if err != nil {
+		panic(err)
+	}
+	cookie := proxy.MakeCookie(req, value, proxy.CookieExpire, time.Now())
+	req.AddCookie(cookie)
+	// This is used by the upstream to validate the signature.
+	st.validator.key = key
+	proxy.ServeHTTP(st.rw, req)
+}
+
+func TestNoRequestSignature(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.MakeRequestWithExpectedKey("GET", "", "")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "no signature received")
+}
+
+func TestDefaultRequestSignature(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.opts.SignatureKey = "foobar"
+	st.MakeRequestWithExpectedKey("GET", "", "foobar")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "signatures match")
+}
+
+func TestDefaultRequestSignaturePostRequest(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.opts.SignatureKey = "foobar"
+	payload := `{ "hello": "world!" }`
+	st.MakeRequestWithExpectedKey("POST", payload, "foobar")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "signatures match")
+}
+
+func TestUpstreamSpecificRequestSignature(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.opts.SignatureKey = "foobar"
+	st.opts.UpstreamKeys = append(st.opts.UpstreamKeys,
+		st.upstream_host+"=bazquux")
+	st.MakeRequestWithExpectedKey("GET", "", "bazquux")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }
