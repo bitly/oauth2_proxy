@@ -697,7 +697,7 @@ func TestNoRequestSignature(t *testing.T) {
 	assert.Equal(t, st.rw.Body.String(), "no signature received")
 }
 
-func TestDefaultRequestSignature(t *testing.T) {
+func TestRequestSignatureGetRequest(t *testing.T) {
 	st := NewSignatureTest()
 	defer st.Close()
 	st.opts.SignatureKey = "sha1:foobar"
@@ -706,23 +706,12 @@ func TestDefaultRequestSignature(t *testing.T) {
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }
 
-func TestDefaultRequestSignaturePostRequest(t *testing.T) {
+func TestRequestSignaturePostRequest(t *testing.T) {
 	st := NewSignatureTest()
 	defer st.Close()
 	st.opts.SignatureKey = "sha1:foobar"
 	payload := `{ "hello": "world!" }`
 	st.MakeRequestWithExpectedKey("POST", payload, "foobar")
-	assert.Equal(t, 200, st.rw.Code)
-	assert.Equal(t, st.rw.Body.String(), "signatures match")
-}
-
-func TestUpstreamSpecificRequestSignature(t *testing.T) {
-	st := NewSignatureTest()
-	defer st.Close()
-	st.opts.SignatureKey = "sha1:foobar"
-	st.opts.UpstreamKeys = append(st.opts.UpstreamKeys,
-		st.upstream_host+"=sha1:bazquux")
-	st.MakeRequestWithExpectedKey("GET", "", "bazquux")
 	assert.Equal(t, 200, st.rw.Code)
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }

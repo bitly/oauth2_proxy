@@ -153,7 +153,6 @@ Usage of oauth2_proxy:
   -tls-cert="": path to certificate file
   -tls-key="": path to private key file
   -upstream=: the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
-  -upstream-keys="": upstream host=signature key pairs
   -validate-url="": Access token validation endpoint
   -version=false: print version string
 ```
@@ -253,24 +252,17 @@ OAuth2 Proxy responds directly to the following endpoints. All other endpoints w
 
 ## Request signatures
 
-If `signature_key` or `upstream_keys` is defined, proxied requests will be
-signed with the `GAP-Signature header, which is [a SHA1 HMAC of selected
-request information and the request body](./signature/signature.go).
+If `signature_key` is defined, proxied requests will be signed with the
+`GAP-Signature header, which is a SHA1 HMAC of selected request information
+and the request body [see `SIGNATURE_HEADERS` in
+`oauthproxy.go`](./oauthproxy.go).
 
-If no secret key is defined for an upstream, the default `signature_key` will
-be used; and if no `signature_key` is set, no signature will be applied.
+If no `signature_key` is set, no signature will be applied.
 
-`signature_key` must be of the form `algorithm:secretkey`. `upstream_keys`
-should be specified per-host, including the port number, of the form
-`hostname=algorithm:upstream_secret_key`, e.g.:
+`signature_key` must be of the form `algorithm:secretkey`, e.g. `
 
 ```
 signature_key = sha1:secret0
-upstream_keys = [
-  foo.com=sha1:secret1,
-  bar.com:8080=sha1:secret2,
-  baz.com=sha1:secret3,
-]
 ```
 
 For more information about HMAC request signature validation, read the

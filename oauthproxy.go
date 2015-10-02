@@ -126,12 +126,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 			} else {
 				setProxyDirector(proxy)
 			}
-			signatureData := opts.upstreamKeys[u.Host]
-			if signatureData == nil {
-				signatureData = opts.signatureData
-			}
-			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, signatureData})
+			serveMux.Handle(path, &UpstreamProxy{
+				u.Host, proxy, opts.signatureData})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment

@@ -62,8 +62,7 @@ type Options struct {
 
 	RequestLogging bool `flag:"request-logging" cfg:"request_logging"`
 
-	SignatureKey string   `flag:"signature-key" cfg:"signature_key"`
-	UpstreamKeys []string `flag:"upstream-keys" cfg:"upstream_keys"`
+	SignatureKey string `flag:"signature-key" cfg:"signature_key"`
 
 	// internal values that are set after config validation
 	redirectURL   *url.URL
@@ -71,7 +70,6 @@ type Options struct {
 	CompiledRegex []*regexp.Regexp
 	provider      providers.Provider
 	signatureData *SignatureData
-	upstreamKeys  map[string]*SignatureData
 }
 
 type SignatureData struct {
@@ -95,7 +93,6 @@ func NewOptions() *Options {
 		PassHostHeader:      true,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
-		upstreamKeys:        make(map[string]*SignatureData),
 	}
 }
 
@@ -188,7 +185,7 @@ func (o *Options) Validate() error {
 		}
 	}
 
-	msgs = parseSignatureKeys(o, msgs)
+	msgs = parseSignatureKey(o, msgs)
 
 	if len(msgs) != 0 {
 		return fmt.Errorf("Invalid configuration:\n  %s",
@@ -226,81 +223,23 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 	return msgs
 }
 
-func parseSignatureKeys(o *Options, msgs []string) []string {
-	var specErr string
-	o.signatureData, specErr = parseSignatureSpec(o.SignatureKey)
-	if specErr != "" {
-		msgs = append(msgs, specErr+": "+o.SignatureKey)
-	}
-
-	numKeys := len(o.UpstreamKeys)
-	if numKeys == 0 {
+func parseSignatureKey(o *Options, msgs []string) []string {
+	if o.SignatureKey == "" {
 		return msgs
 	}
 
-	hostSet := make(map[string]bool)
-	for i := 0; i != len(o.proxyUrls); i++ {
-		hostSet[o.proxyUrls[i].Host] = true
-	}
-
-	invalidSpecs := make([]string, 0)
-	invalidHosts := make([]string, 0)
-	duplicateHosts := make([]string, 0)
-
-	for i := 0; i != numKeys; i++ {
-		keySpec := o.UpstreamKeys[i]
-		hostKey := strings.Split(keySpec, "=")
-		if len(hostKey) != 2 {
-			invalidSpecs = append(invalidSpecs, keySpec)
-			continue
-		}
-
-		host, spec := hostKey[0], hostKey[1]
-		if hostSet[host] == false {
-			invalidHosts = append(invalidHosts, keySpec)
-		} else if o.upstreamKeys[host] != nil {
-			duplicateHosts = append(duplicateHosts, keySpec)
-		}
-
-		if sigData, specErr := parseSignatureSpec(spec); specErr != "" {
-			invalidSpecs = append(invalidSpecs, specErr+": "+
-				keySpec)
-		} else {
-			o.upstreamKeys[host] = sigData
-		}
-	}
-
-	if len(invalidSpecs) != 0 {
-		msgs = append(msgs, "invalid upstream key specs:\n    "+
-			strings.Join(invalidSpecs, "\n    "))
-	}
-	if len(invalidHosts) != 0 {
-		msgs = append(msgs, "specs with hosts that do not match "+
-			"any defined upstreams:\n    "+
-			strings.Join(invalidHosts, "\n    "))
-	}
-	if len(duplicateHosts) != 0 {
-		msgs = append(msgs,
-			"specs that duplicate other host specs:\n    "+
-				strings.Join(duplicateHosts, "\n    "))
-	}
-	return msgs
-}
-
-func parseSignatureSpec(data string) (result *SignatureData, err string) {
-	if data == "" {
-		return nil, ""
-	}
-
-	components := strings.Split(data, ":")
+	components := strings.Split(o.SignatureKey, ":")
 	if len(components) != 2 {
-		return nil, "invalid signature hash:key spec"
+		return append(msgs, "invalid signature hash:key spec: "+
+			o.SignatureKey)
 	}
 
 	algorithm, secretKey := components[0], components[1]
 	if hash, err := hmacauth.HashAlgorithm(algorithm); err != nil {
-		return nil, "unsupported signature hash algorithm"
+		return append(msgs, "unsupported signature hash algorithm: "+
+			o.SignatureKey)
 	} else {
-		return &SignatureData{hash, secretKey}, ""
+		o.signatureData = &SignatureData{hash, secretKey}
 	}
+	return msgs
 }

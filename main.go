@@ -70,7 +70,6 @@ func main() {
 	flagSet.String("approval-prompt", "force", "OAuth approval_prompt")
 
 	flagSet.String("signature-key", "", "default request signature key")
-	flagSet.String("upstream-keys", "", "upstream host:signature key pairs")
 
 	flagSet.Parse(os.Args[1:])
 
