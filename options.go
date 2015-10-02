@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/18F/hmacauth"
 	"github.com/bitly/oauth2_proxy/providers"
-	"github.com/bitly/oauth2_proxy/signature"
 )
 
 // Configuration Options that can be set by Command Line Flag, or Config File
@@ -298,7 +298,7 @@ func parseSignatureSpec(data string) (result *SignatureData, err string) {
 	}
 
 	algorithm, secretKey := components[0], components[1]
-	if hash, err := signature.HashAlgorithm(algorithm); err != nil {
+	if hash, err := hmacauth.HashAlgorithm(algorithm); err != nil {
 		return nil, "unsupported signature hash algorithm"
 	} else {
 		return &SignatureData{hash, secretKey}, ""

@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/base64"
+	"github.com/18F/hmacauth"
 	"github.com/bitly/oauth2_proxy/providers"
-	"github.com/bitly/oauth2_proxy/signature"
 	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"
@@ -599,12 +599,13 @@ type SignatureValidator struct {
 }
 
 func (v *SignatureValidator) Validate(w http.ResponseWriter, r *http.Request) {
-	result, headerSig, computedSig := signature.ValidateRequest(r, v.key)
-	if result == signature.NO_SIGNATURE {
+	result, headerSig, computedSig := hmacauth.ValidateRequest(
+		r, SIGNATURE_HEADERS, v.key)
+	if result == hmacauth.NO_SIGNATURE {
 		w.Write([]byte("no signature received"))
-	} else if result == signature.MATCH {
+	} else if result == hmacauth.MATCH {
 		w.Write([]byte("signatures match"))
-	} else if result == signature.MISMATCH {
+	} else if result == hmacauth.MISMATCH {
 		w.Write([]byte("signatures do not match:" +
 			"\n  received: " + headerSig +
 			"\n  computed: " + computedSig))

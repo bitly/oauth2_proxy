@@ -14,10 +14,27 @@ import (
 	"strings"
 	"time"
 
+	"github.com/18F/hmacauth"
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
-	"github.com/bitly/oauth2_proxy/signature"
 )
+
+var SIGNATURE_HEADERS []string
+
+func init() {
+	SIGNATURE_HEADERS = []string{
+		"Content-Length",
+		"Content-Md5",
+		"Content-Type",
+		"Date",
+		"Authorization",
+		"X-Forwarded-User",
+		"X-Forwarded-Email",
+		"X-Forwarded-Access-Token",
+		"Cookie",
+		"Gap-Auth",
+	}
+}
 
 type OAuthProxy struct {
 	CookieSeed     string
@@ -62,8 +79,8 @@ func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("GAP-Upstream-Address", u.upstream)
 	if u.signature != nil {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
-		sig := signature.RequestSignature(r, u.signature.hash,
-			u.signature.key)
+		sig := hmacauth.RequestSignature(r, u.signature.hash,
+			SIGNATURE_HEADERS, u.signature.key)
 		r.Header.Set("GAP-Signature", sig)
 	}
 	u.handler.ServeHTTP(w, r)
