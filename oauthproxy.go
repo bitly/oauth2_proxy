@@ -81,8 +81,7 @@ func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("GAP-Upstream-Address", u.upstream)
 	if u.auth != nil {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
-		sig := u.auth.RequestSignature(r)
-		r.Header.Set(SIGNATURE_HEADER, sig)
+		u.auth.SignRequest(r)
 	}
 	u.handler.ServeHTTP(w, r)
 }
