@@ -19,6 +19,8 @@ import (
 	"github.com/bitly/oauth2_proxy/providers"
 )
 
+const SIGNATURE_HEADER = "GAP-Signature"
+
 var SIGNATURE_HEADERS []string
 
 func init() {
@@ -81,7 +83,7 @@ func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
 		sig := hmacauth.RequestSignature(r, u.signature.hash,
 			SIGNATURE_HEADERS, u.signature.key)
-		r.Header.Set("GAP-Signature", sig)
+		r.Header.Set(SIGNATURE_HEADER, sig)
 	}
 	u.handler.ServeHTTP(w, r)
 }
