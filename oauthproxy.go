@@ -72,17 +72,16 @@ type OAuthProxy struct {
 }
 
 type UpstreamProxy struct {
-	upstream  string
-	handler   http.Handler
-	signature *SignatureData
+	upstream string
+	handler  http.Handler
+	auth     *hmacauth.HmacAuth
 }
 
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("GAP-Upstream-Address", u.upstream)
-	if u.signature != nil {
+	if u.auth != nil {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
-		sig := hmacauth.RequestSignature(r, u.signature.hash,
-			SIGNATURE_HEADERS, u.signature.key)
+		sig := u.auth.RequestSignature(r)
 		r.Header.Set(SIGNATURE_HEADER, sig)
 	}
 	u.handler.ServeHTTP(w, r)
@@ -116,6 +115,11 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
+	var auth *hmacauth.HmacAuth
+	if sigData := opts.signatureData; sigData != nil {
+		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
+			SIGNATURE_HEADER, SIGNATURE_HEADERS)
+	}
 	for _, u := range opts.proxyURLs {
 		path := u.Path
 		switch u.Scheme {
@@ -128,8 +132,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 			} else {
 				setProxyDirector(proxy)
 			}
-			serveMux.Handle(path, &UpstreamProxy{
-				u.Host, proxy, opts.signatureData})
+			serveMux.Handle(path,
+				&UpstreamProxy{u.Host, proxy, auth})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
