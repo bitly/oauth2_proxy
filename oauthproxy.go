@@ -21,21 +21,17 @@ import (
 
 const SIGNATURE_HEADER = "GAP-Signature"
 
-var SIGNATURE_HEADERS []string
-
-func init() {
-	SIGNATURE_HEADERS = []string{
-		"Content-Length",
-		"Content-Md5",
-		"Content-Type",
-		"Date",
-		"Authorization",
-		"X-Forwarded-User",
-		"X-Forwarded-Email",
-		"X-Forwarded-Access-Token",
-		"Cookie",
-		"Gap-Auth",
-	}
+var SIGNATURE_HEADERS []string = []string{
+	"Content-Length",
+	"Content-Md5",
+	"Content-Type",
+	"Date",
+	"Authorization",
+	"X-Forwarded-User",
+	"X-Forwarded-Email",
+	"X-Forwarded-Access-Token",
+	"Cookie",
+	"Gap-Auth",
 }
 
 type OAuthProxy struct {
