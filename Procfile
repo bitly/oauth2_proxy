@@ -1,1 +1,1 @@
-web: oauth2_proxy -http-address="0.0.0.0:$PORT" -upstream="$OAUTH2_PROXY_UPSTREAM" -email-domain="$OAUTH2_PROXY_EMAIL_DOMAIN"
+web: oauth2_proxy -http-address="0.0.0.0:$PORT" -upstream="$OAUTH2_PROXY_UPSTREAM" -email-domain="$OAUTH2_PROXY_EMAIL_DOMAIN" -basic-auth-password="$OAUTH2_PROXY_BASIC_AUTH_PASSWORD" -pass-basic-auth=true -pass-host-header=false
