@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/bmizerany/assert"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/bmizerany/assert"
 )
 
 func newRedeemServer(body []byte) (*url.URL, *httptest.Server) {

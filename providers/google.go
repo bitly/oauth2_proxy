@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/admin/directory/v1"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/golang.org/x/oauth2"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/golang.org/x/oauth2/google"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/google.golang.org/api/admin/directory/v1"
 )
 
 type GoogleProvider struct {

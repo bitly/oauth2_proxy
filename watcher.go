@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"gopkg.in/fsnotify.v1"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/gopkg.in/fsnotify.v1"
 )
 
 func WaitForReplacement(filename string, op fsnotify.Op,

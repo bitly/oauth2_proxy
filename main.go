@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
-	"github.com/mreiferson/go-options"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/mreiferson/go-options"
 )
 
 func main() {
