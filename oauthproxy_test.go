@@ -596,16 +596,16 @@ func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
 }
 
 type SignatureValidator struct {
-	auth *hmacauth.HmacAuth
+	auth hmacauth.HmacAuth
 }
 
 func (v *SignatureValidator) Validate(w http.ResponseWriter, r *http.Request) {
 	result, headerSig, computedSig := v.auth.ValidateRequest(r)
-	if result == hmacauth.NO_SIGNATURE {
+	if result == hmacauth.ResultNoSignature {
 		w.Write([]byte("no signature received"))
-	} else if result == hmacauth.MATCH {
+	} else if result == hmacauth.ResultMatch {
 		w.Write([]byte("signatures match"))
-	} else if result == hmacauth.MISMATCH {
+	} else if result == hmacauth.ResultMismatch {
 		w.Write([]byte("signatures do not match:" +
 			"\n  received: " + headerSig +
 			"\n  computed: " + computedSig))
@@ -686,7 +686,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	req.AddCookie(cookie)
 	// This is used by the upstream to validate the signature.
 	st.validator.auth = hmacauth.NewHmacAuth(
-		crypto.SHA1, []byte(key), SIGNATURE_HEADER, SIGNATURE_HEADERS)
+		crypto.SHA1, []byte(key), SignatureHeader, SignatureHeaders)
 	proxy.ServeHTTP(st.rw, req)
 }
 

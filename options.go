@@ -235,7 +235,7 @@ func parseSignatureKey(o *Options, msgs []string) []string {
 	}
 
 	algorithm, secretKey := components[0], components[1]
-	if hash, err := hmacauth.HashAlgorithm(algorithm); err != nil {
+	if hash, err := hmacauth.DigestNameToCryptoHash(algorithm); err != nil {
 		return append(msgs, "unsupported signature hash algorithm: "+
 			o.SignatureKey)
 	} else {

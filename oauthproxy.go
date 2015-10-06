@@ -19,9 +19,9 @@ import (
 	"github.com/bitly/oauth2_proxy/providers"
 )
 
-const SIGNATURE_HEADER = "GAP-Signature"
+const SignatureHeader = "GAP-Signature"
 
-var SIGNATURE_HEADERS []string = []string{
+var SignatureHeaders []string = []string{
 	"Content-Length",
 	"Content-Md5",
 	"Content-Type",
@@ -70,7 +70,7 @@ type OAuthProxy struct {
 type UpstreamProxy struct {
 	upstream string
 	handler  http.Handler
-	auth     *hmacauth.HmacAuth
+	auth     hmacauth.HmacAuth
 }
 
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -110,10 +110,10 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
-	var auth *hmacauth.HmacAuth
+	var auth hmacauth.HmacAuth
 	if sigData := opts.signatureData; sigData != nil {
 		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
-			SIGNATURE_HEADER, SIGNATURE_HEADERS)
+			SignatureHeader, SignatureHeaders)
 	}
 	for _, u := range opts.proxyURLs {
 		path := u.Path
