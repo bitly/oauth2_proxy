@@ -600,7 +600,7 @@ type SignatureValidator struct {
 }
 
 func (v *SignatureValidator) Validate(w http.ResponseWriter, r *http.Request) {
-	result, headerSig, computedSig := v.auth.ValidateRequest(r)
+	result, headerSig, computedSig := v.auth.AuthenticateRequest(r)
 	if result == hmacauth.ResultNoSignature {
 		w.Write([]byte("no signature received"))
 	} else if result == hmacauth.ResultMatch {
