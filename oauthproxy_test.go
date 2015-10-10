@@ -661,6 +661,22 @@ func (st *SignatureTest) Close() {
 	st.upstream.Close()
 }
 
+// fakeNetConn simulates an http.Request.Body buffer that will be consumed
+// when it is read by the hmacauth.HmacAuth if not handled properly. See:
+//   https://github.com/18F/hmacauth/pull/4
+type fakeNetConn struct {
+	reqBody string
+}
+
+func (fnc *fakeNetConn) Read(p []byte) (n int, err error) {
+	if bodyLen := len(fnc.reqBody); bodyLen != 0 {
+		copy(p, fnc.reqBody)
+		fnc.reqBody = ""
+		return bodyLen, io.EOF
+	}
+	return 0, io.EOF
+}
+
 func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	err := st.opts.Validate()
 	if err != nil {
@@ -670,7 +686,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 
 	var bodyBuf io.ReadCloser
 	if body != "" {
-		bodyBuf = ioutil.NopCloser(strings.NewReader(body))
+		bodyBuf = ioutil.NopCloser(&fakeNetConn{reqBody: body})
 	}
 	req, err := http.NewRequest(method, "/foo/bar", bodyBuf)
 	if err != nil {
@@ -687,7 +703,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	cookie := proxy.MakeCookie(req, value, proxy.CookieExpire, time.Now())
 	req.AddCookie(cookie)
 	// This is used by the upstream to validate the signature.
-	st.validator.auth = hmacauth.NewHmacAuth(
+	st.authenticator.auth = hmacauth.NewHmacAuth(
 		crypto.SHA1, []byte(key), SignatureHeader, SignatureHeaders)
 	proxy.ServeHTTP(st.rw, req)
 }
