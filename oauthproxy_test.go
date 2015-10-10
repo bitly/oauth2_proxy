@@ -595,11 +595,12 @@ func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
 	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
 }
 
-type SignatureValidator struct {
+type SignatureAuthenticator struct {
 	auth hmacauth.HmacAuth
 }
 
-func (v *SignatureValidator) Validate(w http.ResponseWriter, r *http.Request) {
+func (v *SignatureAuthenticator) Authenticate(
+	w http.ResponseWriter, r *http.Request) {
 	result, headerSig, computedSig := v.auth.AuthenticateRequest(r)
 	if result == hmacauth.ResultNoSignature {
 		w.Write([]byte("no signature received"))
@@ -621,7 +622,7 @@ type SignatureTest struct {
 	provider      *httptest.Server
 	header        http.Header
 	rw            *httptest.ResponseRecorder
-	validator     *SignatureValidator
+	authenticator *SignatureAuthenticator
 }
 
 func NewSignatureTest() *SignatureTest {
@@ -631,8 +632,9 @@ func NewSignatureTest() *SignatureTest {
 	opts.ClientSecret = "client secret"
 	opts.EmailDomains = []string{"acm.org"}
 
-	validator := &SignatureValidator{}
-	upstream := httptest.NewServer(http.HandlerFunc(validator.Validate))
+	authenticator := &SignatureAuthenticator{}
+	upstream := httptest.NewServer(
+		http.HandlerFunc(authenticator.Authenticate))
 	upstream_url, _ := url.Parse(upstream.URL)
 	opts.Upstreams = append(opts.Upstreams, upstream.URL)
 
@@ -650,7 +652,7 @@ func NewSignatureTest() *SignatureTest {
 		provider,
 		make(http.Header),
 		httptest.NewRecorder(),
-		validator,
+		authenticator,
 	}
 }
 
