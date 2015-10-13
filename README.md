@@ -253,9 +253,10 @@ OAuth2 Proxy responds directly to the following endpoints. All other endpoints w
 ## Request signatures
 
 If `signature_key` is defined, proxied requests will be signed with the
-`GAP-Signature header, which is a SHA1 HMAC of selected request information
-and the request body [see `SIGNATURE_HEADERS` in
-`oauthproxy.go`](./oauthproxy.go).
+`GAP-Signature header, which is a [Hash-based Message Authentication Code
+(HMAC)](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code)
+of selected request information and the request body [see `SIGNATURE_HEADERS`
+in `oauthproxy.go`](./oauthproxy.go).
 
 If no `signature_key` is set, no signature will be applied.
 
