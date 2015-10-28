@@ -37,6 +37,7 @@ type OauthProxy struct {
 	redirectUrl         *url.URL // the url to receive requests at
 	provider            providers.Provider
 	ProxyPrefix         string
+	RedirectOption	    string
 	SignInMessage       string
 	HtpasswdFile        *HtpasswdFile
 	DisplayHtpasswdForm bool
@@ -158,6 +159,7 @@ func NewOauthProxy(opts *Options, validator func(string) bool) *OauthProxy {
 		OauthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
 
 		ProxyPrefix:       opts.ProxyPrefix,
+		RedirectOption:	   opts.RedirectOption,
 		provider:          opts.provider,
 		serveMux:          serveMux,
 		redirectUrl:       redirectUrl,
@@ -224,10 +226,13 @@ func (p *OauthProxy) MakeCookie(req *http.Request, value string, expiration time
 	if value != "" {
 		value = cookie.SignedValue(p.CookieSeed, p.CookieName, value, now)
 	}
+
+	path := p.RedirectOption
+
 	return &http.Cookie{
 		Name:     p.CookieName,
 		Value:    value,
-		Path:     "/",
+		Path:     path,
 		Domain:   domain,
 		HttpOnly: p.CookieHttpOnly,
 		Secure:   p.CookieSecure,
@@ -304,7 +309,7 @@ func (p *OauthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 
 	redirect_url := req.URL.RequestURI()
 	if redirect_url == p.SignInPath {
-		redirect_url = "/"
+		redirect_url = p.RedirectOption
 	}
 
 	t := struct {
@@ -352,7 +357,7 @@ func (p *OauthProxy) GetRedirect(req *http.Request) (string, error) {
 	redirect := req.FormValue("rd")
 
 	if redirect == "" {
-		redirect = "/"
+		redirect = p.RedirectOption
 	}
 
 	return redirect, err
@@ -413,13 +418,14 @@ func (p *OauthProxy) SignIn(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (p *OauthProxy) OauthStart(rw http.ResponseWriter, req *http.Request) {
-	redirect, err := p.GetRedirect(req)
+	redirectOption, err := p.GetRedirect(req)
 	if err != nil {
 		p.ErrorPage(rw, 500, "Internal Error", err.Error())
 		return
 	}
 	redirectURI := p.GetRedirectURI(req.Host)
-	http.Redirect(rw, req, p.provider.GetLoginURL(redirectURI, redirect), 302)
+	redirectOption = p.RedirectOption
+	http.Redirect(rw, req, p.provider.GetLoginURL(redirectURI, redirectOption), 302)
 }
 
 func (p *OauthProxy) OauthCallback(rw http.ResponseWriter, req *http.Request) {
@@ -446,7 +452,7 @@ func (p *OauthProxy) OauthCallback(rw http.ResponseWriter, req *http.Request) {
 
 	redirect := req.Form.Get("state")
 	if redirect == "" {
-		redirect = "/"
+		redirect = p.RedirectOption
 	}
 
 	// set cookie, or deny
