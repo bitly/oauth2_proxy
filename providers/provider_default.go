@@ -75,7 +75,7 @@ func (p *ProviderData) Redeem(redirectUrl, code string) (s *SessionState, err er
 }
 
 // GetLoginURL with typical oauth parameters
-func (p *ProviderData) GetLoginURL(redirectURI, finalRedirect string) string {
+func (p *ProviderData) GetLoginURL(redirectURI, redirectOption string) string {
 	var a url.URL
 	a = *p.LoginUrl
 	params, _ := url.ParseQuery(a.RawQuery)
@@ -84,9 +84,7 @@ func (p *ProviderData) GetLoginURL(redirectURI, finalRedirect string) string {
 	params.Add("scope", p.Scope)
 	params.Set("client_id", p.ClientID)
 	params.Set("response_type", "code")
-	if strings.HasPrefix(finalRedirect, "/") {
-		params.Add("state", finalRedirect)
-	}
+	params.Add("state", redirectOption)
 	a.RawQuery = params.Encode()
 	return a.String()
 }
