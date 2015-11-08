@@ -136,6 +136,22 @@ For adding an application to the Microsoft Azure AD follow [these steps to add a
 
 Take note of your `TenantId` if applicable for your situation. The `TenantId` can be used to override the default `common` authorization server with a tenant specific server.
 
+### OpenID Connect Provider
+
+OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many major providers and several open source projects. This provider was originally built against CoreOS Dex and we will use it as an example.
+
+1. Launch a dex instance using the [fast setup instructions](https://github.com/coreos/dex/tree/master/examples/README.md).
+2. Setup oauth2_proxy with the correct provider and using the default ports and callbacks.
+3. Login with the fixture use in the dex guide
+
+    -provider oidc
+    -client-id oauth2_proxy
+    -client-secret proxy
+    -redirect-url http://127.0.0.1:4180/oauth2/callback
+    -oidc-discovery-url http://127.0.0.1:5556
+    -cookie-secure=false
+    -email-domain example.com
+
 ## Email Authentication
 
 To authorize by email domain use `--email-domain=yourcompany.com`. To authorize individual email addresses use `--authenticated-emails-file=/path/to/file` with one email per line. To authorize all email addresses use `--email-domain=*`.

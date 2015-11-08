@@ -62,7 +62,8 @@ func main() {
 
 	flagSet.Bool("request-logging", true, "Log requests to stdout")
 
-	flagSet.String("provider", "google", "OAuth provider")
+	flagSet.String("provider", "oidc", "OAuth provider")
+	flagSet.String("oidc-discovery-url", "", "OIDC discovery endpoint")
 	flagSet.String("login-url", "", "Authentication endpoint")
 	flagSet.String("redeem-url", "", "Token redemption endpoint")
 	flagSet.String("profile-url", "", "Profile access endpoint")
