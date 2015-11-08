@@ -24,7 +24,9 @@ func New(provider string, p *ProviderData) Provider {
 		return NewLinkedInProvider(p)
 	case "github":
 		return NewGitHubProvider(p)
+	case "oidc":
+		return NewOIDCProvider(p)
 	default:
-		return NewGoogleProvider(p)
+		panic("invalid provider: " + provider)
 	}
 }
