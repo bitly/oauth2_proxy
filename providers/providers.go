@@ -24,7 +24,12 @@ func New(provider string, p *ProviderData) Provider {
 		return NewLinkedInProvider(p)
 	case "github":
 		return NewGitHubProvider(p)
+	case "oidc":
+		return NewOIDCProvider(p)
+	case "google":
+		return NewGoogleProvider(p)
 	default:
+		// TODO(philips): this should error out
 		return NewGoogleProvider(p)
 	}
 }

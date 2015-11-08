@@ -8,6 +8,7 @@ type ProviderData struct {
 	ProviderName   string
 	ClientID       string
 	ClientSecret   string
+	DiscoveryURL   *url.URL
 	LoginURL       *url.URL
 	RedeemURL      *url.URL
 	ProfileURL     *url.URL
