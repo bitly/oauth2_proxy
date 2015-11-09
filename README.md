@@ -265,3 +265,7 @@ Follow the examples in the [`providers` package](providers/) to define a new
 `Provider` instance. Add a new `case` to
 [`providers.New()`](providers/providers.go) to allow `oauth2_proxy` to use the
 new `Provider`.
+
+## Quick Start
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)

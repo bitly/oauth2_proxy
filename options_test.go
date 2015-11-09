@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmizerany/assert"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/bmizerany/assert"
 )
 
 func testOptions() *Options {

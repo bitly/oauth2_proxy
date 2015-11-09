@@ -1,0 +1,70 @@
+{
+	"ImportPath": "github.com/bitly/oauth2_proxy",
+	"GoVersion": "go1.5.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.1.0-21-g056c9bc",
+			"Rev": "056c9bc7be7190eaa7715723883caffa5f8fa3e4"
+		},
+		{
+			"ImportPath": "github.com/bitly/go-simplejson",
+			"Comment": "v0.5.0",
+			"Rev": "aabad6e819789e569bd6aabf444c935aa9ba1e44"
+		},
+		{
+			"ImportPath": "github.com/bmizerany/assert",
+			"Comment": "release.r60-6-ge17e998",
+			"Rev": "e17e99893cb6509f428e1728281c2ad60a6b31e3"
+		},
+		{
+			"ImportPath": "github.com/kr/pretty",
+			"Comment": "go.weekly.2011-12-22-27-ge6ac2fc",
+			"Rev": "e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb"
+		},
+		{
+			"ImportPath": "github.com/kr/text",
+			"Rev": "bb797dc4fb8320488f47bf11de07a733d7233e1f"
+		},
+		{
+			"ImportPath": "github.com/mreiferson/go-options",
+			"Rev": "7c174072188d0cfbe6f01bb457626abb22bdff52"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "01256db42e5106196a3473ec1620727a383500e8"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "2fbf3d7329d847b125188ad64b68cfb1f548938a"
+		},
+		{
+			"ImportPath": "google.golang.org/api/admin/directory/v1",
+			"Rev": "7f3774db0aa426a2390fa9abcccbc272dbb93111"
+		},
+		{
+			"ImportPath": "google.golang.org/api/googleapi",
+			"Rev": "7f3774db0aa426a2390fa9abcccbc272dbb93111"
+		},
+		{
+			"ImportPath": "google.golang.org/api/internal",
+			"Rev": "7f3774db0aa426a2390fa9abcccbc272dbb93111"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/compute/metadata",
+			"Rev": "253b8fdc700b7dd3ccac674fe3697bb5f1a49fab"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/internal",
+			"Rev": "253b8fdc700b7dd3ccac674fe3697bb5f1a49fab"
+		},
+		{
+			"ImportPath": "gopkg.in/fsnotify.v1",
+			"Comment": "v1.2.0",
+			"Rev": "96c060f6a6b7e0d6f75fddd10efeaca3e5d1bcb0"
+		}
+	]
+}

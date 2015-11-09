@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/bitly/go-simplejson"
-	"github.com/bmizerany/assert"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/bitly/go-simplejson"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/bmizerany/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"

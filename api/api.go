@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/bitly/go-simplejson"
+	"github.com/bitly/oauth2_proxy/Godeps/_workspace/src/github.com/bitly/go-simplejson"
 )
 
 func Request(req *http.Request) (*simplejson.Json, error) {
