@@ -38,6 +38,7 @@ func main() {
 	flagSet.Var(&skipAuthRegex, "skip-auth-regex", "bypass authentication for requests path's that match (may be given multiple times)")
 
 	flagSet.Var(&emailDomains, "email-domain", "authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email")
+	flagSet.String("azure-tenant", "common", "go to a tenant-specific or common (tenant-independent) endpoint.")
 	flagSet.String("github-org", "", "restrict logins to members of this organisation")
 	flagSet.String("github-team", "", "restrict logins to members of this team")
 	flagSet.Var(&googleGroups, "google-group", "restrict logins to members of this google group (may be given multiple times).")
@@ -65,9 +66,12 @@ func main() {
 	flagSet.String("login-url", "", "Authentication endpoint")
 	flagSet.String("redeem-url", "", "Token redemption endpoint")
 	flagSet.String("profile-url", "", "Profile access endpoint")
+	flagSet.String("resource", "", "The resource that is protected (Azure AD only)")
 	flagSet.String("validate-url", "", "Access token validation endpoint")
-	flagSet.String("scope", "", "Oauth scope specification")
-	flagSet.String("approval-prompt", "force", "Oauth approval_prompt")
+	flagSet.String("scope", "", "OAuth scope specification")
+	flagSet.String("approval-prompt", "force", "OAuth approval_prompt")
+
+	flagSet.String("signature-key", "", "GAP-Signature request signature key (algorithm:secretkey)")
 
 	flagSet.Parse(os.Args[1:])
 
@@ -95,7 +99,7 @@ func main() {
 	}
 
 	validator := NewValidator(opts.EmailDomains, opts.AuthenticatedEmailsFile)
-	oauthproxy := NewOauthProxy(opts, validator)
+	oauthproxy := NewOAuthProxy(opts, validator)
 
 	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
 		if len(opts.EmailDomains) > 1 {

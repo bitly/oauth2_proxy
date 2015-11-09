@@ -29,6 +29,8 @@ You will need to register an OAuth application with a Provider (Google, Github o
 Valid providers are :
 
 * [Google](#google-auth-provider) *default*
+
+* [Azure](#azure-auth-provider)
 * [GitHub](#github-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
 * [MyUSA](#myusa-auth-provider)
@@ -71,6 +73,15 @@ and the user will be checked against all the provided groups.
 
 Note: The user is checked against the group members list on initial authentication and every time the token is refreshed ( about once an hour ).
 
+### Azure Auth Provider
+
+1. [Add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/) to your Azure Active Directory tenant.
+2. On the App properties page provide the correct Sign-On URL ie `https//internal.yourcompany.com/oauth2/callback`
+3. If applicable take note of your `TenantID` and provide it via the `--azure-tenant=<YOUR TENANT ID>` commandline option. Default the `common` tenant is used.
+
+The Azure AD auth provider uses `openid` as it default scope. It uses `https://graph.windows.net` as a default protected resource. It call to `https://graph.windows.net/me` to get the email address of the user that logs in.
+
+
 ### GitHub Auth Provider
 
 1. Create a new project: https://github.com/settings/developers
@@ -97,6 +108,12 @@ For LinkedIn, the registration steps are:
 
 The [MyUSA](https://alpha.my.usa.gov) authentication service ([GitHub](https://github.com/18F/myusa))
 
+### Microsoft Azure AD Provider
+
+For adding an application to the Microsoft Azure AD follow [these steps to add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/).
+
+Take note of your `TenantId` if applicable for your situation. The `TenantId` can be used to override the default `common` authorization server with a tenant specific server.
+
 ## Email Authentication
 
 To authorize by email domain use `--email-domain=yourcompany.com`. To authorize individual email addresses use `--authenticated-emails-file=/path/to/file` with one email per line. To authorize all email addresse use `--email-domain=*`.
@@ -113,15 +130,17 @@ An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is i
 
 ```
 Usage of oauth2_proxy:
-  -approval_prompt="force": Oauth approval_prompt
+  -approval-prompt="force": Oauth approval_prompt
   -authenticated-emails-file="": authenticate against emails via file (one per line)
+  -azure-tenant="common": go to a tenant-specific or common (tenant-independent) endpoint.
+  -basic-auth-password="": the password to set when passing the HTTP Basic Auth header
   -client-id="": the OAuth Client ID: ie: "123456.apps.googleusercontent.com"
   -client-secret="": the OAuth Client Secret
   -config="": path to config file
   -cookie-domain="": an optional cookie domain to force cookies to (ie: .yourcompany.com)*
   -cookie-expire=168h0m0s: expire timeframe for cookie
   -cookie-httponly=true: set HttpOnly cookie flag
-  -cookie-key="_oauth2_proxy": the name of the cookie that the oauth_proxy creates
+  -cookie-name="_oauth2_proxy": the name of the cookie that the oauth_proxy creates
   -cookie-refresh=0: refresh the cookie after this duration; 0 to disable
   -cookie-secret="": the seed string for secure cookies
   -cookie-secure=true: set secure (HTTPS) cookie flag
@@ -130,25 +149,25 @@ Usage of oauth2_proxy:
   -email-domain=: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
   -github-org="": restrict logins to members of this organisation
   -github-team="": restrict logins to members of this team
-  -google-group="": restrict logins to members of this google group
   -google-admin-email="": the google admin to impersonate for api calls
+  -google-group=: restrict logins to members of this google group (may be given multiple times).
   -google-service-account-json="": the path to the service account json credentials
-
   -htpasswd-file="": additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
   -http-address="127.0.0.1:4180": [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients
   -https-address=":443": <addr>:<port> to listen on for HTTPS clients
   -login-url="": Authentication endpoint
   -pass-access-token=false: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
   -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
-  -basic-auth-password="": the password to set when passing the HTTP Basic Auth header
   -pass-host-header=true: pass the request Host Header to upstream
   -profile-url="": Profile access endpoint
   -provider="google": OAuth provider
   -proxy-prefix="/oauth2": the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in)
   -redeem-url="": Token redemption endpoint
   -redirect-url="": the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
+  -resource="": the resource that is being protected. ie: "https://graph.windows.net". Currently only used in the Azure provider.
   -request-logging=true: Log requests to stdout
   -scope="": Oauth scope specification
+  -signature-key="": GAP-Signature request signature key (algorithm:secretkey)
   -skip-auth-regex=: bypass authentication for requests path's that match (may be given multiple times)
   -tls-cert="": path to certificate file
   -tls-key="": path to private key file
@@ -239,7 +258,6 @@ The command line to run `oauth2_proxy` in this configuration would look like thi
    --client-secret=...
 ```
 
-
 ## Endpoint Documentation
 
 OAuth2 Proxy responds directly to the following endpoints. All other endpoints will be proxied upstream when authenticated. The `/oauth2` prefix can be changed with the `--proxy-prefix` config variable.
@@ -249,6 +267,25 @@ OAuth2 Proxy responds directly to the following endpoints. All other endpoints w
 * /oauth2/sign_in - the login page, which also doubles as a sign out page (it clears cookies)
 * /oauth2/start - a URL that will redirect to start the OAuth cycle
 * /oauth2/callback - the URL used at the end of the OAuth cycle. The oauth app will be configured with this as the callback url.
+* /oauth2/auth - only returns a 202 Accepted response or a 401 Unauthorized response; for use with the [Nginx `auth_request` directive](#nginx-auth-request)
+
+## Request signatures
+
+If `signature_key` is defined, proxied requests will be signed with the
+`GAP-Signature` header, which is a [Hash-based Message Authentication Code
+(HMAC)](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code)
+of selected request information and the request body [see `SIGNATURE_HEADERS`
+in `oauthproxy.go`](./oauthproxy.go).
+
+`signature_key` must be of the form `algorithm:secretkey`, (ie: `signature_key = "sha1:secret0"`)
+
+For more information about HMAC request signature validation, read the
+following:
+
+* [Amazon Web Services: Signing and Authenticating REST
+  Requests](https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
+* [rc3.org: Using HMAC to authenticate Web service
+  requests](http://rc3.org/2011/12/02/using-hmac-to-authenticate-web-service-requests/)
 
 ## Logging Format
 
@@ -258,10 +295,36 @@ OAuth2 Proxy logs requests to stdout in a format similar to Apache Combined Log.
 <REMOTE_ADDRESS> - <user@domain.com> [19/Mar/2015:17:20:19 -0400] <HOST_HEADER> GET <UPSTREAM_HOST> "/path/" HTTP/1.1 "<USER_AGENT>" <RESPONSE_CODE> <RESPONSE_BYTES> <REQUEST_DURATION>
 ```
 
-
 ## Adding a new Provider
 
 Follow the examples in the [`providers` package](providers/) to define a new
 `Provider` instance. Add a new `case` to
 [`providers.New()`](providers/providers.go) to allow `oauth2_proxy` to use the
 new `Provider`.
+
+## <a name="nginx-auth-request"></a>Configuring for use with the Nginx `auth_request` directive
+
+The [Nginx `auth_request` directive](http://nginx.org/en/docs/http/ngx_http_auth_request_module.html) allows Nginx to authenticate requests via the oauth2_proxy's `/auth` endpoint, which only returns a 202 Accepted response or a 401 Unauthorized response without proxying the request through. For example:
+
+```nginx
+server {
+  listen 443 ssl spdy;
+  server_name ...;
+  include ssl/ssl.conf;
+
+  location = /auth {
+    internal;
+    proxy_pass http://127.0.0.1:4180;
+  }
+
+  location / {
+    auth_request /auth;
+    error_page 401 = ...;
+
+    root /path/to/the/site;
+    default_type text/html;
+    charset utf-8;
+    charset_types application/json utf-8;
+  }
+}
+```
