@@ -7,3 +7,4 @@ gopkg.in/fsnotify.v1                     v1.2.0
 golang.org/x/oauth2                      397fe7649477ff2e8ced8fc0b2696f781e53745a
 golang.org/x/oauth2/google               397fe7649477ff2e8ced8fc0b2696f781e53745a
 google.golang.org/api/admin/directory/v1 a5c3e2a4792aff40e59840d9ecdff0542a202a80
+github.com/coreos/go-oidc/oidc           5d3ac76573da4d1e3254d3748217bdf89154c667
