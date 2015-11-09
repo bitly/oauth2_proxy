@@ -69,6 +69,8 @@ func main() {
 	flagSet.String("scope", "", "OAuth scope specification")
 	flagSet.String("approval-prompt", "force", "OAuth approval_prompt")
 
+	flagSet.String("signature-key", "", "default request signature key")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
