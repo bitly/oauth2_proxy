@@ -17,6 +17,7 @@ type Options struct {
 	HttpAddress  string `flag:"http-address" cfg:"http_address"`
 	HttpsAddress string `flag:"https-address" cfg:"https_address"`
 	RedirectUrl  string `flag:"redirect-url" cfg:"redirect_url"`
+	DiscoveryUrl string `flag:"oidc-discovery-url" cfg:"oidc_discovery_url"`
 	ClientID     string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
 	ClientSecret string `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
 	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
@@ -193,6 +194,7 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 	p.RedeemUrl, msgs = parseUrl(o.RedeemUrl, "redeem", msgs)
 	p.ProfileUrl, msgs = parseUrl(o.ProfileUrl, "profile", msgs)
 	p.ValidateUrl, msgs = parseUrl(o.ValidateUrl, "validate", msgs)
+	p.DiscoveryUrl, msgs = parseUrl(o.DiscoveryUrl, "discovery", msgs)
 
 	o.provider = providers.New(o.Provider, p)
 	switch p := o.provider.(type) {
