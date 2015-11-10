@@ -34,8 +34,7 @@ func TestNewReverseProxy(t *testing.T) {
 	backendHost := net.JoinHostPort(backendHostname, backendPort)
 	proxyURL, _ := url.Parse(backendURL.Scheme + "://" + backendHost + "/")
 
-	proxyHandler := NewReverseProxy(proxyURL)
-	setProxyUpstreamHostHeader(proxyHandler, proxyURL)
+	proxyHandler := NewReverseProxy(proxyURL, false)
 	frontend := httptest.NewServer(proxyHandler)
 	defer frontend.Close()
 
@@ -56,8 +55,7 @@ func TestEncodedSlashes(t *testing.T) {
 	defer backend.Close()
 
 	b, _ := url.Parse(backend.URL)
-	proxyHandler := NewReverseProxy(b)
-	setProxyDirector(proxyHandler)
+	proxyHandler := NewReverseProxy(b, true)
 	frontend := httptest.NewServer(proxyHandler)
 	defer frontend.Close()
 
