@@ -595,6 +595,35 @@ func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
 	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
 }
 
+func TestAuthOnlyEndpointReturnAuthenticatedUser(t *testing.T) {
+	var pc_test ProcessCookieTest
+
+	pc_test.opts = NewOptions()
+	pc_test.opts.ReturnAuthenticatedUser = true
+	pc_test.opts.Validate()
+
+	pc_test.proxy = NewOAuthProxy(pc_test.opts, func(email string) bool {
+		return pc_test.validate_user
+	})
+	pc_test.proxy.provider = &TestProvider{
+		ValidToken: true,
+	}
+
+	pc_test.validate_user = true
+
+	pc_test.rw = httptest.NewRecorder()
+	pc_test.req, _ = http.NewRequest("GET",
+		pc_test.opts.ProxyPrefix+"/auth", nil)
+
+	startSession := &providers.SessionState{
+		Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	pc_test.SaveSession(startSession, time.Now())
+
+	pc_test.proxy.ServeHTTP(pc_test.rw, pc_test.req)
+	assert.Equal(t, http.StatusAccepted, pc_test.rw.Code)
+	assert.Equal(t, "michael.bland", pc_test.rw.HeaderMap["X-Authenticated-User"][0])
+}
+
 type SignatureAuthenticator struct {
 	auth hmacauth.HmacAuth
 }
