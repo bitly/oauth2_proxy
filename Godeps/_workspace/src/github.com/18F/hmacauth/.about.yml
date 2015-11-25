@@ -1,0 +1,97 @@
+---
+# .about.yml project metadata
+#
+# Short name that acts as the project identifier (required)
+name: hmacauth
+
+# Full proper name of the project (required)
+full_name: HMAC Authentication package for Go
+
+# The type of content in the repo
+# values: app, docs, policy
+type: app
+
+# Describes whether a project team, working group/guild, etc. owns the repo (required)
+# values: guild, working-group, project
+owner_type: project
+
+# Name of the main project repo if this is a sub-repo; name of the working group/guild repo if this is a working group/guild subproject
+#parent:
+
+# Maturity stage of the project (required)
+# values: discovery, alpha, beta, live
+stage: discovery
+
+# Whether or not the project is actively maintained (required)
+# values: active, deprecated
+status: active
+
+# Description of the project
+description: >
+  Signs and validates HTTP requests based on a shared-secret HMAC signature
+
+# Should be 'true' if the project has a continuous build (required)
+# values: true, false
+testable: true
+
+# Team members contributing to the project (required)
+# Items:
+# - github: GitHub user name
+#   id: Internal team identifier/user name
+#   role: Team member's role; leads should be designated as 'lead'
+team:
+- github: mbland
+  role: lead
+
+# Partners for whom the project is developed
+#partners:
+#- 
+
+# Brief descriptions of significant project developments
+#milestones:
+#- 
+
+# Technologies used to build the project
+stack:
+- Go
+
+# Brief description of the project's outcomes
+#impact:
+
+# Services used to supply project status information
+# Items:
+# - name: Name of the service
+#   category: Type of the service
+#   url: URL for detailed information
+#   badge: URL for the status badge
+#services:
+#- 
+
+# Licenses that apply to the project and/or its components (required)
+# Items by property name pattern:
+#   .*:
+#     name: Name of the license from the Software Package Data Exchange (SPDX): https://spdx.org/licenses/
+#     url: URL for the text of the license
+licenses:
+  hmacauth:
+    name: CC0
+    url: https://github.com/18F/hmacauth/blob/master/LICENSE.md
+
+# Blogs or websites associated with project development
+#blog:
+#- 
+
+# Links to project artifacts
+# Items:
+# - url: URL for the link
+#   text: Anchor text for the link
+#links:
+#- url:
+#  text:
+
+# Email addresses of points-of-contact
+contact:
+- url: mailto:michael.bland@acm.org
+  text: Mike Bland
+- url: https://github.com/18F/hmacauth/issues
+  text: 18F/hmacauth issues
