@@ -110,7 +110,7 @@ func getTemplates() *template.Template {
 </head>
 <body>
 	<div class="signin center">
-	<form method="GET" action="/oauth2/start">
+	<form method="GET" action="{{.ProxyPrefix}}/start">
 	<input type="hidden" name="rd" value="{{.Redirect}}">
 	{{ if .SignInMessage }}
 	<p>{{.SignInMessage}}</p>
@@ -121,7 +121,7 @@ func getTemplates() *template.Template {
 
 	{{ if .CustomLogin }}
 	<div class="signin">
-	<form method="POST" action="/oauth2/sign_in">
+	<form method="POST" action="{{.ProxyPrefix}}/sign_in">
 		<input type="hidden" name="rd" value="{{.Redirect}}">
 		<label for="username">Username:</label><input type="text" name="username" id="username" size="10"><br/>
 		<label for="password">Password:</label><input type="password" name="password" id="password" size="10"><br/>
@@ -130,7 +130,7 @@ func getTemplates() *template.Template {
 	</div>
 	{{ end }}
 	<footer>
-	Secured with <a href="https://github.com/bitly/google_auth_proxy#google_auth_proxy">Google Auth Proxy</a> version {{.Version}}
+	Secured with <a href="https://github.com/bitly/oauth2_proxy#oauth2_proxy">OAuth2 Proxy</a> version {{.Version}}
 	</footer>
 </body>
 </html>
@@ -150,7 +150,7 @@ func getTemplates() *template.Template {
 	<h2>{{.Title}}</h2>
 	<p>{{.Message}}</p>
 	<hr>
-	<p><a href="/oauth2/sign_in">Sign In</a></p>
+	<p><a href="{{.ProxyPrefix}}/sign_in">Sign In</a></p>
 </body>
 </html>{{end}}`)
 	if err != nil {

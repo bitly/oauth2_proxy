@@ -1,13 +1,19 @@
 package providers
 
 import (
-	"github.com/bitly/go-simplejson"
+	"github.com/bitly/oauth2_proxy/cookie"
 )
 
 type Provider interface {
 	Data() *ProviderData
-	GetEmailAddress(auth_response *simplejson.Json,
-		access_token string) (string, error)
+	GetEmailAddress(*SessionState) (string, error)
+	Redeem(string, string) (*SessionState, error)
+	ValidateGroup(string) bool
+	ValidateSessionState(*SessionState) bool
+	GetLoginURL(redirectURI, finalRedirect string) string
+	RefreshSessionIfNeeded(*SessionState) (bool, error)
+	SessionFromCookie(string, *cookie.Cipher) (*SessionState, error)
+	CookieForSession(*SessionState, *cookie.Cipher) (string, error)
 }
 
 func New(provider string, p *ProviderData) Provider {
@@ -16,6 +22,8 @@ func New(provider string, p *ProviderData) Provider {
 		return NewMyUsaProvider(p)
 	case "linkedin":
 		return NewLinkedInProvider(p)
+	case "github":
+		return NewGitHubProvider(p)
 	default:
 		return NewGoogleProvider(p)
 	}

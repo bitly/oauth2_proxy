@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bmizerany/assert"
 )
@@ -14,6 +16,7 @@ func testOptions() *Options {
 	o.CookieSecret = "foobar"
 	o.ClientID = "bazquux"
 	o.ClientSecret = "xyzzyplugh"
+	o.EmailDomains = []string{"*"}
 	return o
 }
 
@@ -26,6 +29,7 @@ func errorMsg(msgs []string) string {
 
 func TestNewOptions(t *testing.T) {
 	o := NewOptions()
+	o.EmailDomains = []string{"*"}
 	err := o.Validate()
 	assert.NotEqual(t, nil, err)
 
@@ -37,6 +41,32 @@ func TestNewOptions(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
+func TestGoogleGroupOptions(t *testing.T) {
+	o := testOptions()
+	o.GoogleGroups = []string{"googlegroup"}
+	err := o.Validate()
+	assert.NotEqual(t, nil, err)
+
+	expected := errorMsg([]string{
+		"missing setting: google-admin-email",
+		"missing setting: google-service-account-json"})
+	assert.Equal(t, expected, err.Error())
+}
+
+func TestGoogleGroupInvalidFile(t *testing.T) {
+	o := testOptions()
+	o.GoogleGroups = []string{"test_group"}
+	o.GoogleAdminEmail = "admin@example.com"
+	o.GoogleServiceAccountJSON = "file_doesnt_exist.json"
+	err := o.Validate()
+	assert.NotEqual(t, nil, err)
+
+	expected := errorMsg([]string{
+		"invalid Google credentials file: file_doesnt_exist.json",
+	})
+	assert.Equal(t, expected, err.Error())
+}
+
 func TestInitializedOptions(t *testing.T) {
 	o := testOptions()
 	assert.Equal(t, nil, o.Validate())
@@ -44,16 +74,16 @@ func TestInitializedOptions(t *testing.T) {
 
 // Note that it's not worth testing nonparseable URLs, since url.Parse()
 // seems to parse damn near anything.
-func TestRedirectUrl(t *testing.T) {
+func TestRedirectURL(t *testing.T) {
 	o := testOptions()
-	o.RedirectUrl = "https://myhost.com/oauth2/callback"
+	o.RedirectURL = "https://myhost.com/oauth2/callback"
 	assert.Equal(t, nil, o.Validate())
 	expected := &url.URL{
 		Scheme: "https", Host: "myhost.com", Path: "/oauth2/callback"}
-	assert.Equal(t, expected, o.redirectUrl)
+	assert.Equal(t, expected, o.redirectURL)
 }
 
-func TestProxyUrls(t *testing.T) {
+func TestProxyURLs(t *testing.T) {
 	o := testOptions()
 	o.Upstreams = append(o.Upstreams, "http://127.0.0.1:8081")
 	assert.Equal(t, nil, o.Validate())
@@ -62,7 +92,7 @@ func TestProxyUrls(t *testing.T) {
 		// note the '/' was added
 		&url.URL{Scheme: "http", Host: "127.0.0.1:8081", Path: "/"},
 	}
-	assert.Equal(t, expected, o.proxyUrls)
+	assert.Equal(t, expected, o.proxyURLs)
 }
 
 func TestCompiledRegex(t *testing.T) {
@@ -95,11 +125,11 @@ func TestDefaultProviderApiSettings(t *testing.T) {
 	o := testOptions()
 	assert.Equal(t, nil, o.Validate())
 	p := o.provider.Data()
-	assert.Equal(t, "https://accounts.google.com/o/oauth2/auth",
-		p.LoginUrl.String())
-	assert.Equal(t, "https://accounts.google.com/o/oauth2/token",
-		p.RedeemUrl.String())
-	assert.Equal(t, "", p.ProfileUrl.String())
+	assert.Equal(t, "https://accounts.google.com/o/oauth2/auth?access_type=offline",
+		p.LoginURL.String())
+	assert.Equal(t, "https://www.googleapis.com/oauth2/v3/token",
+		p.RedeemURL.String())
+	assert.Equal(t, "", p.ProfileURL.String())
 	assert.Equal(t, "profile email", p.Scope)
 }
 
@@ -112,6 +142,10 @@ func TestPassAccessTokenRequiresSpecificCookieSecretLengths(t *testing.T) {
 	o.CookieSecret = "cookie of invalid length-"
 	assert.NotEqual(t, nil, o.Validate())
 
+	o.PassAccessToken = false
+	o.CookieRefresh = time.Duration(24) * time.Hour
+	assert.NotEqual(t, nil, o.Validate())
+
 	o.CookieSecret = "16 bytes AES-128"
 	assert.Equal(t, nil, o.Validate())
 
@@ -120,4 +154,40 @@ func TestPassAccessTokenRequiresSpecificCookieSecretLengths(t *testing.T) {
 
 	o.CookieSecret = "32 byte secret for AES-256------"
 	assert.Equal(t, nil, o.Validate())
+}
+
+func TestCookieRefreshMustBeLessThanCookieExpire(t *testing.T) {
+	o := testOptions()
+	assert.Equal(t, nil, o.Validate())
+
+	o.CookieSecret = "0123456789abcdef"
+	o.CookieRefresh = o.CookieExpire
+	assert.NotEqual(t, nil, o.Validate())
+
+	o.CookieRefresh -= time.Duration(1)
+	assert.Equal(t, nil, o.Validate())
+}
+
+func TestValidateSignatureKey(t *testing.T) {
+	o := testOptions()
+	o.SignatureKey = "sha1:secret"
+	assert.Equal(t, nil, o.Validate())
+	assert.Equal(t, o.signatureData.hash, crypto.SHA1)
+	assert.Equal(t, o.signatureData.key, "secret")
+}
+
+func TestValidateSignatureKeyInvalidSpec(t *testing.T) {
+	o := testOptions()
+	o.SignatureKey = "invalid spec"
+	err := o.Validate()
+	assert.Equal(t, err.Error(), "Invalid configuration:\n"+
+		"  invalid signature hash:key spec: "+o.SignatureKey)
+}
+
+func TestValidateSignatureKeyUnsupportedAlgorithm(t *testing.T) {
+	o := testOptions()
+	o.SignatureKey = "unsupported:default secret"
+	err := o.Validate()
+	assert.Equal(t, err.Error(), "Invalid configuration:\n"+
+		"  unsupported signature hash algorithm: "+o.SignatureKey)
 }
