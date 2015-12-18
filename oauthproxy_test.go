@@ -3,9 +3,6 @@ package main
 import (
 	"crypto"
 	"encoding/base64"
-	"github.com/18F/hmacauth"
-	"github.com/bitly/oauth2_proxy/providers"
-	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/18F/hmacauth"
+	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/bmizerany/assert"
 )
 
 func init() {
@@ -89,6 +90,27 @@ func TestRobotsTxt(t *testing.T) {
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 200, rw.Code)
 	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
+}
+
+func TestOptionsMethod(t *testing.T) {
+	provider_server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("pong"))
+	}))
+	opts := NewOptions()
+	opts.Upstreams = append(opts.Upstreams, provider_server.URL)
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.SkipAuthOptions = true
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("OPTIONS", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, 200, rw.Code)
+	assert.Equal(t, "pong", rw.Body.String())
 }
 
 type TestProvider struct {

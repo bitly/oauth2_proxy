@@ -63,6 +63,7 @@ type OAuthProxy struct {
 	PassAccessToken     bool
 	CookieCipher        *cookie.Cipher
 	skipAuthRegex       []string
+	skipAuthOptions     bool
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 }
@@ -191,6 +192,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		serveMux:          serveMux,
 		redirectURL:       redirectURL,
 		skipAuthRegex:     opts.SkipAuthRegex,
+		skipAuthOptions:   opts.SkipAuthOptions,
 		compiledRegex:     opts.CompiledRegex,
 		PassBasicAuth:     opts.PassBasicAuth,
 		BasicAuthPassword: opts.BasicAuthPassword,
@@ -406,6 +408,10 @@ func getRemoteAddr(req *http.Request) (s string) {
 }
 
 func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	if req.Method == "OPTIONS" && p.skipAuthOptions {
+		p.serveMux.ServeHTTP(rw, req)
+		return
+	}
 	switch path := req.URL.Path; {
 	case path == p.RobotsPath:
 		p.RobotsTxt(rw)
