@@ -43,13 +43,13 @@ type Options struct {
 	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 
-	Upstreams               []string `flag:"upstream" cfg:"upstreams"`
-	SkipAuthRegex           []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
-	ReturnAuthenticatedUser bool     `flag:"return-authenticated-user" cfg:"return_authenticated_user"`
-	PassBasicAuth           bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
-	BasicAuthPassword       string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
-	PassAccessToken         bool     `flag:"pass-access-token" cfg:"pass_access_token"`
-	PassHostHeader          bool     `flag:"pass-host-header" cfg:"pass_host_header"`
+	Upstreams                []string `flag:"upstream" cfg:"upstreams"`
+	SkipAuthRegex            []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
+	ReturnAuthenticatedEmail bool     `flag:"return-authenticated-email" cfg:"return_authenticated_email"`
+	PassBasicAuth            bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
+	BasicAuthPassword        string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
+	PassAccessToken          bool     `flag:"pass-access-token" cfg:"pass_access_token"`
+	PassHostHeader           bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
@@ -80,21 +80,21 @@ type SignatureData struct {
 
 func NewOptions() *Options {
 	return &Options{
-		ProxyPrefix:             "/oauth2",
-		HttpAddress:             "127.0.0.1:4180",
-		HttpsAddress:            ":443",
-		DisplayHtpasswdForm:     true,
-		CookieName:              "_oauth2_proxy",
-		CookieSecure:            true,
-		CookieHttpOnly:          true,
-		CookieExpire:            time.Duration(168) * time.Hour,
-		CookieRefresh:           time.Duration(0),
-		ReturnAuthenticatedUser: false,
-		PassBasicAuth:           true,
-		PassAccessToken:         false,
-		PassHostHeader:          true,
-		ApprovalPrompt:          "force",
-		RequestLogging:          true,
+		ProxyPrefix:              "/oauth2",
+		HttpAddress:              "127.0.0.1:4180",
+		HttpsAddress:             ":443",
+		DisplayHtpasswdForm:      true,
+		CookieName:               "_oauth2_proxy",
+		CookieSecure:             true,
+		CookieHttpOnly:           true,
+		CookieExpire:             time.Duration(168) * time.Hour,
+		CookieRefresh:            time.Duration(0),
+		ReturnAuthenticatedEmail: false,
+		PassBasicAuth:            true,
+		PassAccessToken:          false,
+		PassHostHeader:           true,
+		ApprovalPrompt:           "force",
+		RequestLogging:           true,
 	}
 }
 

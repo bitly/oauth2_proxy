@@ -595,11 +595,11 @@ func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
 	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
 }
 
-func TestAuthOnlyEndpointReturnAuthenticatedUser(t *testing.T) {
+func TestAuthOnlyEndpointReturnAuthenticatedEmail(t *testing.T) {
 	var pc_test ProcessCookieTest
 
 	pc_test.opts = NewOptions()
-	pc_test.opts.ReturnAuthenticatedUser = true
+	pc_test.opts.ReturnAuthenticatedEmail = true
 	pc_test.opts.Validate()
 
 	pc_test.proxy = NewOAuthProxy(pc_test.opts, func(email string) bool {
@@ -621,7 +621,7 @@ func TestAuthOnlyEndpointReturnAuthenticatedUser(t *testing.T) {
 
 	pc_test.proxy.ServeHTTP(pc_test.rw, pc_test.req)
 	assert.Equal(t, http.StatusAccepted, pc_test.rw.Code)
-	assert.Equal(t, "michael.bland", pc_test.rw.HeaderMap["X-Authenticated-User"][0])
+	assert.Equal(t, "michael.bland@gsa.gov", pc_test.rw.HeaderMap["X-Authenticated-Email"][0])
 }
 
 type SignatureAuthenticator struct {
