@@ -71,6 +71,14 @@ func main() {
 
 	flagSet.String("signature-key", "", "GAP-Signature request signature key (algorithm:secretkey)")
 
+	flagSet.String("ldap-uri", "", "URI to LDAP server for mapping email to uid (ex ldap.example.com:389)")
+	flagSet.String("ldap-bind-user", "", "Bind user for LDAP (ex cn=x,dc=example,dc=com)")
+	flagSet.String("ldap-bind-pass", "", "Bind user password for LDAP")
+	flagSet.String("ldap-search-base", "", "BaseDN for LDAP search (ex dc=example,dc=com)")
+	flagSet.String("ldap-filter-attribute", "mail", "Attribute used to match Oauth2 email with LDAP.")
+	flagSet.String("ldap-uid-attribute", "uid", "Attribute used to store uid in LDAP, this attribute is returned.")
+	flagSet.String("ldap-mail-attribute", "mail", "Attribute used to store email in LDAP, this attribute is returned.")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
