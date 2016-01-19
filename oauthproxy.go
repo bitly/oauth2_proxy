@@ -65,6 +65,14 @@ type OAuthProxy struct {
 	skipAuthRegex       []string
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
+
+	LdapUri             string
+	LdapBindUser        string
+	LdapBindPass        string
+	LdapSearchBase      string
+	LdapFilterAttribute string
+	LdapUidAttribute    string
+	LdapMailAttribute   string
 }
 
 type UpstreamProxy struct {
@@ -197,6 +205,14 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		PassAccessToken:   opts.PassAccessToken,
 		CookieCipher:      cipher,
 		templates:         loadTemplates(opts.CustomTemplatesDir),
+
+		LdapUri:             opts.LdapUri,
+		LdapBindUser:        opts.LdapBindUser,
+		LdapBindPass:        opts.LdapBindPass,
+		LdapSearchBase:      opts.LdapSearchBase,
+		LdapFilterAttribute: opts.LdapFilterAttribute,
+		LdapUidAttribute:    opts.LdapUidAttribute,
+		LdapMailAttribute:   opts.LdapMailAttribute,
 	}
 }
 
@@ -593,6 +609,20 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 			req.Header["X-Forwarded-Email"] = []string{session.Email}
 		}
 	}
+
+	// If email -> uid mapping with LDAP is configured
+	if p.LdapUri != "" {
+		var luser, lemail string
+		luser, lemail, err = LdapMap(p, session.Email)
+		if err == nil {
+			req.Header["X-Forwarded-User"] = []string{luser}
+			req.Header["X-Forwarded-Email"] = []string{lemail}
+		} else {
+			log.Printf("Ldap failed to map email -> uid: %s", err)
+			return http.StatusForbidden
+		}
+	}
+
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
 	}

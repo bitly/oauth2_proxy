@@ -118,48 +118,104 @@ An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is i
 
 ```
 Usage of oauth2_proxy:
-  -approval-prompt="force": Oauth approval_prompt
-  -authenticated-emails-file="": authenticate against emails via file (one per line)
-  -basic-auth-password="": the password to set when passing the HTTP Basic Auth header
-  -client-id="": the OAuth Client ID: ie: "123456.apps.googleusercontent.com"
-  -client-secret="": the OAuth Client Secret
-  -config="": path to config file
-  -cookie-domain="": an optional cookie domain to force cookies to (ie: .yourcompany.com)*
-  -cookie-expire=168h0m0s: expire timeframe for cookie
-  -cookie-httponly=true: set HttpOnly cookie flag
-  -cookie-name="_oauth2_proxy": the name of the cookie that the oauth_proxy creates
-  -cookie-refresh=0: refresh the cookie after this duration; 0 to disable
-  -cookie-secret="": the seed string for secure cookies
-  -cookie-secure=true: set secure (HTTPS) cookie flag
-  -custom-templates-dir="": path to custom html templates
-  -display-htpasswd-form=true: display username / password login form if an htpasswd file is provided
-  -email-domain=: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
-  -github-org="": restrict logins to members of this organisation
-  -github-team="": restrict logins to members of this team
-  -google-admin-email="": the google admin to impersonate for api calls
-  -google-group=: restrict logins to members of this google group (may be given multiple times).
-  -google-service-account-json="": the path to the service account json credentials
-  -htpasswd-file="": additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
-  -http-address="127.0.0.1:4180": [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients
-  -https-address=":443": <addr>:<port> to listen on for HTTPS clients
-  -login-url="": Authentication endpoint
-  -pass-access-token=false: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
-  -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
-  -pass-host-header=true: pass the request Host Header to upstream
-  -profile-url="": Profile access endpoint
-  -provider="google": OAuth provider
-  -proxy-prefix="/oauth2": the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in)
-  -redeem-url="": Token redemption endpoint
-  -redirect-url="": the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
-  -request-logging=true: Log requests to stdout
-  -scope="": Oauth scope specification
-  -signature-key="": GAP-Signature request signature key (algorithm:secretkey)
-  -skip-auth-regex=: bypass authentication for requests path's that match (may be given multiple times)
-  -tls-cert="": path to certificate file
-  -tls-key="": path to private key file
-  -upstream=: the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
-  -validate-url="": Access token validation endpoint
-  -version=false: print version string
+  -approval-prompt string
+        OAuth approval_prompt (default "force")
+  -authenticated-emails-file string
+        authenticate against emails via file (one per line)
+  -basic-auth-password string
+        the password to set when passing the HTTP Basic Auth header
+  -client-id string
+        the OAuth Client ID: ie: "123456.apps.googleusercontent.com"
+  -client-secret string
+        the OAuth Client Secret
+  -config string
+        path to config file
+  -cookie-domain string
+        an optional cookie domain to force cookies to (ie: .yourcompany.com)*
+  -cookie-expire duration
+        expire timeframe for cookie (default 168h0m0s)
+  -cookie-httponly
+        set HttpOnly cookie flag (default true)
+  -cookie-name string
+        the name of the cookie that the oauth_proxy creates (default "_oauth2_proxy")
+  -cookie-refresh duration
+        refresh the cookie after this duration; 0 to disable
+  -cookie-secret string
+        the seed string for secure cookies
+  -cookie-secure
+        set secure (HTTPS) cookie flag (default true)
+  -custom-templates-dir string
+        path to custom html templates
+  -display-htpasswd-form
+        display username / password login form if an htpasswd file is provided (default true)
+  -email-domain value
+        authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
+  -github-org string
+        restrict logins to members of this organisation
+  -github-team string
+        restrict logins to members of this team
+  -google-admin-email string
+        the google admin to impersonate for api calls
+  -google-group value
+        restrict logins to members of this google group (may be given multiple times).
+  -google-service-account-json string
+        the path to the service account json credentials
+  -htpasswd-file string
+        additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
+  -http-address string
+        [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients (default "127.0.0.1:4180")
+  -https-address string
+        <addr>:<port> to listen on for HTTPS clients (default ":443")
+  -ldap-bind-pass string
+        Bind user password for LDAP
+  -ldap-bind-user string
+        Bind user for LDAP (ex cn=x,dc=example,dc=com)
+  -ldap-filter-attribute string
+        Attribute used to match Oauth2 email with LDAP. (default "mail")
+  -ldap-mail-attribute string
+        Attribute used to store email in LDAP, this attribute is returned. (default "mail")
+  -ldap-search-base string
+        BaseDN for LDAP search (ex dc=example,dc=com)
+  -ldap-uid-attribute string
+        Attribute used to store uid in LDAP, this attribute is returned. (default "uid")
+  -ldap-uri string
+        URI to LDAP server for mapping email to uid (ex ldap.example.com:389)
+  -login-url string
+        Authentication endpoint
+  -pass-access-token
+        pass OAuth access_token to upstream via X-Forwarded-Access-Token header
+  -pass-basic-auth
+        pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
+  -pass-host-header
+        pass the request Host Header to upstream (default true)
+  -profile-url string
+        Profile access endpoint
+  -provider string
+        OAuth provider (default "google")
+  -proxy-prefix string
+        the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in) (default "/oauth2")
+  -redeem-url string
+        Token redemption endpoint
+  -redirect-url string
+        the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
+  -request-logging
+        Log requests to stdout (default true)
+  -scope string
+        OAuth scope specification
+  -signature-key string
+        GAP-Signature request signature key (algorithm:secretkey)
+  -skip-auth-regex value
+        bypass authentication for requests path's that match (may be given multiple times)
+  -tls-cert string
+        path to certificate file
+  -tls-key string
+        path to private key file
+  -upstream value
+        the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
+  -validate-url string
+        Access token validation endpoint
+  -version
+        print version string
 ```
 
 See below for provider specific options

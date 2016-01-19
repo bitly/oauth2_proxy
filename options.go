@@ -50,6 +50,14 @@ type Options struct {
 	PassAccessToken   bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader    bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 
+	LdapUri             string `flag:"ldap-uri" cfg:"ldap_uri"`
+	LdapBindUser        string `flag:"ldap-bind-user" cfg:"ldap_bind_user"`
+	LdapBindPass        string `flag:"ldap-bind-pass" cfg:"ldap_bind_pass"`
+	LdapSearchBase      string `flag:"ldap-search-base" cfg:"ldap_search_base"`
+	LdapFilterAttribute string `flag:"ldap-filter-attribute" cfg:"ldap_filter_attribute"`
+	LdapUidAttribute    string `flag:"ldap-uid-attribute" cfg:"ldap_uid_attribute"`
+	LdapMailAttribute   string `flag:"ldap-mail-attribute" cfg:"ldap_mail_attribute"`
+
 	// These options allow for other providers besides Google, with
 	// potential overrides.
 	Provider       string `flag:"provider" cfg:"provider"`
@@ -182,6 +190,30 @@ func (o *Options) Validate() error {
 		}
 		if o.GoogleServiceAccountJSON == "" {
 			msgs = append(msgs, "missing setting: google-service-account-json")
+		}
+	}
+
+	if len(o.LdapUri) > 0 || len(o.LdapBindUser) > 0 || len(o.LdapBindPass) > 0 || len(o.LdapSearchBase) > 0 || len(o.LdapFilterAttribute) > 0 || len(o.LdapUidAttribute) > 0 || len(o.LdapMailAttribute) > 0 {
+		if len(o.LdapUri) == 0 {
+			msgs = append(msgs, "missing setting: ldap-uri")
+		}
+		if len(o.LdapBindUser) == 0 {
+			msgs = append(msgs, "missing setting: ldap-bind-user")
+		}
+		if len(o.LdapBindPass) == 0 {
+			msgs = append(msgs, "missing setting: ldap-bind-pass")
+		}
+		if len(o.LdapSearchBase) == 0 {
+			msgs = append(msgs, "missing setting: ldap-search-base")
+		}
+		if len(o.LdapFilterAttribute) == 0 {
+			msgs = append(msgs, "missing setting: ldap-filter-attribute")
+		}
+		if len(o.LdapUidAttribute) == 0 {
+			msgs = append(msgs, "missing setting: ldap-uid-attribute")
+		}
+		if len(o.LdapMailAttribute) == 0 {
+			msgs = append(msgs, "missing setting: ldap-email-attribute")
 		}
 	}
 
