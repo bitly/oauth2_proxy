@@ -53,8 +53,7 @@ func (um *UserMap) LoadAuthenticatedEmailsFile() {
 	}
 	updated := make(map[string]bool)
 	for _, r := range records {
-		address := strings.ToLower(strings.TrimSpace(r[0]))
-		updated[address] = true
+		updated[strings.ToLower(r[0])] = true
 	}
 	atomic.StorePointer(&um.m, unsafe.Pointer(&updated))
 }
