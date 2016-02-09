@@ -48,6 +48,7 @@ type Options struct {
 	SkipAuthRegex     []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth     bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
+	BasicAuthUsername string   `flag:"basic-auth-username" cfg:"basic_auth_username"`
 	PassAccessToken   bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader    bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 
