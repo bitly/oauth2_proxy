@@ -35,11 +35,6 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 		return
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// workaround for Cloudfoundry UAA bug https://github.com/cloudfoundry/uaa/issues/308
-	if (p.ProviderName == "CloudFoundry") {
-		req.SetBasicAuth(p.ClientID, p.ClientSecret)
-	}
-
 	var resp *http.Response
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
