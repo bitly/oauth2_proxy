@@ -26,7 +26,8 @@ type Options struct {
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
-	EmailDomains             []string `flag:"email-domain" cfg:"email_domains" env:"OAUTH2_PROXY_EMAIL_DOMAINS"`
+	EmailDomains             []string `flag:"email-domains" cfg:"email_domains" env:"OAUTH2_PROXY_EMAIL_DOMAINS"`
+	EmailDomain              string   `flag:"email-domain" cfg:"email_domain" env:"OAUTH2_PROXY_EMAIL_DOMAIN"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
@@ -44,7 +45,8 @@ type Options struct {
 	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 
-	Upstreams         []string `flag:"upstream" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAMS"`
+	Upstreams         []string `flag:"upstreams" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAMS"`
+	Upstream          string   `flag:"upstream" cfg:"upstream" env:"OAUTH2_PROXY_UPSTREAM"`
 	SkipAuthRegex     []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth     bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
@@ -84,12 +86,14 @@ func NewOptions() *Options {
 		ProxyPrefix:         "/oauth2",
 		HttpAddress:         "127.0.0.1:4180",
 		HttpsAddress:        ":443",
+		EmailDomain:         "",
 		DisplayHtpasswdForm: true,
 		CookieName:          "_oauth2_proxy",
 		CookieSecure:        true,
 		CookieHttpOnly:      true,
 		CookieExpire:        time.Duration(168) * time.Hour,
 		CookieRefresh:       time.Duration(0),
+		Upstream:            "",
 		PassBasicAuth:       true,
 		PassAccessToken:     false,
 		PassHostHeader:      true,
@@ -109,6 +113,12 @@ func parseURL(to_parse string, urltype string, msgs []string) (*url.URL, []strin
 
 func (o *Options) Validate() error {
 	msgs := make([]string, 0)
+	if o.Upstream != "" {
+		o.Upstreams = append(o.Upstreams, o.Upstream)
+	}
+	if o.EmailDomain != "" {
+		o.EmailDomains = append(o.EmailDomains, o.EmailDomain)
+	}
 	if len(o.Upstreams) < 1 {
 		msgs = append(msgs, "missing setting: upstream")
 	}
