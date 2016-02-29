@@ -1,0 +1,117 @@
+{
+	"ImportPath": "github.com/bitly/oauth2_proxy",
+	"GoVersion": "go1.5.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/18F/hmacauth",
+			"Comment": "1.0.1",
+			"Rev": "9232a6386b737d7d1e5c1c6e817aa48d5d8ee7cd"
+		},
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.1.0-9-g3883ac1",
+			"Rev": "3883ac1ce943878302255f538fce319d23226223"
+		},
+		{
+			"ImportPath": "github.com/bitly/go-simplejson",
+			"Comment": "v0.4.3-28-g3378bdc",
+			"Rev": "3378bdcb5cebedcbf8b5750edee28010f128fe24"
+		},
+		{
+			"ImportPath": "github.com/bmizerany/assert",
+			"Comment": "release.r60-6-ge17e998",
+			"Rev": "e17e99893cb6509f428e1728281c2ad60a6b31e3"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-oidc/http",
+			"Rev": "5d3ac76573da4d1e3254d3748217bdf89154c667"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-oidc/jose",
+			"Rev": "5d3ac76573da4d1e3254d3748217bdf89154c667"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-oidc/key",
+			"Rev": "5d3ac76573da4d1e3254d3748217bdf89154c667"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-oidc/oauth2",
+			"Rev": "5d3ac76573da4d1e3254d3748217bdf89154c667"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-oidc/oidc",
+			"Rev": "5d3ac76573da4d1e3254d3748217bdf89154c667"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-systemd/journal",
+			"Comment": "v4-8-gf164f43",
+			"Rev": "f164f437010a16e0443d2d1e68e8e001cdbf1226"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/capnslog",
+			"Rev": "2c77715c4df99b5420ffcae14ead08f52104065d"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/health",
+			"Rev": "2c77715c4df99b5420ffcae14ead08f52104065d"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/httputil",
+			"Rev": "2c77715c4df99b5420ffcae14ead08f52104065d"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/timeutil",
+			"Rev": "2c77715c4df99b5420ffcae14ead08f52104065d"
+		},
+		{
+			"ImportPath": "github.com/jonboulle/clockwork",
+			"Rev": "ed104f61ea4877bea08af6f759805674861e968d"
+		},
+		{
+			"ImportPath": "github.com/kr/pretty",
+			"Comment": "go.weekly.2011-12-22-27-ge6ac2fc",
+			"Rev": "e6ac2fc51e89a3249e82157fa0bb7a18ef9dd5bb"
+		},
+		{
+			"ImportPath": "github.com/kr/text",
+			"Rev": "bb797dc4fb8320488f47bf11de07a733d7233e1f"
+		},
+		{
+			"ImportPath": "github.com/mreiferson/go-options",
+			"Rev": "ee94b57f2fbf116075426f853e5abbcdfeca8b3d"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "c745c36eab1034bceb7999c915ced45b1f99021f"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "397fe7649477ff2e8ced8fc0b2696f781e53745a"
+		},
+		{
+			"ImportPath": "google.golang.org/api/admin/directory/v1",
+			"Rev": "030d584ade5f79aa2ed0ce067e8f7da50c9a10d5"
+		},
+		{
+			"ImportPath": "google.golang.org/api/gensupport",
+			"Rev": "030d584ade5f79aa2ed0ce067e8f7da50c9a10d5"
+		},
+		{
+			"ImportPath": "google.golang.org/api/googleapi",
+			"Rev": "030d584ade5f79aa2ed0ce067e8f7da50c9a10d5"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/compute/metadata",
+			"Rev": "b467501b2a6e4998b369e3569864906a1261972c"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud/internal",
+			"Rev": "b467501b2a6e4998b369e3569864906a1261972c"
+		},
+		{
+			"ImportPath": "gopkg.in/fsnotify.v1",
+			"Comment": "v1.2.0",
+			"Rev": "96c060f6a6b7e0d6f75fddd10efeaca3e5d1bcb0"
+		}
+	]
+}
