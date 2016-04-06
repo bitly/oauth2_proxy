@@ -53,6 +53,7 @@ type Options struct {
 	PassAccessToken    bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader     bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 	SkipProviderButton bool     `flag:"skip-provider-button" cfg:"skip_provider_button"`
+	EnableInsecure    bool     `flag:"enable-insecure" cfg:"enable_insecure"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
@@ -99,6 +100,7 @@ func NewOptions() *Options {
 		SkipProviderButton:  false,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
+		EnableInsecure:      false,
 	}
 }
 
