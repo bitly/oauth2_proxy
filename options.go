@@ -51,6 +51,7 @@ type Options struct {
 	BasicAuthPassword string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken   bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader    bool     `flag:"pass-host-header" cfg:"pass_host_header"`
+	EnableInsecure    bool     `flag:"enable-insecure" cfg:"enable_insecure"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
@@ -97,6 +98,7 @@ func NewOptions() *Options {
 		PassHostHeader:      true,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
+		EnableInsecure:      false,
 	}
 }
 
