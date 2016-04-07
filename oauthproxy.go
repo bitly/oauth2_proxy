@@ -151,6 +151,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 
 	log.Printf("OAuthProxy configured for %s Client ID: %s", opts.provider.Data().ProviderName, opts.ClientID)
 	opts.provider.Data().EnableInsecure = opts.EnableInsecure
+	log.Printf("OAuthProxy Insecure SSL: %t", opts.provider.Data().EnableInsecure)
 	domain := opts.CookieDomain
 	if domain == "" {
 		domain = "<default>"
