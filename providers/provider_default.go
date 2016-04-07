@@ -30,7 +30,6 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 
 	fmt.Printf("Before Request -> SSL: %t", p.EnableInsecure)
 
-
 	cfg := &tls.Config{ InsecureSkipVerify: p.EnableInsecure, }
 
 	http.DefaultClient.Transport = &http.Transport{ TLSClientConfig: cfg, }
