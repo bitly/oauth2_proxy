@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 )
 
 var (
-	CoookieHeaderKey    = http.CanonicalHeaderKey("cookie")
 	ConnectionHeaderKey = http.CanonicalHeaderKey("connection")
 	SetCookieHeaderKey  = http.CanonicalHeaderKey("set-cookie")
 	UpgradeHeaderKey    = http.CanonicalHeaderKey("upgrade")
@@ -107,8 +107,19 @@ func (u *UpstreamProxy) upstreamWSURL(r url.URL) *url.URL {
 }
 
 func isWebsocketRequest(req *http.Request) bool {
-	return req.Header.Get(UpgradeHeaderKey) == UpgradeHeaderValue &&
-		req.Header.Get(ConnectionHeaderKey) == ConnectionHeaderValue
+	return isHeaderValuePresent(req.Header, UpgradeHeaderKey, UpgradeHeaderValue) &&
+		isHeaderValuePresent(req.Header, ConnectionHeaderKey, ConnectionHeaderValue)
+}
+
+func isHeaderValuePresent(headers http.Header, key string, value string) bool {
+	for _, header := range headers[key] {
+		for _, v := range strings.Split(header, ",") {
+			if strings.EqualFold(value, strings.TrimSpace(v)) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func copyHeaders(dst *http.Header, src http.Header, headers []string) {
