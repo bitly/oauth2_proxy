@@ -67,6 +67,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	EnableInsecure	    bool
 }
 
 type UpstreamProxy struct {
@@ -202,6 +203,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		EnableInsecure:	   opts.EnableInsecure,
 	}
 }
 
