@@ -359,3 +359,35 @@ server {
   }
 }
 ```
+
+## Simple HTTP Nginx Configuration with Google OAuth
+
+A simple Nginx Configuration that works for a single application is here:
+
+```
+server {
+	listen       80;
+	server_name  internal.website.io;
+    location / {
+	    proxy_pass http://127.0.0.1:4180;
+      proxy_set_header Host $host;
+	    proxy_set_header X-Real-IP $remote_addr;
+	    proxy_set_header X-Scheme $scheme;
+	    proxy_connect_timeout 1;
+	    proxy_send_timeout 30;
+	    proxy_read_timeout 30;
+	}
+	server_tokens off;
+
+}
+```
+
+Then to run the oauth2_proxy a simple configuration with the internal app running on port `5000` is
+
+```
+./oauth2_proxy -email-domain=gmail.com -upstream=http://127.0.0.1:5000 -cookie-secret=somesecret -client-id=googleid.apps.googleusercontent.com -client-secret=googlesecret -provider=google -cookie-secure=false
+```
+
+This doesn't differ much for SSL. Just make sure that `-cookie-secure` is set to `true` and cookies are set to HTTP only
+
+
