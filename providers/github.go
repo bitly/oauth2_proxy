@@ -64,7 +64,7 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 		"limit":        {"100"},
 	}
 
-	endpoint := p.ValidateURL.Scheme + "://"  + p.ValidateURL.Host + "/user/orgs?" + params.Encode()
+	endpoint := p.ValidateURL.Scheme + "://"  + p.ValidateURL.Host + p.ValidateURL.Path + "/user/orgs?" + params.Encode()
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	resp, err := http.DefaultClient.Do(req)
@@ -114,7 +114,7 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 		"limit":        {"100"},
 	}
 
-	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/user/teams?" + params.Encode()
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + p.ValidateURL.Path + "/user/teams?" + params.Encode()
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	resp, err := http.DefaultClient.Do(req)
@@ -187,7 +187,7 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	params := url.Values{
 		"access_token": {s.AccessToken},
 	}
-	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + p.ValidateURL.Path + "?" + params.Encode()
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + p.ValidateURL.Path + "/user/emails" + "?" + params.Encode()
 	resp, err := http.DefaultClient.Get(endpoint)
 	if err != nil {
 		return "", err
@@ -201,7 +201,7 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
 	} else {
-		log.Printf("got %d from %q %s", resp.StatusCode, endpoint, body)
+		log.Printf("got %d from %q", resp.StatusCode, endpoint)
 	}
 
 	if err := json.Unmarshal(body, &emails); err != nil {
