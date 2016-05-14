@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"json"
 	"fmt"
 	"io"
 	"io/ioutil"
