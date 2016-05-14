@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"error"
+	"errors"
 
 	"github.com/bitly/oauth2_proxy/api"
 )
