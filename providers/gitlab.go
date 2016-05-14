@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"bytes"
+	"encoding/base64"
 
 	"github.com/bitly/oauth2_proxy/api"
 )
