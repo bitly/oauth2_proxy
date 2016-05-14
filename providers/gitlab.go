@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"ioutil"
+	"io/ioutil"
 	
 	"github.com/bitly/oauth2_proxy/api"
 )
