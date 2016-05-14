@@ -6,12 +6,8 @@ import (
 	"net/url"
 	"time"
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"errors"
 
 	"github.com/bitly/oauth2_proxy/api"
 )
