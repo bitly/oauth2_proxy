@@ -65,6 +65,8 @@ type OAuthProxy struct {
 	skipAuthRegex       []string
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
+
+	Footer string
 }
 
 type UpstreamProxy struct {
@@ -197,6 +199,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		PassAccessToken:   opts.PassAccessToken,
 		CookieCipher:      cipher,
 		templates:         loadTemplates(opts.CustomTemplatesDir),
+
+		Footer: opts.Footer,
 	}
 }
 
@@ -343,6 +347,7 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		Redirect      string
 		Version       string
 		ProxyPrefix   string
+		Footer        string
 	}{
 		ProviderName:  p.provider.Data().ProviderName,
 		SignInMessage: p.SignInMessage,
@@ -350,6 +355,7 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		Redirect:      redirect_url,
 		Version:       VERSION,
 		ProxyPrefix:   p.ProxyPrefix,
+		Footer:        p.Footer,
 	}
 	p.templates.ExecuteTemplate(rw, "sign_in.html", t)
 }
