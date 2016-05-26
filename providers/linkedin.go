@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/bitly/oauth2_proxy/api"
+	"github.com/revinate-docker/oauth2_proxy/api"
 )
 
 type LinkedInProvider struct {

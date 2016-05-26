@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/bitly/oauth2_proxy/cookie"
+	"github.com/revinate-docker/oauth2_proxy/cookie"
 )
 
 func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err error) {
