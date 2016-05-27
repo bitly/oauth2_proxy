@@ -12,15 +12,15 @@ func testLinkedInProvider(hostname string) *LinkedInProvider {
 	p := NewLinkedInProvider(
 		&ProviderData{
 			ProviderName: "",
-			LoginUrl:     &url.URL{},
-			RedeemUrl:    &url.URL{},
-			ProfileUrl:   &url.URL{},
-			ValidateUrl:  &url.URL{},
+			LoginURL:     &url.URL{},
+			RedeemURL:    &url.URL{},
+			ProfileURL:   &url.URL{},
+			ValidateURL:  &url.URL{},
 			Scope:        ""})
 	if hostname != "" {
-		updateUrl(p.Data().LoginUrl, hostname)
-		updateUrl(p.Data().RedeemUrl, hostname)
-		updateUrl(p.Data().ProfileUrl, hostname)
+		updateURL(p.Data().LoginURL, hostname)
+		updateURL(p.Data().RedeemURL, hostname)
+		updateURL(p.Data().ProfileURL, hostname)
 	}
 	return p
 }
@@ -47,32 +47,32 @@ func TestLinkedInProviderDefaults(t *testing.T) {
 	assert.NotEqual(t, nil, p)
 	assert.Equal(t, "LinkedIn", p.Data().ProviderName)
 	assert.Equal(t, "https://www.linkedin.com/uas/oauth2/authorization",
-		p.Data().LoginUrl.String())
+		p.Data().LoginURL.String())
 	assert.Equal(t, "https://www.linkedin.com/uas/oauth2/accessToken",
-		p.Data().RedeemUrl.String())
+		p.Data().RedeemURL.String())
 	assert.Equal(t, "https://www.linkedin.com/v1/people/~/email-address",
-		p.Data().ProfileUrl.String())
+		p.Data().ProfileURL.String())
 	assert.Equal(t, "https://www.linkedin.com/v1/people/~/email-address",
-		p.Data().ValidateUrl.String())
+		p.Data().ValidateURL.String())
 	assert.Equal(t, "r_emailaddress r_basicprofile", p.Data().Scope)
 }
 
 func TestLinkedInProviderOverrides(t *testing.T) {
 	p := NewLinkedInProvider(
 		&ProviderData{
-			LoginUrl: &url.URL{
+			LoginURL: &url.URL{
 				Scheme: "https",
 				Host:   "example.com",
 				Path:   "/oauth/auth"},
-			RedeemUrl: &url.URL{
+			RedeemURL: &url.URL{
 				Scheme: "https",
 				Host:   "example.com",
 				Path:   "/oauth/token"},
-			ProfileUrl: &url.URL{
+			ProfileURL: &url.URL{
 				Scheme: "https",
 				Host:   "example.com",
 				Path:   "/oauth/profile"},
-			ValidateUrl: &url.URL{
+			ValidateURL: &url.URL{
 				Scheme: "https",
 				Host:   "example.com",
 				Path:   "/oauth/tokeninfo"},
@@ -80,13 +80,13 @@ func TestLinkedInProviderOverrides(t *testing.T) {
 	assert.NotEqual(t, nil, p)
 	assert.Equal(t, "LinkedIn", p.Data().ProviderName)
 	assert.Equal(t, "https://example.com/oauth/auth",
-		p.Data().LoginUrl.String())
+		p.Data().LoginURL.String())
 	assert.Equal(t, "https://example.com/oauth/token",
-		p.Data().RedeemUrl.String())
+		p.Data().RedeemURL.String())
 	assert.Equal(t, "https://example.com/oauth/profile",
-		p.Data().ProfileUrl.String())
+		p.Data().ProfileURL.String())
 	assert.Equal(t, "https://example.com/oauth/tokeninfo",
-		p.Data().ValidateUrl.String())
+		p.Data().ValidateURL.String())
 	assert.Equal(t, "profile", p.Data().Scope)
 }
 
@@ -97,8 +97,8 @@ func TestLinkedInProviderGetEmailAddress(t *testing.T) {
 	b_url, _ := url.Parse(b.URL)
 	p := testLinkedInProvider(b_url.Host)
 
-	email, err := p.GetEmailAddress([]byte{},
-		"imaginary_access_token")
+	session := &SessionState{AccessToken: "imaginary_access_token"}
+	email, err := p.GetEmailAddress(session)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "user@linkedin.com", email)
 }
@@ -113,7 +113,8 @@ func TestLinkedInProviderGetEmailAddressFailedRequest(t *testing.T) {
 	// We'll trigger a request failure by using an unexpected access
 	// token. Alternatively, we could allow the parsing of the payload as
 	// JSON to fail.
-	email, err := p.GetEmailAddress([]byte{}, "unexpected_access_token")
+	session := &SessionState{AccessToken: "unexpected_access_token"}
+	email, err := p.GetEmailAddress(session)
 	assert.NotEqual(t, nil, err)
 	assert.Equal(t, "", email)
 }
@@ -125,7 +126,8 @@ func TestLinkedInProviderGetEmailAddressEmailNotPresentInPayload(t *testing.T) {
 	b_url, _ := url.Parse(b.URL)
 	p := testLinkedInProvider(b_url.Host)
 
-	email, err := p.GetEmailAddress([]byte{}, "imaginary_access_token")
+	session := &SessionState{AccessToken: "imaginary_access_token"}
+	email, err := p.GetEmailAddress(session)
 	assert.NotEqual(t, nil, err)
 	assert.Equal(t, "", email)
 }

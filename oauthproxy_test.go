@@ -1,8 +1,12 @@
 package main
 
 import (
+	"crypto"
+	"encoding/base64"
+	"github.com/18F/hmacauth"
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/bmizerany/assert"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -74,13 +78,12 @@ func TestEncodedSlashes(t *testing.T) {
 
 func TestRobotsTxt(t *testing.T) {
 	opts := NewOptions()
-	opts.Upstreams = append(opts.Upstreams, "unused")
 	opts.ClientID = "bazquux"
 	opts.ClientSecret = "foobar"
 	opts.CookieSecret = "xyzzyplugh"
 	opts.Validate()
 
-	proxy := NewOauthProxy(opts, func(string) bool { return true })
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/robots.txt", nil)
 	proxy.ServeHTTP(rw, req)
@@ -94,17 +97,115 @@ type TestProvider struct {
 	ValidToken   bool
 }
 
-func (tp *TestProvider) GetEmailAddress(body []byte, access_token string) (string, error) {
+func NewTestProvider(provider_url *url.URL, email_address string) *TestProvider {
+	return &TestProvider{
+		ProviderData: &providers.ProviderData{
+			ProviderName: "Test Provider",
+			LoginURL: &url.URL{
+				Scheme: "http",
+				Host:   provider_url.Host,
+				Path:   "/oauth/authorize",
+			},
+			RedeemURL: &url.URL{
+				Scheme: "http",
+				Host:   provider_url.Host,
+				Path:   "/oauth/token",
+			},
+			ProfileURL: &url.URL{
+				Scheme: "http",
+				Host:   provider_url.Host,
+				Path:   "/api/v1/profile",
+			},
+			Scope: "profile.email",
+		},
+		EmailAddress: email_address,
+	}
+}
+
+func (tp *TestProvider) GetEmailAddress(session *providers.SessionState) (string, error) {
 	return tp.EmailAddress, nil
 }
 
-func (tp *TestProvider) ValidateToken(access_token string) bool {
+func (tp *TestProvider) ValidateSessionState(session *providers.SessionState) bool {
 	return tp.ValidToken
+}
+
+func TestBasicAuthPassword(t *testing.T) {
+	provider_server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%#v", r)
+		url := r.URL
+		payload := ""
+		switch url.Path {
+		case "/oauth/token":
+			payload = `{"access_token": "my_auth_token"}`
+		default:
+			payload = r.Header.Get("Authorization")
+			if payload == "" {
+				payload = "No Authorization header found."
+			}
+		}
+		w.WriteHeader(200)
+		w.Write([]byte(payload))
+	}))
+	opts := NewOptions()
+	opts.Upstreams = append(opts.Upstreams, provider_server.URL)
+	// The CookieSecret must be 32 bytes in order to create the AES
+	// cipher.
+	opts.CookieSecret = "xyzzyplughxyzzyplughxyzzyplughxp"
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecure = false
+	opts.PassBasicAuth = true
+	opts.BasicAuthPassword = "This is a secure password"
+	opts.Validate()
+
+	provider_url, _ := url.Parse(provider_server.URL)
+	const email_address = "michael.bland@gsa.gov"
+	const user_name = "michael.bland"
+
+	opts.provider = NewTestProvider(provider_url, email_address)
+	proxy := NewOAuthProxy(opts, func(email string) bool {
+		return email == email_address
+	})
+
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/oauth2/callback?code=callback_code",
+		strings.NewReader(""))
+	proxy.ServeHTTP(rw, req)
+	cookie := rw.HeaderMap["Set-Cookie"][0]
+
+	cookieName := proxy.CookieName
+	var value string
+	key_prefix := cookieName + "="
+
+	for _, field := range strings.Split(cookie, "; ") {
+		value = strings.TrimPrefix(field, key_prefix)
+		if value != field {
+			break
+		} else {
+			value = ""
+		}
+	}
+
+	req, _ = http.NewRequest("GET", "/", strings.NewReader(""))
+	req.AddCookie(&http.Cookie{
+		Name:     cookieName,
+		Value:    value,
+		Path:     "/",
+		Expires:  time.Now().Add(time.Duration(24)),
+		HttpOnly: true,
+	})
+
+	rw = httptest.NewRecorder()
+	proxy.ServeHTTP(rw, req)
+	expectedHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(user_name+":"+opts.BasicAuthPassword))
+	assert.Equal(t, expectedHeader, rw.Body.String())
+	provider_server.Close()
 }
 
 type PassAccessTokenTest struct {
 	provider_server *httptest.Server
-	proxy           *OauthProxy
+	proxy           *OAuthProxy
 	opts            *Options
 }
 
@@ -147,30 +248,8 @@ func NewPassAccessTokenTest(opts PassAccessTokenTestOptions) *PassAccessTokenTes
 	provider_url, _ := url.Parse(t.provider_server.URL)
 	const email_address = "michael.bland@gsa.gov"
 
-	t.opts.provider = &TestProvider{
-		ProviderData: &providers.ProviderData{
-			ProviderName: "Test Provider",
-			LoginUrl: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/oauth/authorize",
-			},
-			RedeemUrl: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/oauth/token",
-			},
-			ProfileUrl: &url.URL{
-				Scheme: "http",
-				Host:   provider_url.Host,
-				Path:   "/api/v1/profile",
-			},
-			Scope: "profile.email",
-		},
-		EmailAddress: email_address,
-	}
-
-	t.proxy = NewOauthProxy(t.opts, func(email string) bool {
+	t.opts.provider = NewTestProvider(provider_url, email_address)
+	t.proxy = NewOAuthProxy(t.opts, func(email string) bool {
 		return email == email_address
 	})
 	return t
@@ -193,9 +272,9 @@ func (pat_test *PassAccessTokenTest) getCallbackEndpoint() (http_code int,
 }
 
 func (pat_test *PassAccessTokenTest) getRootEndpoint(cookie string) (http_code int, access_token string) {
-	cookie_key := pat_test.proxy.CookieKey
+	cookieName := pat_test.proxy.CookieName
 	var value string
-	key_prefix := cookie_key + "="
+	key_prefix := cookieName + "="
 
 	for _, field := range strings.Split(cookie, "; ") {
 		value = strings.TrimPrefix(field, key_prefix)
@@ -214,7 +293,7 @@ func (pat_test *PassAccessTokenTest) getRootEndpoint(cookie string) (http_code i
 		return 0, ""
 	}
 	req.AddCookie(&http.Cookie{
-		Name:     cookie_key,
+		Name:     cookieName,
 		Value:    value,
 		Path:     "/",
 		Expires:  time.Now().Add(time.Duration(24)),
@@ -265,7 +344,7 @@ func TestDoNotForwardAccessTokenUpstream(t *testing.T) {
 
 type SignInPageTest struct {
 	opts           *Options
-	proxy          *OauthProxy
+	proxy          *OAuthProxy
 	sign_in_regexp *regexp.Regexp
 }
 
@@ -275,13 +354,12 @@ func NewSignInPageTest() *SignInPageTest {
 	var sip_test SignInPageTest
 
 	sip_test.opts = NewOptions()
-	sip_test.opts.Upstreams = append(sip_test.opts.Upstreams, "unused")
 	sip_test.opts.CookieSecret = "foobar"
 	sip_test.opts.ClientID = "bazquux"
 	sip_test.opts.ClientSecret = "xyzzyplugh"
 	sip_test.opts.Validate()
 
-	sip_test.proxy = NewOauthProxy(sip_test.opts, func(email string) bool {
+	sip_test.proxy = NewOAuthProxy(sip_test.opts, func(email string) bool {
 		return true
 	})
 	sip_test.sign_in_regexp = regexp.MustCompile(signInRedirectPattern)
@@ -331,7 +409,7 @@ func TestSignInPageDirectAccessRedirectsToRoot(t *testing.T) {
 
 type ProcessCookieTest struct {
 	opts          *Options
-	proxy         *OauthProxy
+	proxy         *OAuthProxy
 	rw            *httptest.ResponseRecorder
 	req           *http.Request
 	provider      TestProvider
@@ -347,17 +425,15 @@ func NewProcessCookieTest(opts ProcessCookieTestOpts) *ProcessCookieTest {
 	var pc_test ProcessCookieTest
 
 	pc_test.opts = NewOptions()
-	pc_test.opts.Upstreams = append(pc_test.opts.Upstreams, "unused")
-	pc_test.opts.CookieSecret = "foobar"
 	pc_test.opts.ClientID = "bazquux"
 	pc_test.opts.ClientSecret = "xyzzyplugh"
 	pc_test.opts.CookieSecret = "0123456789abcdef"
 	// First, set the CookieRefresh option so proxy.AesCipher is created,
 	// needed to encrypt the access_token.
-	pc_test.opts.CookieRefresh = time.Duration(24) * time.Hour
+	pc_test.opts.CookieRefresh = time.Hour
 	pc_test.opts.Validate()
 
-	pc_test.proxy = NewOauthProxy(pc_test.opts, func(email string) bool {
+	pc_test.proxy = NewOAuthProxy(pc_test.opts, func(email string) bool {
 		return pc_test.validate_user
 	})
 	pc_test.proxy.provider = &TestProvider{
@@ -379,107 +455,282 @@ func NewProcessCookieTestWithDefaults() *ProcessCookieTest {
 	})
 }
 
-func (p *ProcessCookieTest) MakeCookie(value, access_token string) *http.Cookie {
-	cookie_value, _ := buildCookieValue(
-		value, p.proxy.AesCipher, access_token)
-	return p.proxy.MakeCookie(p.req, cookie_value, p.opts.CookieExpire)
+func (p *ProcessCookieTest) MakeCookie(value string, ref time.Time) *http.Cookie {
+	return p.proxy.MakeCookie(p.req, value, p.opts.CookieExpire, ref)
 }
 
-func (p *ProcessCookieTest) AddCookie(value, access_token string) {
-	p.req.AddCookie(p.MakeCookie(value, access_token))
+func (p *ProcessCookieTest) SaveSession(s *providers.SessionState, ref time.Time) error {
+	value, err := p.proxy.provider.CookieForSession(s, p.proxy.CookieCipher)
+	if err != nil {
+		return err
+	}
+	p.req.AddCookie(p.proxy.MakeCookie(p.req, value, p.proxy.CookieExpire, ref))
+	return nil
 }
 
-func (p *ProcessCookieTest) ProcessCookie() (email, user, access_token string, ok bool) {
-	return p.proxy.ProcessCookie(p.rw, p.req)
+func (p *ProcessCookieTest) LoadCookiedSession() (*providers.SessionState, time.Duration, error) {
+	return p.proxy.LoadCookiedSession(p.req)
 }
 
-func TestProcessCookie(t *testing.T) {
+func TestLoadCookiedSession(t *testing.T) {
 	pc_test := NewProcessCookieTestWithDefaults()
 
-	pc_test.AddCookie("michael.bland@gsa.gov", "my_access_token")
-	email, user, access_token, ok := pc_test.ProcessCookie()
-	assert.Equal(t, true, ok)
-	assert.Equal(t, "michael.bland@gsa.gov", email)
-	assert.Equal(t, "michael.bland", user)
-	assert.Equal(t, "my_access_token", access_token)
+	startSession := &providers.SessionState{Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	pc_test.SaveSession(startSession, time.Now())
+
+	session, _, err := pc_test.LoadCookiedSession()
+	assert.Equal(t, nil, err)
+	assert.Equal(t, startSession.Email, session.Email)
+	assert.Equal(t, "michael.bland", session.User)
+	assert.Equal(t, startSession.AccessToken, session.AccessToken)
 }
 
 func TestProcessCookieNoCookieError(t *testing.T) {
 	pc_test := NewProcessCookieTestWithDefaults()
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, false, ok)
-}
 
-func TestProcessCookieFailIfParsingCookieValueFails(t *testing.T) {
-	pc_test := NewProcessCookieTestWithDefaults()
-	value, _ := buildCookieValue("michael.bland@gsa.gov",
-		pc_test.proxy.AesCipher, "my_access_token")
-	pc_test.req.AddCookie(pc_test.proxy.MakeCookie(
-		pc_test.req, value+"some bogus bytes",
-		pc_test.opts.CookieExpire))
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, false, ok)
+	session, _, err := pc_test.LoadCookiedSession()
+	assert.Equal(t, "Cookie \"_oauth2_proxy\" not present", err.Error())
+	if session != nil {
+		t.Errorf("expected nil session. got %#v", session)
+	}
 }
 
 func TestProcessCookieRefreshNotSet(t *testing.T) {
 	pc_test := NewProcessCookieTestWithDefaults()
 	pc_test.proxy.CookieExpire = time.Duration(23) * time.Hour
-	cookie := pc_test.MakeCookie("michael.bland@gsa.gov", "")
-	pc_test.req.AddCookie(cookie)
+	reference := time.Now().Add(time.Duration(-2) * time.Hour)
 
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, true, ok)
-	assert.Equal(t, []string(nil), pc_test.rw.HeaderMap["Set-Cookie"])
+	startSession := &providers.SessionState{Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	pc_test.SaveSession(startSession, reference)
+
+	session, age, err := pc_test.LoadCookiedSession()
+	assert.Equal(t, nil, err)
+	if age < time.Duration(-2)*time.Hour {
+		t.Errorf("cookie too young %v", age)
+	}
+	assert.Equal(t, startSession.Email, session.Email)
 }
 
-func TestProcessCookieRefresh(t *testing.T) {
+func TestProcessCookieFailIfCookieExpired(t *testing.T) {
 	pc_test := NewProcessCookieTestWithDefaults()
-	pc_test.proxy.CookieExpire = time.Duration(23) * time.Hour
-	cookie := pc_test.MakeCookie("michael.bland@gsa.gov", "my_access_token")
-	pc_test.req.AddCookie(cookie)
+	pc_test.proxy.CookieExpire = time.Duration(24) * time.Hour
+	reference := time.Now().Add(time.Duration(25) * time.Hour * -1)
+	startSession := &providers.SessionState{Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	pc_test.SaveSession(startSession, reference)
 
-	pc_test.proxy.CookieRefresh = time.Duration(24) * time.Hour
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, true, ok)
-	assert.NotEqual(t, []string(nil), pc_test.rw.HeaderMap["Set-Cookie"])
+	session, _, err := pc_test.LoadCookiedSession()
+	assert.NotEqual(t, nil, err)
+	if session != nil {
+		t.Errorf("expected nil session %#v", session)
+	}
 }
 
-func TestProcessCookieRefreshThresholdNotCrossed(t *testing.T) {
+func TestProcessCookieFailIfRefreshSetAndCookieExpired(t *testing.T) {
 	pc_test := NewProcessCookieTestWithDefaults()
-	pc_test.proxy.CookieExpire = time.Duration(25) * time.Hour
-	cookie := pc_test.MakeCookie("michael.bland@gsa.gov", "my_access_token")
-	pc_test.req.AddCookie(cookie)
+	pc_test.proxy.CookieExpire = time.Duration(24) * time.Hour
+	reference := time.Now().Add(time.Duration(25) * time.Hour * -1)
+	startSession := &providers.SessionState{Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	pc_test.SaveSession(startSession, reference)
 
-	pc_test.proxy.CookieRefresh = time.Duration(24) * time.Hour
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, true, ok)
-	assert.Equal(t, []string(nil), pc_test.rw.HeaderMap["Set-Cookie"])
+	pc_test.proxy.CookieRefresh = time.Hour
+	session, _, err := pc_test.LoadCookiedSession()
+	assert.NotEqual(t, nil, err)
+	if session != nil {
+		t.Errorf("expected nil session %#v", session)
+	}
 }
 
-func TestProcessCookieFailIfRefreshSetAndTokenNoLongerValid(t *testing.T) {
-	pc_test := NewProcessCookieTest(ProcessCookieTestOpts{
-		provider_validate_cookie_response: false,
-	})
-	pc_test.proxy.CookieExpire = time.Duration(23) * time.Hour
-	cookie := pc_test.MakeCookie("michael.bland@gsa.gov", "my_access_token")
-	pc_test.req.AddCookie(cookie)
-
-	pc_test.proxy.CookieRefresh = time.Duration(24) * time.Hour
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, false, ok)
-	assert.Equal(t, []string(nil), pc_test.rw.HeaderMap["Set-Cookie"])
-}
-
-func TestProcessCookieFailIfRefreshSetAndUserNoLongerValid(t *testing.T) {
+func NewAuthOnlyEndpointTest() *ProcessCookieTest {
 	pc_test := NewProcessCookieTestWithDefaults()
-	pc_test.validate_user = false
+	pc_test.req, _ = http.NewRequest("GET",
+		pc_test.opts.ProxyPrefix+"/auth", nil)
+	return pc_test
+}
 
-	pc_test.proxy.CookieExpire = time.Duration(23) * time.Hour
-	cookie := pc_test.MakeCookie("michael.bland@gsa.gov", "my_access_token")
-	pc_test.req.AddCookie(cookie)
+func TestAuthOnlyEndpointAccepted(t *testing.T) {
+	test := NewAuthOnlyEndpointTest()
+	startSession := &providers.SessionState{
+		Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	test.SaveSession(startSession, time.Now())
 
-	pc_test.proxy.CookieRefresh = time.Duration(24) * time.Hour
-	_, _, _, ok := pc_test.ProcessCookie()
-	assert.Equal(t, false, ok)
-	assert.Equal(t, []string(nil), pc_test.rw.HeaderMap["Set-Cookie"])
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusAccepted, test.rw.Code)
+	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
+	assert.Equal(t, "", string(bodyBytes))
+}
+
+func TestAuthOnlyEndpointUnauthorizedOnNoCookieSetError(t *testing.T) {
+	test := NewAuthOnlyEndpointTest()
+
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusUnauthorized, test.rw.Code)
+	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
+	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
+}
+
+func TestAuthOnlyEndpointUnauthorizedOnExpiration(t *testing.T) {
+	test := NewAuthOnlyEndpointTest()
+	test.proxy.CookieExpire = time.Duration(24) * time.Hour
+	reference := time.Now().Add(time.Duration(25) * time.Hour * -1)
+	startSession := &providers.SessionState{
+		Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	test.SaveSession(startSession, reference)
+
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusUnauthorized, test.rw.Code)
+	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
+	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
+}
+
+func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
+	test := NewAuthOnlyEndpointTest()
+	startSession := &providers.SessionState{
+		Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	test.SaveSession(startSession, time.Now())
+	test.validate_user = false
+
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusUnauthorized, test.rw.Code)
+	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
+	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
+}
+
+type SignatureAuthenticator struct {
+	auth hmacauth.HmacAuth
+}
+
+func (v *SignatureAuthenticator) Authenticate(
+	w http.ResponseWriter, r *http.Request) {
+	result, headerSig, computedSig := v.auth.AuthenticateRequest(r)
+	if result == hmacauth.ResultNoSignature {
+		w.Write([]byte("no signature received"))
+	} else if result == hmacauth.ResultMatch {
+		w.Write([]byte("signatures match"))
+	} else if result == hmacauth.ResultMismatch {
+		w.Write([]byte("signatures do not match:" +
+			"\n  received: " + headerSig +
+			"\n  computed: " + computedSig))
+	} else {
+		panic("Unknown result value: " + result.String())
+	}
+}
+
+type SignatureTest struct {
+	opts          *Options
+	upstream      *httptest.Server
+	upstream_host string
+	provider      *httptest.Server
+	header        http.Header
+	rw            *httptest.ResponseRecorder
+	authenticator *SignatureAuthenticator
+}
+
+func NewSignatureTest() *SignatureTest {
+	opts := NewOptions()
+	opts.CookieSecret = "cookie secret"
+	opts.ClientID = "client ID"
+	opts.ClientSecret = "client secret"
+	opts.EmailDomains = []string{"acm.org"}
+
+	authenticator := &SignatureAuthenticator{}
+	upstream := httptest.NewServer(
+		http.HandlerFunc(authenticator.Authenticate))
+	upstream_url, _ := url.Parse(upstream.URL)
+	opts.Upstreams = append(opts.Upstreams, upstream.URL)
+
+	providerHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"access_token": "my_auth_token"}`))
+	}
+	provider := httptest.NewServer(http.HandlerFunc(providerHandler))
+	provider_url, _ := url.Parse(provider.URL)
+	opts.provider = NewTestProvider(provider_url, "mbland@acm.org")
+
+	return &SignatureTest{
+		opts,
+		upstream,
+		upstream_url.Host,
+		provider,
+		make(http.Header),
+		httptest.NewRecorder(),
+		authenticator,
+	}
+}
+
+func (st *SignatureTest) Close() {
+	st.provider.Close()
+	st.upstream.Close()
+}
+
+// fakeNetConn simulates an http.Request.Body buffer that will be consumed
+// when it is read by the hmacauth.HmacAuth if not handled properly. See:
+//   https://github.com/18F/hmacauth/pull/4
+type fakeNetConn struct {
+	reqBody string
+}
+
+func (fnc *fakeNetConn) Read(p []byte) (n int, err error) {
+	if bodyLen := len(fnc.reqBody); bodyLen != 0 {
+		copy(p, fnc.reqBody)
+		fnc.reqBody = ""
+		return bodyLen, io.EOF
+	}
+	return 0, io.EOF
+}
+
+func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
+	err := st.opts.Validate()
+	if err != nil {
+		panic(err)
+	}
+	proxy := NewOAuthProxy(st.opts, func(email string) bool { return true })
+
+	var bodyBuf io.ReadCloser
+	if body != "" {
+		bodyBuf = ioutil.NopCloser(&fakeNetConn{reqBody: body})
+	}
+	req, err := http.NewRequest(method, "/foo/bar", bodyBuf)
+	if err != nil {
+		panic(err)
+	}
+	req.Header = st.header
+
+	state := &providers.SessionState{
+		Email: "mbland@acm.org", AccessToken: "my_access_token"}
+	value, err := proxy.provider.CookieForSession(state, proxy.CookieCipher)
+	if err != nil {
+		panic(err)
+	}
+	cookie := proxy.MakeCookie(req, value, proxy.CookieExpire, time.Now())
+	req.AddCookie(cookie)
+	// This is used by the upstream to validate the signature.
+	st.authenticator.auth = hmacauth.NewHmacAuth(
+		crypto.SHA1, []byte(key), SignatureHeader, SignatureHeaders)
+	proxy.ServeHTTP(st.rw, req)
+}
+
+func TestNoRequestSignature(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.MakeRequestWithExpectedKey("GET", "", "")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "no signature received")
+}
+
+func TestRequestSignatureGetRequest(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.opts.SignatureKey = "sha1:foobar"
+	st.MakeRequestWithExpectedKey("GET", "", "foobar")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "signatures match")
+}
+
+func TestRequestSignaturePostRequest(t *testing.T) {
+	st := NewSignatureTest()
+	defer st.Close()
+	st.opts.SignatureKey = "sha1:foobar"
+	payload := `{ "hello": "world!" }`
+	st.MakeRequestWithExpectedKey("POST", payload, "foobar")
+	assert.Equal(t, 200, st.rw.Code)
+	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }

@@ -9,13 +9,8 @@ import (
 	"github.com/bmizerany/assert"
 )
 
-func updateURL(url *url.URL, hostname string) {
-	url.Scheme = "http"
-	url.Host = hostname
-}
-
-func testMyUsaProvider(hostname string) *MyUsaProvider {
-	p := NewMyUsaProvider(
+func testGitLabProvider(hostname string) *GitLabProvider {
+	p := NewGitLabProvider(
 		&ProviderData{
 			ProviderName: "",
 			LoginURL:     &url.URL{},
@@ -32,8 +27,8 @@ func testMyUsaProvider(hostname string) *MyUsaProvider {
 	return p
 }
 
-func testMyUsaBackend(payload string) *httptest.Server {
-	path := "/api/v1/profile"
+func testGitLabBackend(payload string) *httptest.Server {
+	path := "/api/v3/user"
 	query := "access_token=imaginary_access_token"
 
 	return httptest.NewServer(http.HandlerFunc(
@@ -48,23 +43,21 @@ func testMyUsaBackend(payload string) *httptest.Server {
 		}))
 }
 
-func TestMyUsaProviderDefaults(t *testing.T) {
-	p := testMyUsaProvider("")
+func TestGitLabProviderDefaults(t *testing.T) {
+	p := testGitLabProvider("")
 	assert.NotEqual(t, nil, p)
-	assert.Equal(t, "MyUSA", p.Data().ProviderName)
-	assert.Equal(t, "https://alpha.my.usa.gov/oauth/authorize",
+	assert.Equal(t, "GitLab", p.Data().ProviderName)
+	assert.Equal(t, "https://gitlab.com/oauth/authorize",
 		p.Data().LoginURL.String())
-	assert.Equal(t, "https://alpha.my.usa.gov/oauth/token",
+	assert.Equal(t, "https://gitlab.com/oauth/token",
 		p.Data().RedeemURL.String())
-	assert.Equal(t, "https://alpha.my.usa.gov/api/v1/profile",
-		p.Data().ProfileURL.String())
-	assert.Equal(t, "https://alpha.my.usa.gov/api/v1/tokeninfo",
+	assert.Equal(t, "https://gitlab.com/api/v3/user",
 		p.Data().ValidateURL.String())
-	assert.Equal(t, "profile.email", p.Data().Scope)
+	assert.Equal(t, "api", p.Data().Scope)
 }
 
-func TestMyUsaProviderOverrides(t *testing.T) {
-	p := NewMyUsaProvider(
+func TestGitLabProviderOverrides(t *testing.T) {
+	p := NewGitLabProvider(
 		&ProviderData{
 			LoginURL: &url.URL{
 				Scheme: "https",
@@ -74,34 +67,28 @@ func TestMyUsaProviderOverrides(t *testing.T) {
 				Scheme: "https",
 				Host:   "example.com",
 				Path:   "/oauth/token"},
-			ProfileURL: &url.URL{
-				Scheme: "https",
-				Host:   "example.com",
-				Path:   "/oauth/profile"},
 			ValidateURL: &url.URL{
 				Scheme: "https",
 				Host:   "example.com",
-				Path:   "/oauth/tokeninfo"},
+				Path:   "/api/v3/user"},
 			Scope: "profile"})
 	assert.NotEqual(t, nil, p)
-	assert.Equal(t, "MyUSA", p.Data().ProviderName)
+	assert.Equal(t, "GitLab", p.Data().ProviderName)
 	assert.Equal(t, "https://example.com/oauth/auth",
 		p.Data().LoginURL.String())
 	assert.Equal(t, "https://example.com/oauth/token",
 		p.Data().RedeemURL.String())
-	assert.Equal(t, "https://example.com/oauth/profile",
-		p.Data().ProfileURL.String())
-	assert.Equal(t, "https://example.com/oauth/tokeninfo",
+	assert.Equal(t, "https://example.com/api/v3/user",
 		p.Data().ValidateURL.String())
 	assert.Equal(t, "profile", p.Data().Scope)
 }
 
-func TestMyUsaProviderGetEmailAddress(t *testing.T) {
-	b := testMyUsaBackend("{\"email\": \"michael.bland@gsa.gov\"}")
+func TestGitLabProviderGetEmailAddress(t *testing.T) {
+	b := testGitLabBackend("{\"email\": \"michael.bland@gsa.gov\"}")
 	defer b.Close()
 
 	b_url, _ := url.Parse(b.URL)
-	p := testMyUsaProvider(b_url.Host)
+	p := testGitLabProvider(b_url.Host)
 
 	session := &SessionState{AccessToken: "imaginary_access_token"}
 	email, err := p.GetEmailAddress(session)
@@ -111,12 +98,12 @@ func TestMyUsaProviderGetEmailAddress(t *testing.T) {
 
 // Note that trying to trigger the "failed building request" case is not
 // practical, since the only way it can fail is if the URL fails to parse.
-func TestMyUsaProviderGetEmailAddressFailedRequest(t *testing.T) {
-	b := testMyUsaBackend("unused payload")
+func TestGitLabProviderGetEmailAddressFailedRequest(t *testing.T) {
+	b := testGitLabBackend("unused payload")
 	defer b.Close()
 
 	b_url, _ := url.Parse(b.URL)
-	p := testMyUsaProvider(b_url.Host)
+	p := testGitLabProvider(b_url.Host)
 
 	// We'll trigger a request failure by using an unexpected access
 	// token. Alternatively, we could allow the parsing of the payload as
@@ -127,12 +114,12 @@ func TestMyUsaProviderGetEmailAddressFailedRequest(t *testing.T) {
 	assert.Equal(t, "", email)
 }
 
-func TestMyUsaProviderGetEmailAddressEmailNotPresentInPayload(t *testing.T) {
-	b := testMyUsaBackend("{\"foo\": \"bar\"}")
+func TestGitLabProviderGetEmailAddressEmailNotPresentInPayload(t *testing.T) {
+	b := testGitLabBackend("{\"foo\": \"bar\"}")
 	defer b.Close()
 
 	b_url, _ := url.Parse(b.URL)
-	p := testMyUsaProvider(b_url.Host)
+	p := testGitLabProvider(b_url.Host)
 
 	session := &SessionState{AccessToken: "imaginary_access_token"}
 	email, err := p.GetEmailAddress(session)

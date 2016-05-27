@@ -53,7 +53,8 @@ func (um *UserMap) LoadAuthenticatedEmailsFile() {
 	}
 	updated := make(map[string]bool)
 	for _, r := range records {
-		updated[strings.ToLower(r[0])] = true
+		address := strings.ToLower(strings.TrimSpace(r[0]))
+		updated[address] = true
 	}
 	atomic.StorePointer(&um.m, unsafe.Pointer(&updated))
 }
@@ -71,9 +72,11 @@ func newValidatorImpl(domains []string, usersFile string,
 		domains[i] = fmt.Sprintf("@%s", strings.ToLower(domain))
 	}
 
-	validator := func(email string) bool {
+	validator := func(email string) (valid bool) {
+		if email == "" {
+			return
+		}
 		email = strings.ToLower(email)
-		valid := false
 		for _, domain := range domains {
 			valid = valid || strings.HasSuffix(email, domain)
 		}
@@ -83,7 +86,6 @@ func newValidatorImpl(domains []string, usersFile string,
 		if allowAll {
 			valid = true
 		}
-		log.Printf("validating: is %s valid? %v", email, valid)
 		return valid
 	}
 	return validator
