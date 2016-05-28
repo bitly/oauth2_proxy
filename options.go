@@ -46,6 +46,7 @@ type Options struct {
 
 	Upstreams         []string `flag:"upstream" cfg:"upstreams"`
 	SkipAuthRegex     []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
+	SkipAuthOptions   bool     `flag:"skip-auth-options" cfg:"skip_auth_options"`
 	PassBasicAuth     bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken   bool     `flag:"pass-access-token" cfg:"pass_access_token"`
