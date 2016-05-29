@@ -34,7 +34,7 @@ func NewGoogleProvider(p *ProviderData) *GoogleProvider {
 			Host: "accounts.google.com",
 			Path: "/o/oauth2/auth",
 			// to get a refresh token. see https://developers.google.com/identity/protocols/OAuth2WebServer#offline
-			RawQuery: "access_type=offline",
+			RawQuery: "access_type=online",
 		}
 	}
 	if p.RedeemURL.String() == "" {

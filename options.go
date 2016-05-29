@@ -10,23 +10,24 @@ import (
 	"time"
 
 	"github.com/18F/hmacauth"
-	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/revinate-docker/oauth2_proxy/providers"
 )
 
 // Configuration Options that can be set by Command Line Flag, or Config File
 type Options struct {
-	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy-prefix"`
-	HttpAddress  string `flag:"http-address" cfg:"http_address"`
-	HttpsAddress string `flag:"https-address" cfg:"https_address"`
-	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url"`
+	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy-prefix" env:"OAUTH2_PROXY_PREFIX"`
+	HttpAddress  string `flag:"http-address" cfg:"http_address" env:"OAUTH2_PROXY_HTTP_ADDRESS"`
+	HttpsAddress string `flag:"https-address" cfg:"https_address" env:"OAUTH2_PROXY_HTTPS_ADDRESS"`
+	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url" env:"OAUTH2_PROXY_REDIRECT_URL"`
 	ClientID     string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
 	ClientSecret string `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
-	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
-	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file"`
+	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file" env:"OAUTH2_PROXY_TLS_CERT_FILE"`
+	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file" env:"OAUTH2_PROXY_TLS_KEY_FILE"`
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
-	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
+	EmailDomains             []string `flag:"email-domains" cfg:"email_domains" env:"OAUTH2_PROXY_EMAIL_DOMAINS"`
+	EmailDomain              string   `flag:"email-domain" cfg:"email_domain" env:"OAUTH2_PROXY_EMAIL_DOMAIN"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
@@ -44,7 +45,8 @@ type Options struct {
 	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 
-	Upstreams         []string `flag:"upstream" cfg:"upstreams"`
+	Upstreams         []string `flag:"upstreams" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAMS"`
+	Upstream          string   `flag:"upstream" cfg:"upstream" env:"OAUTH2_PROXY_UPSTREAM"`
 	SkipAuthRegex     []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth     bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
@@ -84,12 +86,14 @@ func NewOptions() *Options {
 		ProxyPrefix:         "/oauth2",
 		HttpAddress:         "127.0.0.1:4180",
 		HttpsAddress:        ":443",
+		EmailDomain:         "",
 		DisplayHtpasswdForm: true,
 		CookieName:          "_oauth2_proxy",
 		CookieSecure:        true,
 		CookieHttpOnly:      true,
 		CookieExpire:        time.Duration(168) * time.Hour,
 		CookieRefresh:       time.Duration(0),
+		Upstream:            "",
 		PassBasicAuth:       true,
 		PassAccessToken:     false,
 		PassHostHeader:      true,
@@ -109,6 +113,12 @@ func parseURL(to_parse string, urltype string, msgs []string) (*url.URL, []strin
 
 func (o *Options) Validate() error {
 	msgs := make([]string, 0)
+	if o.Upstream != "" {
+		o.Upstreams = append(o.Upstreams, o.Upstream)
+	}
+	if o.EmailDomain != "" {
+		o.EmailDomains = append(o.EmailDomains, o.EmailDomain)
+	}
 	if len(o.Upstreams) < 1 {
 		msgs = append(msgs, "missing setting: upstream")
 	}
@@ -126,7 +136,7 @@ func (o *Options) Validate() error {
 	}
 
 	o.redirectURL, msgs = parseURL(o.RedirectURL, "redirect", msgs)
-
+	
 	for _, u := range o.Upstreams {
 		upstreamURL, err := url.Parse(u)
 		if err != nil {
