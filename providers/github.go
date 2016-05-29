@@ -14,6 +14,7 @@ type GitHubProvider struct {
 	*ProviderData
 	Org  string
 	Team string
+	ValidateOrgURL *url.URL
 }
 
 func NewGitHubProvider(p *ProviderData) *GitHubProvider {
@@ -42,8 +43,18 @@ func NewGitHubProvider(p *ProviderData) *GitHubProvider {
 	if p.Scope == "" {
 		p.Scope = "user:email"
 	}
-	return &GitHubProvider{ProviderData: p}
+	gp := &GitHubProvider{ProviderData: p}
+	gp.ValidateOrgURL = &url.URL{
+		Scheme: "https",
+		Host:   "api.github.com",
+		Path:   "/user/orgs",
+	}
+	return gp
 }
+func (p *GitHubProvider) SetValidateOrgURL(url *url.URL) {
+	p.ValidateOrgURL = url
+}
+
 func (p *GitHubProvider) SetOrgTeam(org, team string) {
 	p.Org = org
 	p.Team = team
@@ -64,7 +75,7 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 		"limit":        {"100"},
 	}
 
-	endpoint := p.ValidateURL.Scheme + "://"  + p.ValidateURL.Host + "/user/orgs?" + params.Encode()
+	endpoint := p.ValidateOrgURL.Scheme + "://"  + p.ValidateOrgURL.Host + p.ValidateOrgURL.Path + "?" + params.Encode()
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	resp, err := http.DefaultClient.Do(req)
