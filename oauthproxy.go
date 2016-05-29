@@ -60,6 +60,7 @@ type OAuthProxy struct {
 	serveMux            http.Handler
 	PassBasicAuth       bool
 	BasicAuthPassword   string
+	BasicAuthUsername   string
 	PassAccessToken     bool
 	CookieCipher        *cookie.Cipher
 	skipAuthRegex       []string
@@ -194,6 +195,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		compiledRegex:     opts.CompiledRegex,
 		PassBasicAuth:     opts.PassBasicAuth,
 		BasicAuthPassword: opts.BasicAuthPassword,
+		BasicAuthUsername: opts.BasicAuthUsername,
 		PassAccessToken:   opts.PassAccessToken,
 		CookieCipher:      cipher,
 		templates:         loadTemplates(opts.CustomTemplatesDir),
@@ -587,6 +589,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 
 	// At this point, the user is authenticated. proxy normally
 	if p.PassBasicAuth {
+		if p.BasicAuthUsername != "" {
+			session.User = p.BasicAuthUsername
+		}
 		req.SetBasicAuth(session.User, p.BasicAuthPassword)
 		req.Header["X-Forwarded-User"] = []string{session.User}
 		if session.Email != "" {
