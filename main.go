@@ -35,6 +35,7 @@ func main() {
 	flagSet.String("basic-auth-password", "", "the password to set when passing the HTTP Basic Auth header")
 	flagSet.Bool("pass-access-token", false, "pass OAuth access_token to upstream via X-Forwarded-Access-Token header")
 	flagSet.Bool("pass-host-header", true, "pass the request Host Header to upstream")
+	flagSet.Bool("pass-roles-header", false, "pass user's teams upstream via X-Forwarded-Roles header")
 	flagSet.Var(&skipAuthRegex, "skip-auth-regex", "bypass authentication for requests path's that match (may be given multiple times)")
 
 	flagSet.Var(&emailDomains, "email-domain", "authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email")

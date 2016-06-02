@@ -30,6 +30,7 @@ var SignatureHeaders []string = []string{
 	"X-Forwarded-User",
 	"X-Forwarded-Email",
 	"X-Forwarded-Access-Token",
+	"X-Forwarded-Roles",
 	"Cookie",
 	"Gap-Auth",
 }
@@ -61,6 +62,7 @@ type OAuthProxy struct {
 	PassBasicAuth       bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
+	PassRolesHeader     bool
 	CookieCipher        *cookie.Cipher
 	skipAuthRegex       []string
 	compiledRegex       []*regexp.Regexp
@@ -195,6 +197,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		PassBasicAuth:     opts.PassBasicAuth,
 		BasicAuthPassword: opts.BasicAuthPassword,
 		PassAccessToken:   opts.PassAccessToken,
+		PassRolesHeader:   opts.PassRolesHeader,
 		CookieCipher:      cipher,
 		templates:         loadTemplates(opts.CustomTemplatesDir),
 	}
@@ -596,6 +599,11 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
 	}
+
+	if p.PassRolesHeader {
+		req.Header["X-Forwarded-Roles"] = []string{"our_roles"}
+	}
+
 	if session.Email == "" {
 		rw.Header().Set("GAP-Auth", session.User)
 	} else {
