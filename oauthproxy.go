@@ -601,7 +601,10 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 
 	if p.PassRolesHeader {
-		req.Header["X-Forwarded-Roles"] = []string{"our_roles"}
+
+		// Todo - pull team list
+		log.Printf("Provider data - %v", p.provider.Data())
+		req.Header["X-Forwarded-Roles"] = []string{"admin,kindly"}
 	}
 
 	if session.Email == "" {
