@@ -177,6 +177,20 @@ func (o *Options) Validate() error {
 			o.CookieExpire.String()))
 	}
 
+	// Todo - Read up on Go syntax and clean this up
+	// Confirm the provider type supports sending user roles
+	if o.PassRolesHeader {
+		type RoleProvider interface {
+			GetUserRoles() string
+		}
+		if rp, ok := o.provider.(RoleProvider); ok{
+			rp.GetUserRoles();
+		} else {
+			msgs = append(msgs, "Provider '" + o.provider.Data().ProviderName + "' does not support sending a roles header.")
+		}
+	}
+
+
 	if len(o.GoogleGroups) > 0 || o.GoogleAdminEmail != "" || o.GoogleServiceAccountJSON != "" {
 		if len(o.GoogleGroups) < 1 {
 			msgs = append(msgs, "missing setting: google-group")

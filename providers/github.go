@@ -14,7 +14,7 @@ type GitHubProvider struct {
 	*ProviderData
 	Org  string
 	Team string
-	UserTeams []struct{
+	userTeams []struct{
 		Name string `json:"name"`
 		Slug string `json:"slug"`
 		Org  struct {
@@ -109,7 +109,6 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 func(p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
 
 	// https://developer.github.com/v3/orgs/teams/#list-user-teams
-
 	params := url.Values{
 		"access_token": {accessToken},
 		"limit":        {"100"},
@@ -134,12 +133,11 @@ func(p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
 		return false, fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
 	}
 
-	if err := json.Unmarshal(body, &p.UserTeams); err != nil {
+	if err := json.Unmarshal(body, &p.userTeams); err != nil {
 		return false, fmt.Errorf("%s unmarshaling %s", err, body)
 	}
 
-	// Todo - Filter by organization we care about
-	log.Printf("Returned teams - %v", p.UserTeams)
+	log.Printf("Returned teams - %v", p.userTeams)
 
 	return true, nil
 }
@@ -149,7 +147,7 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 	var hasOrg bool
 	presentOrgs := make(map[string]bool)
 	var presentTeams []string
-	for _, team := range p.UserTeams {
+	for _, team := range p.userTeams {
 		presentOrgs[team.Org.Login] = true
 		if p.Org == team.Org.Login {
 			hasOrg = true
@@ -230,4 +228,28 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	}
 
 	return "", nil
+}
+
+
+
+// Return a filtered list of all teams assigned to a user by the organization defined in the configuration
+func (p *GitHubProvider) GetUserRoles()(string) {
+
+	// Todo - could abstract this filtering and refactor hasOrgAndTeam()
+	presentOrgs := make(map[string]bool)
+	var presentTeams []string
+	for _, team := range p.userTeams {
+		presentOrgs[team.Org.Login] = true
+		if p.Org == team.Org.Login {
+			ts := strings.Split(p.Team, ",")
+			for _, t := range ts {
+				if t == team.Slug {
+					log.Printf("Found Github Organization:%q Team:%q (Name:%q)", team.Org.Login, team.Slug, team.Name)
+				}
+			}
+			presentTeams = append(presentTeams, team.Slug)
+		}
+	}
+
+	return strings.Join(presentTeams, ",")
 }
