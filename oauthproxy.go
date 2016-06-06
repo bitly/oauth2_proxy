@@ -601,12 +601,10 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 
 	if p.PassRolesHeader {
-		switch rp := p.provider.(type) {
-		case providers.RoleProvider:
-			roles := rp.GetUserRoles()
-			log.Printf("User role data - %v", roles)
-			req.Header["X-Forwarded-Roles"] = []string{roles}
-		}
+		rp := p.provider.(providers.RoleProvider)
+		roles := rp.GetUserRoles()
+		log.Printf("User role data - %v", roles)
+		req.Header["X-Forwarded-Roles"] = []string{roles}
 	}
 
 	if session.Email == "" {
