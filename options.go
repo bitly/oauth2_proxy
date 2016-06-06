@@ -179,9 +179,7 @@ func (o *Options) Validate() error {
 
 	// Confirm the provider type supports sending user roles
 	if o.PassRolesHeader {
-		if rp, ok := o.provider.(providers.RoleProvider); ok {
-			rp.GetUserRoles()
-		} else {
+		if _, ok := o.provider.(providers.RoleProvider); !ok {
 			msgs = append(msgs, "Provider '"+o.provider.Data().ProviderName+"' does not support sending a roles header.")
 		}
 	}
