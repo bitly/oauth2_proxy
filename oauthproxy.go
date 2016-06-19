@@ -51,20 +51,21 @@ type OAuthProxy struct {
 	OAuthCallbackPath string
 	AuthOnlyPath      string
 
-	redirectURL         *url.URL // the url to receive requests at
-	provider            providers.Provider
-	ProxyPrefix         string
-	SignInMessage       string
-	HtpasswdFile        *HtpasswdFile
-	DisplayHtpasswdForm bool
-	serveMux            http.Handler
-	PassBasicAuth       bool
-	BasicAuthPassword   string
-	PassAccessToken     bool
-	CookieCipher        *cookie.Cipher
-	skipAuthRegex       []string
-	compiledRegex       []*regexp.Regexp
-	templates           *template.Template
+	redirectURL              *url.URL // the url to receive requests at
+	provider                 providers.Provider
+	ProxyPrefix              string
+	SignInMessage            string
+	HtpasswdFile             *HtpasswdFile
+	DisplayHtpasswdForm      bool
+	serveMux                 http.Handler
+	PassBasicAuth            bool
+	ReturnAuthenticatedEmail bool
+	BasicAuthPassword        string
+	PassAccessToken          bool
+	CookieCipher             *cookie.Cipher
+	skipAuthRegex            []string
+	compiledRegex            []*regexp.Regexp
+	templates                *template.Template
 }
 
 type UpstreamProxy struct {
@@ -186,17 +187,18 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		OAuthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
 		AuthOnlyPath:      fmt.Sprintf("%s/auth", opts.ProxyPrefix),
 
-		ProxyPrefix:       opts.ProxyPrefix,
-		provider:          opts.provider,
-		serveMux:          serveMux,
-		redirectURL:       redirectURL,
-		skipAuthRegex:     opts.SkipAuthRegex,
-		compiledRegex:     opts.CompiledRegex,
-		PassBasicAuth:     opts.PassBasicAuth,
-		BasicAuthPassword: opts.BasicAuthPassword,
-		PassAccessToken:   opts.PassAccessToken,
-		CookieCipher:      cipher,
-		templates:         loadTemplates(opts.CustomTemplatesDir),
+		ProxyPrefix:              opts.ProxyPrefix,
+		provider:                 opts.provider,
+		serveMux:                 serveMux,
+		redirectURL:              redirectURL,
+		skipAuthRegex:            opts.SkipAuthRegex,
+		compiledRegex:            opts.CompiledRegex,
+		PassBasicAuth:            opts.PassBasicAuth,
+		ReturnAuthenticatedEmail: opts.ReturnAuthenticatedEmail,
+		BasicAuthPassword:        opts.BasicAuthPassword,
+		PassAccessToken:          opts.PassAccessToken,
+		CookieCipher:             cipher,
+		templates:                loadTemplates(opts.CustomTemplatesDir),
 	}
 }
 
@@ -592,6 +594,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		if session.Email != "" {
 			req.Header["X-Forwarded-Email"] = []string{session.Email}
 		}
+	}
+	if p.ReturnAuthenticatedEmail {
+		rw.Header().Set("X-Authenticated-Email", session.Email)
 	}
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
