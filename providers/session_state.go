@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"../cookie"
+	"github.com/articulate/oauth2_proxy/cookie"
 )
 
 type SessionState struct {

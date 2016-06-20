@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"../cookie"
+	"github.com/articulate/oauth2_proxy/cookie"
 	"github.com/bmizerany/assert"
 )
 

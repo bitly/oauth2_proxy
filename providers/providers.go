@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"../cookie"
+	"github.com/articulate/oauth2_proxy/cookie"
 )
 
 type Provider interface {

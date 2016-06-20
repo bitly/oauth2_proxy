@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"../api"
+	"github.com/articulate/oauth2_proxy/api"
 )
 
 // validateToken returns true if token is valid

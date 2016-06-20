@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"../cookie"
+	"github.com/articulate/oauth2_proxy/cookie"
 )
 
 func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err error) {

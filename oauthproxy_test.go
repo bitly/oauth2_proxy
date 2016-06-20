@@ -1,10 +1,10 @@
 package main
 
 import (
-	"./providers"
 	"crypto"
 	"encoding/base64"
 	"github.com/18F/hmacauth"
+	"github.com/articulate/oauth2_proxy/providers"
 	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"

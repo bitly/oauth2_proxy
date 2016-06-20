@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"../api"
+	"github.com/articulate/oauth2_proxy/api"
 )
 
 type MyUsaProvider struct {
