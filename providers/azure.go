@@ -1,9 +1,9 @@
 package providers
 
 import (
+	"../api"
 	"errors"
 	"fmt"
-	"github.com/bitly/oauth2_proxy/api"
 	"log"
 	"net/http"
 	"net/url"
