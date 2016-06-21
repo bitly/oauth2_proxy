@@ -30,6 +30,7 @@ Valid providers are :
 
 * [Google](#google-auth-provider) *default*
 * [Azure](#azure-auth-provider)
+* [Box](#box-auth-provider)
 * [GitHub](#github-auth-provider)
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
@@ -85,6 +86,15 @@ Note: The user is checked against the group members list on initial authenticati
 3. If applicable take note of your `TenantID` and provide it via the `--azure-tenant=<YOUR TENANT ID>` commandline option. Default the `common` tenant is used.
 
 The Azure AD auth provider uses `openid` as it default scope. It uses `https://graph.windows.net` as a default protected resource. It call to `https://graph.windows.net/me` to get the email address of the user that logs in.
+
+
+### Box Auth Provider
+
+The [Box](https://box.com) authentication service. This hands off authentiation to the [Box Content API](https://box-content.readme.io/docs/oauth-20).
+
+1. Create a new application: https://app.box.com/developers/services
+2. Set the application's `redirect_uri` to the correct URL.
+3. All other options may be left as their default values.
 
 
 ### GitHub Auth Provider
