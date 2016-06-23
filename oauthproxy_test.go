@@ -427,7 +427,7 @@ func NewProcessCookieTest(opts ProcessCookieTestOpts) *ProcessCookieTest {
 	pc_test.opts = NewOptions()
 	pc_test.opts.ClientID = "bazquux"
 	pc_test.opts.ClientSecret = "xyzzyplugh"
-	pc_test.opts.CookieSecret = "0123456789abcdefabcd"
+	pc_test.opts.CookieSecret = "0!23456789@bcdef"
 	// First, set the CookieRefresh option so proxy.AesCipher is created,
 	// needed to encrypt the access_token.
 	pc_test.opts.CookieRefresh = time.Hour
