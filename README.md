@@ -342,7 +342,7 @@ new `Provider`.
 
 ## <a name="nginx-auth-request"></a>Configuring for use with the Nginx `auth_request` directive
 
-The [Nginx `auth_request` directive](http://nginx.org/en/docs/http/ngx_http_auth_request_module.html) allows Nginx to authenticate requests via the oauth2_proxy's `/auth` endpoint, which only returns a 202 Accepted response or a 401 Unauthorized response without proxying the request through. For example:
+(New after 2.0.1) The [Nginx `auth_request` directive](http://nginx.org/en/docs/http/ngx_http_auth_request_module.html) allows Nginx to authenticate requests via the oauth2_proxy's `/oauth2/auth` endpoint, which only returns a `202 Accepted` response or a `401 Unauthorized` response without proxying the request through. For example:
 
 ```nginx
 server {
@@ -350,14 +350,14 @@ server {
   server_name ...;
   include ssl/ssl.conf;
 
-  location = /auth {
-    internal;
+  # OAuth2 authentication via oauth2_proxy
+  location /oauth2 {
     proxy_pass http://127.0.0.1:4180;
   }
 
   location / {
-    auth_request /auth;
-    error_page 401 = ...;
+    auth_request /oauth2/auth;       # Validate existing oauth2_proxy cookie
+    error_page 401 = /oauth2/start;  # redirect to the OAuth2 process if not logged in
 
     root /path/to/the/site;
     default_type text/html;
@@ -365,4 +365,20 @@ server {
     charset_types application/json utf-8;
   }
 }
+```
+The command line to run `oauth2_proxy` in this configuration against Google would look like this:
+
+```bash
+./oauth2_proxy \
+   -email-domain="yourcompany.com"  \
+   -upstream=file:///dev/null \
+   --cookie-secret=... \
+   --cookie-secure=true \
+   --cookie-httponly=true \
+   --cookie-expire=2h \
+   --cookie-refresh=1h \
+   --provider=google \
+   --client-id=... \
+   --client-secret=...
+   --approval-prompt=auto \
 ```
