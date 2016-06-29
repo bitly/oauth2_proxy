@@ -355,9 +355,19 @@ server {
     proxy_pass http://127.0.0.1:4180;
   }
 
+  location /oauth2/ {
+    proxy_pass http://127.0.0.1:4180;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Scheme $scheme;
+    proxy_connect_timeout 1;
+    proxy_send_timeout 30;
+    proxy_read_timeout 30;
+  }
+
   location / {
     auth_request /oauth2/auth;
-    error_page 401 = ...;
+    error_page 401 = https://example.com/oauth2/sign_in;
 
     root /path/to/the/site;
     default_type text/html;
