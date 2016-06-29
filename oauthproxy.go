@@ -604,8 +604,8 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		type RoleProvider interface {
 			GetUserRoles() string
 		}
-		rp := p.provider.(RoleProvider);
-		rp.GetUserRoles();
+		rp := p.provider.(RoleProvider)
+		rp.GetUserRoles()
 		log.Printf("User role data - %v", rp.GetUserRoles())
 		req.Header["X-Forwarded-Roles"] = []string{rp.GetUserRoles()}
 	}

@@ -3,23 +3,24 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 )
 
 type GitHubProvider struct {
 	*ProviderData
-	Org  string
-	Team string
-	userTeams []struct{
+	Org       string
+	Team      string
+	userTeams []struct {
 		Name string `json:"name"`
 		Slug string `json:"slug"`
 		Org  struct {
-			     Login string `json:"login"`
-		     } `json:"organization"`
+			Login string `json:"login"`
+		} `json:"organization"`
 	}
 }
 
@@ -72,7 +73,7 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 		"limit":        {"100"},
 	}
 
-	endpoint := p.ValidateURL.Scheme + "://"  + p.ValidateURL.Host + "/user/orgs?" + params.Encode()
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/user/orgs?" + params.Encode()
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	resp, err := http.DefaultClient.Do(req)
@@ -106,7 +107,7 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 	return false, nil
 }
 
-func(p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
+func (p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
 
 	// https://developer.github.com/v3/orgs/teams/#list-user-teams
 	params := url.Values{
@@ -114,7 +115,7 @@ func(p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
 		"limit":        {"100"},
 	}
 
-	log.Printf("Getting team list");
+	log.Printf("Getting team list")
 
 	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/user/teams?" + params.Encode()
 	req, _ := http.NewRequest("GET", endpoint, nil)
@@ -230,10 +231,24 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	return "", nil
 }
 
+func (p *GitHubProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 
+	if s == nil || s.ExpiresOn.After(time.Now()) {
+		return false, nil
+	}
+
+	if !p.ValidateGroup(s.Email) {
+		return false, fmt.Errorf("%s is no longer in the group(s)", s.Email)
+	}
+
+	log.Printf("Refreshing roles for for Github provider.")
+
+	p.setUserTeams(s.AccessToken)
+	return true, nil
+}
 
 // Return a filtered list of all teams assigned to a user by the organization defined in the configuration
-func (p *GitHubProvider) GetUserRoles()(string) {
+func (p *GitHubProvider) GetUserRoles() string {
 
 	// Todo - could abstract this filtering and refactor hasOrgAndTeam()
 	presentOrgs := make(map[string]bool)
