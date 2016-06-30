@@ -66,7 +66,7 @@ func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("failed making request %s", err)
 		return "", err
 	}
-	var email string
+	var email []string
 	email = json.Get("email").String()
 	if email == "" {
 		email = json.Get("sub").String()
