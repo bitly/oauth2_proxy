@@ -49,7 +49,7 @@ func NewWso2Provider(p *ProviderData) *Wso2Provider {
 func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 
 	req, err := http.NewRequest("GET",
-		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
+		p.ValidateURL.String()+"&access_token="+s.AccessToken, nil)
 	if err != nil {
 		log.Printf("failed building request %s", err)
 		return "", err
