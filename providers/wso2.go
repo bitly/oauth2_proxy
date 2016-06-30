@@ -66,12 +66,15 @@ func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("failed making request %s", err)
 		return "", err
 	}
-	var email []string
-	email = json.Get("email").String()
-	if email == "" {
-		email = json.Get("sub").String()
+	var email string
+	email, err = json.Get("email").String()
+	if err != nil {
+		email, err = json.Get("sub").String()
 	}
-	return email
+	if err != nil {
+		return "", err
+	}
+	return email, err
 }
 func (p *Wso2Provider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	if s == nil || s.ExpiresOn.After(time.Now()) || s.RefreshToken == "" {
