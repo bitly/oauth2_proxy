@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"io/ioutil"
 	
 	"github.com/bitly/oauth2_proxy/api"
