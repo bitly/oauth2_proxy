@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"io/ioutil"
 	
 	"github.com/bitly/oauth2_proxy/api"
@@ -66,7 +67,11 @@ func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("failed making request %s", err)
 		return "", err
 	}
-	return json.Get("email").String()
+	email = json.Get("email").String()
+	if email == nil {
+		email = json.Get("sub").String()
+	}
+	return email
 }
 func (p *Wso2Provider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	if s == nil || s.ExpiresOn.After(time.Now()) || s.RefreshToken == "" {
