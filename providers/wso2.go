@@ -68,7 +68,7 @@ func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 	}
 	var email string
 	email = json.Get("email").String()
-	if email == nil {
+	if email == "" {
 		email = json.Get("sub").String()
 	}
 	return email
