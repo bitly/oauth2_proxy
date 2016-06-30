@@ -46,6 +46,12 @@ func NewWso2Provider(p *ProviderData) *Wso2Provider {
 	return &Wso2Provider{ProviderData: p}
 }
 
+func getWso2Header(access_token string) http.Header {
+	header := make(http.Header)
+	header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
+	return header
+}
+
 func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 
 	req, err := http.NewRequest("GET",
@@ -54,6 +60,7 @@ func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("failed building request %s", err)
 		return "", err
 	}
+	req.Header = getWso2Header(s.AccessToken)
 	json, err := api.Request(req)
 	if err != nil {
 		log.Printf("failed making request %s", err)
