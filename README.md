@@ -162,6 +162,7 @@ Usage of oauth2_proxy:
   -approval-prompt="force": Oauth approval_prompt
   -authenticated-emails-file="": authenticate against emails via file (one per line)
   -azure-tenant="common": go to a tenant-specific or common (tenant-independent) endpoint.
+  -basic-auth-user="": the username to set when passing the HTTP Basic Auth header
   -basic-auth-password="": the password to set when passing the HTTP Basic Auth header
   -client-id="": the OAuth Client ID: ie: "123456.apps.googleusercontent.com"
   -client-secret="": the OAuth Client Secret
