@@ -23,6 +23,7 @@ type Provider interface {
 // is a member of.
 type RoleProvider interface {
 	GetUserRoles() string
+	SetUserRoles(string) (bool, error)
 }
 
 // New gives you an instance of the given provider

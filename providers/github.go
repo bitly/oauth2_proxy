@@ -8,14 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 type GitHubProvider struct {
 	*ProviderData
 	Org       string
 	Team      string
-	userTeams []struct {
+	userRoles []struct {
 		Name string `json:"name"`
 		Slug string `json:"slug"`
 		Org  struct {
@@ -107,16 +106,14 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 	return false, nil
 }
 
-func (p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
+func (p *GitHubProvider) SetUserRoles(accessToken string) (bool, error) {
 
 	// https://developer.github.com/v3/orgs/teams/#list-user-teams
 	params := url.Values{
 		"access_token": {accessToken},
 		"limit":        {"100"},
 	}
-
-	log.Printf("Getting team list")
-
+	
 	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/user/teams?" + params.Encode()
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
@@ -134,11 +131,11 @@ func (p *GitHubProvider) setUserTeams(accessToken string) (bool, error) {
 		return false, fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
 	}
 
-	if err := json.Unmarshal(body, &p.userTeams); err != nil {
+	if err := json.Unmarshal(body, &p.userRoles); err != nil {
 		return false, fmt.Errorf("%s unmarshaling %s", err, body)
 	}
 
-	log.Printf("Returned teams - %v", p.userTeams)
+	log.Printf("Returned roles - %v", p.userRoles)
 
 	return true, nil
 }
@@ -148,7 +145,7 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 	var hasOrg bool
 	presentOrgs := make(map[string]bool)
 	var presentTeams []string
-	for _, team := range p.userTeams {
+	for _, team := range p.userRoles {
 		presentOrgs[team.Org.Login] = true
 		if p.Org == team.Org.Login {
 			hasOrg = true
@@ -181,7 +178,7 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 		Primary bool   `json:"primary"`
 	}
 
-	if ok, err := p.setUserTeams(s.AccessToken); err != nil || !ok {
+	if ok, err := p.SetUserRoles(s.AccessToken); err != nil || !ok {
 		return "", err
 	}
 
@@ -231,29 +228,13 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	return "", nil
 }
 
-func (p *GitHubProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
-
-	if s == nil || s.ExpiresOn.After(time.Now()) {
-		return false, nil
-	}
-
-	if !p.ValidateGroup(s.Email) {
-		return false, fmt.Errorf("%s is no longer in the group(s)", s.Email)
-	}
-
-	log.Printf("Refreshing roles for for Github provider.")
-
-	p.setUserTeams(s.AccessToken)
-	return true, nil
-}
-
 // Return a filtered list of all teams assigned to a user by the organization defined in the configuration
 func (p *GitHubProvider) GetUserRoles() string {
 
 	// Todo - could abstract this filtering and refactor hasOrgAndTeam()
 	presentOrgs := make(map[string]bool)
-	var presentTeams []string
-	for _, team := range p.userTeams {
+	var presentRoles []string
+	for _, team := range p.userRoles {
 		presentOrgs[team.Org.Login] = true
 		if p.Org == team.Org.Login {
 			ts := strings.Split(p.Team, ",")
@@ -262,9 +243,9 @@ func (p *GitHubProvider) GetUserRoles() string {
 					log.Printf("Found Github Organization:%q Team:%q (Name:%q)", team.Org.Login, team.Slug, team.Name)
 				}
 			}
-			presentTeams = append(presentTeams, team.Slug)
+			presentRoles = append(presentRoles, team.Slug)
 		}
 	}
 
-	return strings.Join(presentTeams, ",")
+	return strings.Join(presentRoles, ",")
 }

@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-
 	"github.com/bitly/oauth2_proxy/cookie"
 )
 
