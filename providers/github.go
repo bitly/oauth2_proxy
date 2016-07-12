@@ -245,10 +245,15 @@ func (p *GitHubProvider) GetUuid(s *SessionState) (string, error) {
 	params := url.Values{
 		"access_token": {s.AccessToken},
 	}
+	
+	endpoint := &url.URL{
+		Scheme:   p.ValidateURL.Scheme,
+		Host:     p.ValidateURL.Host,
+		Path:     path.Join(p.ValidateURL.Path, "/user"),
+		RawQuery: params.Encode(),
+	}
+	resp, err := http.DefaultClient.Get(endpoint.String())
 
-	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/user?" + params.Encode()
-
-	resp, err := http.DefaultClient.Get(endpoint)
 	if err != nil {
 		return "", err
 	}
