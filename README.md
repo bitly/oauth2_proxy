@@ -17,7 +17,7 @@ to validate accounts by email, domain or group.
 
 ## Installation
 
-1. Download [Prebuilt Binary](https://github.com/bitly/oauth2_proxy/releases) (current release is `v2.0.1`) or build with `$ go get github.com/bitly/oauth2_proxy` which will put the binary in `$GOROOT/bin`
+1. Download [Prebuilt Binary](https://github.com/bitly/oauth2_proxy/releases) (current release is `v2.1`) or build with `$ go get github.com/bitly/oauth2_proxy` which will put the binary in `$GOROOT/bin`
 2. Select a Provider and Register an OAuth Application with a Provider
 3. Configure OAuth2 Proxy using config file, command line options, or environment variables
 4. Configure SSL or Deploy behind a SSL endpoint (example provided for Nginx)
@@ -30,6 +30,7 @@ Valid providers are :
 
 * [Google](#google-auth-provider) *default*
 * [Azure](#azure-auth-provider)
+* [Facebook](#facebook-auth-provider)
 * [GitHub](#github-auth-provider)
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
@@ -87,6 +88,11 @@ Note: The user is checked against the group members list on initial authenticati
 The Azure AD auth provider uses `openid` as it default scope. It uses `https://graph.windows.net` as a default protected resource. It call to `https://graph.windows.net/me` to get the email address of the user that logs in.
 
 
+### Facebook Auth Provider
+
+1. Create a new FB App from <https://developers.facebook.com/>
+2. Under FB Login, set your Valid OAuth redirect URIs to `https://internal.yourcompany.com/oauth2/callback`
+
 ### GitHub Auth Provider
 
 1. Create a new project: https://github.com/settings/developers
@@ -97,12 +103,11 @@ The GitHub auth provider supports two additional parameters to restrict authenti
     -github-org="": restrict logins to members of this organisation
     -github-team="": restrict logins to members of any of these teams, separated by a comma
 
-If you are using github enterprise, make sure you set the following to the appropriate url:
+If you are using GitHub enterprise, make sure you set the following to the appropriate url:
 
-    -login-url="<enterprise github url>/login/oauth/authorize"
-    -redeem-url="<enterprise github url>/login/oauth/access_token"
-    -validate-url="<enterprise github api url>/user/emails"
-
+    -login-url="http(s)://<enterprise github host>/login/oauth/authorize"
+    -redeem-url="http(s)://<enterprise github host>/login/oauth/access_token"
+    -validate-url="http(s)://<enterprise github host>/api/v3"
 
 ### GitLab Auth Provider
 
@@ -143,6 +148,8 @@ To authorize by email domain use `--email-domain=yourcompany.com`. To authorize 
 ## Configuration
 
 `oauth2_proxy` can be configured via [config file](#config-file), [command line options](#command-line-options) or [environment variables](#environment-variables).
+
+To generate a strong cookie secret use `python -c 'import os,base64; print base64.b64encode(os.urandom(16))'`
 
 ### Config File
 
@@ -343,19 +350,23 @@ server {
   server_name ...;
   include ssl/ssl.conf;
 
-  location = /auth {
+  location = /oauth2/auth {
     internal;
     proxy_pass http://127.0.0.1:4180;
   }
 
+  location /oauth2/ {
+    proxy_pass http://127.0.0.1:4180;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Scheme $scheme;
+  }
+
   location / {
-    auth_request /auth;
-    error_page 401 = ...;
+    auth_request /oauth2/auth;
+    error_page 401 = https://example.com/oauth2/sign_in;
 
     root /path/to/the/site;
-    default_type text/html;
-    charset utf-8;
-    charset_types application/json utf-8;
   }
 }
 ```
