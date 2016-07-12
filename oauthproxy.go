@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/base64"
+	b64 "encoding/base64"
 	"errors"
 	"fmt"
 	"html/template"
@@ -60,12 +60,14 @@ type OAuthProxy struct {
 	serveMux            http.Handler
 	PassBasicAuth       bool
 	PassUuid            bool
+	SkipProviderButton  bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
 	CookieCipher        *cookie.Cipher
 	skipAuthRegex       []string
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
+	Footer              string
 }
 
 type UpstreamProxy struct {
@@ -163,10 +165,9 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	var cipher *cookie.Cipher
 	if opts.PassAccessToken || (opts.CookieRefresh != time.Duration(0)) {
 		var err error
-		cipher, err = cookie.NewCipher(opts.CookieSecret)
+		cipher, err = cookie.NewCipher(secretBytes(opts.CookieSecret))
 		if err != nil {
-			log.Fatal("error creating AES cipher with "+
-				"cookie-secret ", opts.CookieSecret, ": ", err)
+			log.Fatal("cookie-secret error: ", err)
 		}
 	}
 
@@ -199,6 +200,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		PassAccessToken:   opts.PassAccessToken,
 		CookieCipher:      cipher,
 		templates:         loadTemplates(opts.CustomTemplatesDir),
+		SkipProviderButton: opts.SkipProviderButton,
+		Footer:             opts.Footer,
 	}
 }
 
@@ -348,6 +351,7 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		Redirect      string
 		Version       string
 		ProxyPrefix   string
+		Footer        template.HTML
 	}{
 		ProviderName:  p.provider.Data().ProviderName,
 		SignInMessage: p.SignInMessage,
@@ -355,6 +359,7 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		Redirect:      redirect_url,
 		Version:       VERSION,
 		ProxyPrefix:   p.ProxyPrefix,
+		Footer:        template.HTML(p.Footer),
 	}
 	p.templates.ExecuteTemplate(rw, "sign_in.html", t)
 }
@@ -516,7 +521,11 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		p.ErrorPage(rw, http.StatusInternalServerError,
 			"Internal Error", "Internal Error")
 	} else if status == http.StatusForbidden {
-		p.SignInPage(rw, req, http.StatusForbidden)
+		if p.SkipProviderButton {
+			p.OAuthStart(rw, req)
+		} else {
+			p.SignInPage(rw, req, http.StatusForbidden)
+		}
 	} else {
 		p.serveMux.ServeHTTP(rw, req)
 	}
@@ -627,7 +636,7 @@ func (p *OAuthProxy) CheckBasicAuth(req *http.Request) (*providers.SessionState,
 	if len(s) != 2 || s[0] != "Basic" {
 		return nil, fmt.Errorf("invalid Authorization header %s", req.Header.Get("Authorization"))
 	}
-	b, err := base64.StdEncoding.DecodeString(s[1])
+	b, err := b64.StdEncoding.DecodeString(s[1])
 	if err != nil {
 		return nil, err
 	}
