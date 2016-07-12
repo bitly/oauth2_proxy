@@ -125,5 +125,5 @@ func (p *ProviderData) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 }
 
 func (p *ProviderData) GetUuid(s *SessionState) (string, error) {
-	return "", errors.New("Not implemented")
+	return "", nil
 }
