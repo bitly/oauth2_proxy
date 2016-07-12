@@ -180,6 +180,7 @@ Usage of oauth2_proxy:
   -login-url="": Authentication endpoint
   -pass-access-token=false: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
   -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
+  -pass-uuid=false, pass user's unique identifier as X-Forwarded-Uuid
   -pass-host-header=true: pass the request Host Header to upstream
   -profile-url="": Profile access endpoint
   -provider="google": OAuth provider

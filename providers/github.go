@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 type GitHubProvider struct {
@@ -216,3 +217,40 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	return "", nil
 }
+
+func (p *GitHubProvider) GetUuid(s *SessionState) (string, error) {
+
+	var userData struct {
+		Uuid int `json:"id"`
+	}
+
+	params := url.Values{
+		"access_token": {s.AccessToken},
+	}
+
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/user?" + params.Encode()
+
+	resp, err := http.DefaultClient.Get(endpoint)
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
+	} else {
+		log.Printf("got %d from %q %s", resp.StatusCode, endpoint, body)
+	}
+
+	if err := json.Unmarshal(body, &userData); err != nil {
+		return "", fmt.Errorf("%s unmarshaling %s", err, body)
+	}
+
+	var id = strconv.Itoa(userData.Uuid)
+
+	log.Printf("User ID is", id)
+
+	return id, nil
+
+}
+
