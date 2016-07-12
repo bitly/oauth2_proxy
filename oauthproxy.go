@@ -609,7 +609,7 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 
 	if p.PassUuid {
-		log.Printf("passing header %s", session.Uuid)
+		log.Printf("Passing uuid header %s", session.Uuid)
 		req.Header["X-Forwarded-Uuid"] = []string{session.Uuid}
 	}
 
