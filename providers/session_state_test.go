@@ -22,7 +22,7 @@ func TestSessionStateSerialization(t *testing.T) {
 		AccessToken:  "token1234",
 		ExpiresOn:    time.Now().Add(time.Duration(1) * time.Hour),
 		RefreshToken: "refresh4321",
-		Uuid: "1",
+		UserId: "1",
 
 	}
 	encoded, err := s.EncodeSessionState(c)

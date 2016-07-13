@@ -236,10 +236,10 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	return "", nil
 }
 
-func (p *GitHubProvider) GetUuid(s *SessionState) (string, error) {
+func (p *GitHubProvider) GetUserId(s *SessionState) (string, error) {
 
 	var userData struct {
-		Uuid int `json:"id"`
+		UserId int `json:"id"`
 	}
 
 	params := url.Values{
@@ -269,7 +269,7 @@ func (p *GitHubProvider) GetUuid(s *SessionState) (string, error) {
 		return "", fmt.Errorf("%s unmarshaling %s", err, body)
 	}
 
-	var id = strconv.Itoa(userData.Uuid)
+	var id = strconv.Itoa(userData.UserId)
 
 	log.Printf("User ID is", id)
 

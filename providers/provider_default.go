@@ -124,6 +124,6 @@ func (p *ProviderData) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	return false, nil
 }
 
-func (p *ProviderData) GetUuid(s *SessionState) (string, error) {
+func (p *ProviderData) GetUserId(s *SessionState) (string, error) {
 	return "", nil
 }

@@ -14,7 +14,7 @@ type SessionState struct {
 	RefreshToken string
 	Email        string
 	User         string
-	Uuid	     string
+	UserId	     string
 }
 
 func (s *SessionState) IsExpired() bool {
@@ -73,7 +73,7 @@ func (s *SessionState) EncryptedString(c *cookie.Cipher) (string, error) {
 		}
 	}
 
-	u := s.Uuid
+	u := s.UserId
 	if u != "" {
 		u, err = c.Encrypt(u)
 		if err != nil {
@@ -114,7 +114,7 @@ func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error)
 	}
 
 	if c!=nil && chunks[4] != "" {
-		s.Uuid, err = c.Decrypt(chunks[4])
+		s.UserId, err = c.Decrypt(chunks[4])
 		if err !=nil {
 			return nil, err
 		}

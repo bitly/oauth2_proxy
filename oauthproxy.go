@@ -59,7 +59,7 @@ type OAuthProxy struct {
 	DisplayHtpasswdForm bool
 	serveMux            http.Handler
 	PassBasicAuth       bool
-	PassUuid            bool
+	PassUserId          bool
 	SkipProviderButton  bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
@@ -188,18 +188,18 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		OAuthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
 		AuthOnlyPath:      fmt.Sprintf("%s/auth", opts.ProxyPrefix),
 
-		ProxyPrefix:       opts.ProxyPrefix,
-		provider:          opts.provider,
-		serveMux:          serveMux,
-		redirectURL:       redirectURL,
-		skipAuthRegex:     opts.SkipAuthRegex,
-		compiledRegex:     opts.CompiledRegex,
-		PassBasicAuth:     opts.PassBasicAuth,
-		PassUuid:          opts.PassUuid,
-		BasicAuthPassword: opts.BasicAuthPassword,
-		PassAccessToken:   opts.PassAccessToken,
-		CookieCipher:      cipher,
-		templates:         loadTemplates(opts.CustomTemplatesDir),
+		ProxyPrefix:        opts.ProxyPrefix,
+		provider:           opts.provider,
+		serveMux:           serveMux,
+		redirectURL:        redirectURL,
+		skipAuthRegex:      opts.SkipAuthRegex,
+		compiledRegex:      opts.CompiledRegex,
+		PassBasicAuth:      opts.PassBasicAuth,
+		PassUserId:         opts.PassUserId,
+		BasicAuthPassword:  opts.BasicAuthPassword,
+		PassAccessToken:    opts.PassAccessToken,
+		CookieCipher:       cipher,
+		templates:          loadTemplates(opts.CustomTemplatesDir),
 		SkipProviderButton: opts.SkipProviderButton,
 		Footer:             opts.Footer,
 	}
@@ -241,7 +241,7 @@ func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, e
 		s.Email, err = p.provider.GetEmailAddress(s)
 	}
 
-	s.Uuid, err = p.provider.GetUuid(s)
+	s.UserId, err = p.provider.GetUserId(s)
 
 	return
 }
@@ -608,9 +608,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		}
 	}
 
-	if p.PassUuid {
-		log.Printf("Passing uuid header %s", session.Uuid)
-		req.Header["X-Forwarded-Uuid"] = []string{session.Uuid}
+	if p.PassUserId {
+		log.Printf("Passing UserId header %s", session.UserId)
+		req.Header["X-Forwarded-UserId"] = []string{session.UserId}
 	}
 
 	if p.PassAccessToken && session.AccessToken != "" {

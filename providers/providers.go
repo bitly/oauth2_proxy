@@ -7,7 +7,7 @@ import (
 type Provider interface {
 	Data() *ProviderData
 	GetEmailAddress(*SessionState) (string, error)
-	GetUuid(*SessionState) (string, error)
+	GetUserId(*SessionState) (string, error)
 	Redeem(string, string) (*SessionState, error)
 	ValidateGroup(string) bool
 	ValidateSessionState(*SessionState) bool
