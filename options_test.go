@@ -216,3 +216,17 @@ func TestValidateSignatureKeyUnsupportedAlgorithm(t *testing.T) {
 	assert.Equal(t, err.Error(), "Invalid configuration:\n"+
 		"  unsupported signature hash algorithm: "+o.SignatureKey)
 }
+
+func TestValidateCookie(t *testing.T) {
+	o := testOptions()
+	o.CookieName = "_valid_cookie_name"
+	assert.Equal(t, nil, o.Validate())
+}
+
+func TestValidateCookieBadName(t *testing.T) {
+	o := testOptions()
+	o.CookieName = "_bad_cookie_name{}"
+	err := o.Validate()
+	assert.Equal(t, err.Error(), "Invalid configuration:\n"+
+		"  invalid cookie name: "+o.CookieName)
+}
