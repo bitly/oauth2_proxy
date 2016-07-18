@@ -13,7 +13,7 @@ type MobProvider struct {
 }
 
 func NewMobProvider(p *ProviderData) *MobProvider {
-	p.ProviderName = "mob.myvnc.com"
+	p.ProviderName = "mob"
 	if p.LoginURL == nil || p.LoginURL.String() == "" {
 		p.LoginURL = &url.URL{
 			Scheme: "https",
