@@ -266,7 +266,7 @@ func parseSignatureKey(o *Options, msgs []string) []string {
 func validateCookieName(o *Options, msgs []string) []string {
 	cookie := &http.Cookie{Name: o.CookieName}
 	if cookie.String() == "" {
-		return append(msgs, "invalid cookie name: "+o.CookieName)
+		return append(msgs, fmt.Sprintf("invalid cookie name: %q", o.CookieName))
 	}
 	return msgs
 }

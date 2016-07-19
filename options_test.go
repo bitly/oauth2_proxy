@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -228,5 +229,5 @@ func TestValidateCookieBadName(t *testing.T) {
 	o.CookieName = "_bad_cookie_name{}"
 	err := o.Validate()
 	assert.Equal(t, err.Error(), "Invalid configuration:\n"+
-		"  invalid cookie name: "+o.CookieName)
+		fmt.Sprintf("  invalid cookie name: %q", o.CookieName))
 }
