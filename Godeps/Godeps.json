@@ -1,0 +1,38 @@
+{
+	"ImportPath": "github.com/Shopify/google_auth_proxy",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.2.0-21-g9906417",
+			"Rev": "99064174e013895bbd9b025c31100bd1d9b590ca"
+		},
+		{
+			"ImportPath": "github.com/bitly/go-simplejson",
+			"Comment": "v0.5.0",
+			"Rev": "aabad6e819789e569bd6aabf444c935aa9ba1e44"
+		},
+		{
+			"ImportPath": "github.com/bmizerany/assert",
+			"Comment": "release.r60-7-gb7ed37b",
+			"Rev": "b7ed37b82869576c289d7d97fb2bbd8b64a0cb28"
+		},
+		{
+			"ImportPath": "github.com/kr/pretty",
+			"Comment": "go.weekly.2011-12-22-35-g737b74a",
+			"Rev": "737b74a46c4bf788349f72cb256fed10aea4d0ac"
+		},
+		{
+			"ImportPath": "github.com/kr/text",
+			"Rev": "7cafcd837844e784b526369c9bce262804aebc60"
+		},
+		{
+			"ImportPath": "github.com/mreiferson/go-options",
+			"Rev": "33795234b6f327f1be2d78a541893012362a4e06"
+		}
+	]
+}
