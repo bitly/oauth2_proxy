@@ -25,14 +25,14 @@ func NewMobProvider(p *ProviderData) *MobProvider {
 		p.RedeemURL = &url.URL{
 			Scheme: "https",
 			Host:   "mob.myvnc.com",
-			Path:   "/org/api/oauth2/token/",
+			Path:   "/org/oauth2/token/",
 		}
 	}
 	if p.ValidateURL == nil || p.ValidateURL.String() == "" {
 		p.ValidateURL = &url.URL{
 			Scheme: "https",
 			Host:   "mob.myvnc.com",
-			Path:   "/org/api/oauth2/verify/",
+			Path:   "/org/oauth2/verify/",
 		}
 	}
 	if p.Scope == "" {
