@@ -2,6 +2,7 @@ package providers
 
 import (
 	"log"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -43,8 +44,10 @@ func NewMobProvider(p *ProviderData) *MobProvider {
 
 func (p *MobProvider) GetEmailAddress(s *SessionState) (string, error) {
 
-	req, err := http.NewRequest("GET",
-		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
+	req, err := http.NewRequest("GET", p.ValidateURL.String(), nil)
+        req.Header = make(http.Header)
+        req.Header.Set("Accept", "application/json")
+        req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.AccessToken))
 	if err != nil {
 		log.Printf("failed building request %s", err)
 		return "", err
@@ -54,5 +57,5 @@ func (p *MobProvider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("failed making request %s", err)
 		return "", err
 	}
-	return json.Get("email").String()
+	return json.Get("user").Get("email").String()
 }
