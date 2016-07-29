@@ -1,31 +1,5 @@
 #!/bin/bash
 
-BINARY='google_auth_proxy'
-GIT_CHECKOUT_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null && pwd)"
-SHA="$(git rev-parse HEAD)"
+set -ex
 
-git submodule update --init
-
-export GOPATH="${GIT_CHECKOUT_DIR}/vendor"
-export GOBIN="${GIT_CHECKOUT_DIR}"
-
-echo "Getting dependencies..."
-go get
-if [ "$?" != "0" ]; then
-  echo "Failed to get dependencies."
-  exit 1
-fi
-
-echo "Building binary..."
-go build -o "${GIT_CHECKOUT_DIR}/${BINARY}"
-if [ "$?" != "0" ]; then
-  echo "Failed to build"
-  exit 1
-fi
-
-if [ -f "${GIT_CHECKOUT_DIR}/${BINARY}" ]; then
-  echo "Successfully compiled ${BINARY}"
-else
-  echo "Output file ${GIT_CHECKOUT_DIR}/${BINARY} does not exist!"
-  exit 1
-fi
+godep go build
