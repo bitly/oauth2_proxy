@@ -1,0 +1,17 @@
+dependencies:
+  pre:
+    - go get github.com/tools/godep
+    - bundle install --without development
+  override:
+    - echo "All dependencies are vendored"
+
+test:
+  override:
+    - script/test
+
+deployment:
+  production:
+    branch: [master, build-deb]
+    commands:
+      - script/compile
+      - script/build_deb
