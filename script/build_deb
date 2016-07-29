@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -ex
+
+APP="google_auth_proxy"
+VERSION=$(eval echo $(cat version))
+
+target="deb/usr/local/bin"
+mkdir -p ${target}
+
+cp ${APP} ${target}
+
+bundle exec fpm -s dir -t deb -n ${APP} -v "$VERSION" -C deb .
+package_cloud push --url https://packages.shopify.io shopify/${APP}/ubuntu/trusty "google-auth-proxy_${VERSION}_amd64.deb"
