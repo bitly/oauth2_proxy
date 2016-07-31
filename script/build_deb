@@ -12,3 +12,4 @@ cp ${APP} ${target}
 
 bundle exec fpm -s dir -t deb -n ${APP} -v "$VERSION" -C deb .
 package_cloud push --url https://packages.shopify.io shopify/${APP}/ubuntu/trusty "google-auth-proxy_${VERSION}_amd64.deb"
+package_cloud push --url https://packages.shopify.io shopify/${APP}/ubuntu/precise "google-auth-proxy_${VERSION}_amd64.deb"
