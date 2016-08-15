@@ -179,7 +179,6 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 }
 
 func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
-
 	var emails []struct {
 		Email   string `json:"email"`
 		Primary bool   `json:"primary"`
@@ -229,6 +228,16 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 		return "", fmt.Errorf("%s unmarshaling %s", err, body)
 	}
 
+	for _, domain := range p.PreferredEmailDomains {
+		if domain == "*" {
+			break
+		}
+		for _, email := range emails {
+			if strings.HasSuffix(email.Email, domain) {
+				return email.Email, nil
+			}
+		}
+	}
 	for _, email := range emails {
 		if email.Primary {
 			return email.Email, nil
