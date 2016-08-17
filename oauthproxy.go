@@ -387,6 +387,9 @@ func (p *OAuthProxy) GetRedirect(req *http.Request) (string, error) {
 	}
 
 	redirect := req.FormValue("rd")
+	if req.Header.Get("X-Original-URI") != "" {
+		redirect = req.Header.Get("X-Original-URI")
+	}
 
 	if redirect == "" {
 		redirect = "/"
