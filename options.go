@@ -73,8 +73,8 @@ type Options struct {
 	// These options allow for defining a list of aws upstream servers. Requests to these upstreams will be signed with
 	// the provided key/secret provided as well. Env vars are read from the standard aws env var names.
 	AwsUpstreams       []string `flag:"aws-upstream" cfg:"aws_upstreams"`
-	AwsAccessKeyId     string   `flag:"aws-access-key-id" cfg"aws_access_key_id" env:"AWS_ACCESS_KEY"`
-	AwsSecretAccessKey string   `flag:"aws-secret-access-key" cfg"aws_secret_access_key" env:"AWS_SECRET_KEY"`
+	AwsAccessKeyId     string   `flag:"aws-access-key-id" cfg:"aws_access_key_id" env:"AWS_ACCESS_KEY"`
+	AwsSecretAccessKey string   `flag:"aws-secret-access-key" cfg:"aws_secret_access_key" env:"AWS_SECRET_KEY"`
 
 	// internal values that are set after config validation
 	redirectURL   *url.URL
@@ -169,8 +169,8 @@ func (o *Options) Validate() error {
 			Url:         upstreamURL,
 			BackendType: backends.BackendTypeAws,
 			Options: &backends.Options{
-				ClientKey:    o.AwsAccessKeyId,
-				ClientSecret: o.AwsSecretAccessKey,
+				AwsAccessKeyId:     o.AwsAccessKeyId,
+				AwsSecretAccessKey: o.AwsSecretAccessKey,
 			},
 		})
 	}

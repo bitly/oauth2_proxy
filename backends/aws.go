@@ -30,8 +30,8 @@ func (a *awsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Host = a.upstream.Host
 
 	awsauth.Sign(r, awsauth.Credentials{
-		AccessKeyID:     a.options.ClientKey,
-		SecretAccessKey: a.options.ClientSecret,
+		AccessKeyID:     a.options.AwsAccessKeyId,
+		SecretAccessKey: a.options.AwsSecretAccessKey,
 	})
 	a.handler.ServeHTTP(w, r)
 }

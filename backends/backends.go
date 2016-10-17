@@ -51,10 +51,10 @@ type GAPSignatureData struct {
 }
 
 type Options struct {
-	SignatureData  *GAPSignatureData
-	PassHostHeader bool
-	ClientKey      string
-	ClientSecret   string
+	SignatureData      *GAPSignatureData
+	PassHostHeader     bool
+	AwsAccessKeyId     string
+	AwsSecretAccessKey string
 }
 
 // this is what is used to handle urls in the "upstreams" option flag
