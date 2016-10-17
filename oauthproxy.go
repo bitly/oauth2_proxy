@@ -56,11 +56,9 @@ type OAuthProxy struct {
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
 
-	for _, b := range opts.proxyURLs {
-		backends.Register(b.BackendType, b.Url, &backends.Options{
-			SignatureData:  opts.signatureData,
-			PassHostHeader: opts.PassHostHeader,
-		}, serveMux)
+	for _, p := range opts.proxyURLs {
+		log.Printf("about to register: %+v, %+v \n", p, *p.Options)
+		backends.Register(p.BackendType, p.Url, p.Options, serveMux)
 	}
 
 	for _, u := range opts.CompiledRegex {

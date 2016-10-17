@@ -1,7 +1,6 @@
 package backends
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -16,18 +15,23 @@ func registerNewAwsBackend(u *url.URL, opts *Options, serveMux *http.ServeMux) {
 	log.Printf("mapping path %q => upstream %q", path, u)
 
 	proxy := httputil.NewSingleHostReverseProxy(u)
-	serveMux.Handle(path, &awsProxy{u, proxy})
+	serveMux.Handle(path, &awsProxy{u, proxy, opts})
 }
 
 type awsProxy struct {
 	upstream *url.URL
 	handler  http.Handler
+	options  *Options
 }
 
 func (a *awsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.URL.Host = a.upstream.Host
 	r.URL.Scheme = a.upstream.Scheme
 	r.Host = a.upstream.Host
-	awsauth.Sign4(r)
+
+	awsauth.Sign(r, awsauth.Credentials{
+		AccessKeyID:     a.options.ClientKey,
+		SecretAccessKey: a.options.ClientSecret,
+	})
 	a.handler.ServeHTTP(w, r)
 }
