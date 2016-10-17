@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bitly/oauth2_proxy/backends"
 	"github.com/bmizerany/assert"
 )
 
@@ -35,7 +36,7 @@ func TestNewOptions(t *testing.T) {
 	assert.NotEqual(t, nil, err)
 
 	expected := errorMsg([]string{
-		"missing setting: upstream",
+		"missing setting: upstreams or aws-upstreams required",
 		"missing setting: cookie-secret",
 		"missing setting: client-id",
 		"missing setting: client-secret"})
@@ -88,10 +89,22 @@ func TestProxyURLs(t *testing.T) {
 	o := testOptions()
 	o.Upstreams = append(o.Upstreams, "http://127.0.0.1:8081")
 	assert.Equal(t, nil, o.Validate())
-	expected := []*url.URL{
-		&url.URL{Scheme: "http", Host: "127.0.0.1:8080", Path: "/"},
+	expected := []*proxyURL{
+		&proxyURL{
+			Url:         &url.URL{Scheme: "http", Host: "127.0.0.1:8080", Path: "/"},
+			BackendType: backends.BackendTypeDefault,
+			Options: &backends.Options{
+				PassHostHeader: true,
+			},
+		},
 		// note the '/' was added
-		&url.URL{Scheme: "http", Host: "127.0.0.1:8081", Path: "/"},
+		&proxyURL{
+			Url:         &url.URL{Scheme: "http", Host: "127.0.0.1:8081", Path: "/"},
+			BackendType: backends.BackendTypeDefault,
+			Options: &backends.Options{
+				PassHostHeader: true,
+			},
+		},
 	}
 	assert.Equal(t, expected, o.proxyURLs)
 }
@@ -198,8 +211,8 @@ func TestValidateSignatureKey(t *testing.T) {
 	o := testOptions()
 	o.SignatureKey = "sha1:secret"
 	assert.Equal(t, nil, o.Validate())
-	assert.Equal(t, o.signatureData.hash, crypto.SHA1)
-	assert.Equal(t, o.signatureData.key, "secret")
+	assert.Equal(t, o.signatureData.Hash, crypto.SHA1)
+	assert.Equal(t, o.signatureData.Key, "secret")
 }
 
 func TestValidateSignatureKeyInvalidSpec(t *testing.T) {

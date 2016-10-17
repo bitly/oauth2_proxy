@@ -70,7 +70,7 @@ func registerNewDefaultBackend(u *url.URL, opts *Options, serveMux *http.ServeMu
 	case "http", "https":
 		u.Path = ""
 		log.Printf("mapping path %q => upstream %q", path, u)
-		proxy := httputil.NewSingleHostReverseProxy(u)
+		proxy := NewReverseProxy(u)
 		if !opts.PassHostHeader {
 			setProxyUpstreamHostHeader(proxy, u)
 		} else {
@@ -83,11 +83,30 @@ func registerNewDefaultBackend(u *url.URL, opts *Options, serveMux *http.ServeMu
 			path = u.Fragment
 		}
 		log.Printf("mapping path %q => file system %q", path, u.Path)
-		proxy := http.StripPrefix(path, http.FileServer(http.Dir(u.Path)))
+		proxy := NewFileServer(path, u.Path)
 		serveMux.Handle(path, &UpstreamProxy{u, proxy, nil})
 	default:
 		panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
 	}
+}
+
+type UpstreamProxy struct {
+	upstream *url.URL
+	handler  http.Handler
+	auth     hmacauth.HmacAuth
+}
+
+func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("GAP-Upstream-Address", u.upstream.Host)
+	if u.auth != nil {
+		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
+		u.auth.SignRequest(r)
+	}
+	u.handler.ServeHTTP(w, r)
+}
+
+func NewReverseProxy(target *url.URL) (proxy *httputil.ReverseProxy) {
+	return httputil.NewSingleHostReverseProxy(target)
 }
 
 func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
@@ -111,17 +130,6 @@ func setProxyDirector(proxy *httputil.ReverseProxy) {
 	}
 }
 
-type UpstreamProxy struct {
-	upstream *url.URL
-	handler  http.Handler
-	auth     hmacauth.HmacAuth
-}
-
-func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("GAP-Upstream-Address", u.upstream.Host)
-	if u.auth != nil {
-		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
-		u.auth.SignRequest(r)
-	}
-	u.handler.ServeHTTP(w, r)
+func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
+	return http.StripPrefix(path, http.FileServer(http.Dir(filesystemPath)))
 }

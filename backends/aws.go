@@ -3,7 +3,6 @@ package backends
 import (
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 
 	"github.com/smartystreets/go-aws-auth"
@@ -12,9 +11,9 @@ import (
 func registerNewAwsBackend(u *url.URL, opts *Options, serveMux *http.ServeMux) {
 	path := u.Path
 	u.Path = ""
-	log.Printf("mapping path %q => upstream %q", path, u)
+	log.Printf("mapping path %q => aws-upstream %q", path, u)
 
-	proxy := httputil.NewSingleHostReverseProxy(u)
+	proxy := NewReverseProxy(u)
 	serveMux.Handle(path, &awsProxy{u, proxy, opts})
 }
 
