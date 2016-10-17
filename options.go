@@ -130,7 +130,7 @@ func parseUpstreamUrl(u string, msgs []string) (*url.URL, []string) {
 func (o *Options) Validate() error {
 	msgs := make([]string, 0)
 	if len(o.Upstreams) < 1 && len(o.AwsUpstreams) < 1 {
-		msgs = append(msgs, "missing setting: at least one set of upstreams is required, either upstreams or aws-upstreams requires")
+		msgs = append(msgs, "missing setting,at least one set of upstreams is required: upstreams or aws-upstreams required")
 	}
 	if o.CookieSecret == "" {
 		msgs = append(msgs, "missing setting: cookie-secret")
