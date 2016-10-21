@@ -6,6 +6,9 @@ import (
 	"net/url"
 
 	"github.com/bitly/oauth2_proxy/api"
+	"fmt"
+	"io/ioutil"
+	"encoding/json"
 )
 
 type GitLabProvider struct {
@@ -46,7 +49,52 @@ func (p *GitLabProvider) SetGroup(group string) {
 	p.Group = group
 }
 
+func (p *GitLabProvider) hasGroup(accessToken string) (bool, error) {
+
+	var groups []struct {
+		Group string `json:"name"`
+	}
+
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/api/v3/groups?access_token="+accessToken
+	req, _ := http.NewRequest("GET", endpoint, nil)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode != 200 {
+		return false, fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
+	}
+
+	if err := json.Unmarshal(body, &groups); err != nil {
+		return false, err
+	}
+
+	for _, group := range groups {
+		if( p.Group == group.Group) {
+			// Found the group
+			return true, nil
+		}
+	}
+
+	log.Printf("Group %s not found in %s", p.Group, groups)
+	return false, nil
+}
+
+
 func (p *GitLabProvider) GetEmailAddress(s *SessionState) (string, error) {
+
+	// if we require a group, check that first
+	if p.Group != "" {
+		if ok, err := p.hasGroup(s.AccessToken); err != nil || !ok {
+			return "", err
+		}
+	}
 
 	req, err := http.NewRequest("GET",
 		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
