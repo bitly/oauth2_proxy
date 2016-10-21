@@ -10,6 +10,7 @@ import (
 
 type GitLabProvider struct {
 	*ProviderData
+	Group string
 }
 
 func NewGitLabProvider(p *ProviderData) *GitLabProvider {
@@ -39,6 +40,10 @@ func NewGitLabProvider(p *ProviderData) *GitLabProvider {
 		p.Scope = "read_user"
 	}
 	return &GitLabProvider{ProviderData: p}
+}
+
+func (p *GitLabProvider) SetGroup(group string) {
+	p.Group = group
 }
 
 func (p *GitLabProvider) GetEmailAddress(s *SessionState) (string, error) {
