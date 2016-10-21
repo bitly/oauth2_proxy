@@ -115,6 +115,10 @@ If you are using GitHub enterprise, make sure you set the following to the appro
 
 Whether you are using GitLab.com or self-hosting GitLab, follow [these steps to add an application](http://doc.gitlab.com/ce/integration/oauth_provider.html)
 
+The GitLab auth provider supports one additional parameters to restrict authentication to a specific group. Restricting by group is normally accompanied with `--email-domain=*`
+
+    -gitlab-group="": restrict logins to members of this group
+
 If you are using self-hosted GitLab, make sure you set the following to the appropriate URL:
 
     -login-url="<your gitlab url>/oauth/authorize"
