@@ -8,11 +8,15 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"rsc.io/letsencrypt"
 )
 
 type Server struct {
 	Handler http.Handler
 	Opts    *Options
+
+	m *letsencrypt.Manager
 }
 
 func (s *Server) ListenAndServe() {
@@ -55,6 +59,7 @@ func (s *Server) ServeHTTP() {
 
 func (s *Server) ServeHTTPS() {
 	addr := s.Opts.HttpsAddress
+
 	config := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		MaxVersion: tls.VersionTLS12,
@@ -63,11 +68,26 @@ func (s *Server) ServeHTTPS() {
 		config.NextProtos = []string{"http/1.1"}
 	}
 
-	var err error
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(s.Opts.TLSCertFile, s.Opts.TLSKeyFile)
-	if err != nil {
-		log.Fatalf("FATAL: loading tls config (%s, %s) failed - %s", s.Opts.TLSCertFile, s.Opts.TLSKeyFile, err)
+	if s.Opts.LetsEncryptEnabled {
+		var m letsencrypt.Manager
+		if err := m.CacheFile(s.Opts.LetsEncryptCacheDir); err != nil {
+			log.Fatal(err)
+		}
+
+		m.Register(s.Opts.LetsEncryptAdminEmail, func(_ string) bool {
+			return true
+		})
+
+		m.SetHosts([]string{addr})
+
+		config.GetCertificate = m.GetCertificate
+	} else {
+		var err error
+		config.Certificates = make([]tls.Certificate, 1)
+		config.Certificates[0], err = tls.LoadX509KeyPair(s.Opts.TLSCertFile, s.Opts.TLSKeyFile)
+		if err != nil {
+			log.Fatalf("FATAL: loading tls config (%s, %s) failed - %s", s.Opts.TLSCertFile, s.Opts.TLSKeyFile, err)
+		}
 	}
 
 	ln, err := net.Listen("tcp", addr)

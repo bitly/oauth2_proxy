@@ -26,6 +26,10 @@ type Options struct {
 	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
 	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file"`
 
+	LetsEncryptEnabled    bool   `flag:"letsencrypt-enabled" cfg:"letsencrypt-enabled"`
+	LetsEncryptCacheDir   string `flag:"letsencrypt-cache-dir" cfg:"letsencrypt-cache-dir"`
+	LetsEncryptAdminEmail string `flag:"letsencrypt-admin-email" cfg:"letsencrypt-admin-email"`
+
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
@@ -128,6 +132,14 @@ func (o *Options) Validate() error {
 	}
 	if o.AuthenticatedEmailsFile == "" && len(o.EmailDomains) == 0 && o.HtpasswdFile == "" {
 		msgs = append(msgs, "missing setting for email validation: email-domain or authenticated-emails-file required.\n      use email-domain=* to authorize all email addresses")
+	}
+
+	if o.LetsEncryptEnabled && (o.TLSCertFile != "" || o.TLSKeyFile != "") {
+		msgs = append(msgs, "cannot enable letsencrypt AND specify a TLS keypair")
+	}
+
+	if o.LetsEncryptEnabled && o.LetsEncryptAdminEmail == "" {
+		msgs = append(msgs, "must set letsencrypt-admin-email if letsencrypt is enabled")
 	}
 
 	o.redirectURL, msgs = parseURL(o.RedirectURL, "redirect", msgs)
