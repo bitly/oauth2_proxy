@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -16,6 +17,9 @@ type Server struct {
 }
 
 func (s *Server) ListenAndServe() {
+	if s.Opts.RedirectHttpToHttps {
+		go s.ServeHTTPSRedirector()
+	}
 	if s.Opts.TLSKeyFile != "" || s.Opts.TLSCertFile != "" {
 		s.ServeHTTPS()
 	} else {
@@ -85,6 +89,12 @@ func (s *Server) ServeHTTPS() {
 	}
 
 	log.Printf("HTTPS: closing %s", tlsListener.Addr())
+}
+
+func (s *Server) ServeHTTPSRedirector() {
+	h := LoggingHandler(os.Stdout, NewRedirectHandler(*s.Opts), s.Opts.RequestLogging)
+	log.Printf("HTTPs redirector listening on: %s", s.Opts.HttpsRedirectorAddress)
+	log.Fatal(http.ListenAndServe(s.Opts.HttpsRedirectorAddress, h))
 }
 
 // tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
