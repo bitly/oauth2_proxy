@@ -23,7 +23,7 @@ func getTemplates() *template.Template {
 <!DOCTYPE html>
 <html lang="en" charset="utf-8">
 <head>
-	<title>Sign In</title>
+	<title>{{.Title}}</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 	<style>
 	body {
@@ -89,6 +89,18 @@ func getTemplates() *template.Template {
 		margin:0;
 		box-sizing: border-box;
 	}
+	header {
+		font-size:16px;
+		color:#333;
+		text-align:center;
+		margin:10px 0;
+	}
+	header a {
+		color:#333;
+	}
+	header a:hover {
+		color:#111;
+	}
 	footer {
 		display:block;
 		font-size:10px;
@@ -109,6 +121,8 @@ func getTemplates() *template.Template {
 	</style>
 </head>
 <body>
+	<header>{{.Header}}</header>
+
 	<div class="signin center">
 	<form method="GET" action="{{.ProxyPrefix}}/start">
 	<input type="hidden" name="rd" value="{{.Redirect}}">

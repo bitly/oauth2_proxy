@@ -37,6 +37,8 @@ type Options struct {
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
 	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
+	Title                    string   `flag:"title" cfg:"title"`
+	Header                   string   `flag:"header" cfg:"header"`
 	Footer                   string   `flag:"footer" cfg:"footer"`
 
 	CookieName     string        `flag:"cookie-name" cfg:"cookie_name" env:"OAUTH2_PROXY_COOKIE_NAME"`
