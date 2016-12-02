@@ -338,11 +338,6 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	if err != nil {
 		p.ErrorPage(rw, 500, "Internal Error", err.Error())
 		return
-	} else if redirect_url == "/" {
-		redirect_url = req.URL.RequestURI()
-		if redirect_url == p.SignInPath {
-			redirect_url = "/"
-		}
 	}
 
 	t := struct {
