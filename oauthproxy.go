@@ -60,6 +60,7 @@ type OAuthProxy struct {
 	serveMux            http.Handler
 	PassBasicAuth       bool
 	SkipProviderButton  bool
+	ProxySecretValue		string
 	BasicAuthPassword   string
 	PassAccessToken     bool
 	CookieCipher        *cookie.Cipher
@@ -160,6 +161,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	}
 
 	log.Printf("Cookie settings: name:%s secure(https):%v httponly:%v expiry:%s domain:%s refresh:%s", opts.CookieName, opts.CookieSecure, opts.CookieHttpOnly, opts.CookieExpire, domain, refresh)
+	log.Printf("Headers settings: secret:%s", opts.ProxySecretValue)
 
 	var cipher *cookie.Cipher
 	if opts.PassAccessToken || (opts.CookieRefresh != time.Duration(0)) {
@@ -197,6 +199,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		BasicAuthPassword:  opts.BasicAuthPassword,
 		PassAccessToken:    opts.PassAccessToken,
 		SkipProviderButton: opts.SkipProviderButton,
+		ProxySecretValue:   opts.ProxySecretValue,
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
@@ -601,6 +604,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		if session.Email != "" {
 			req.Header["X-Forwarded-Email"] = []string{session.Email}
 		}
+	}
+	if p.ProxySecretValue != "" {
+		req.Header["OAuth2-Proxy-Secret"] = []string{p.ProxySecretValue}
 	}
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
