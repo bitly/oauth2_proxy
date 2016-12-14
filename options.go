@@ -18,7 +18,7 @@ type Options struct {
 	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy-prefix"`
 	HttpAddress  string `flag:"http-address" cfg:"http_address"`
 	HttpsAddress string `flag:"https-address" cfg:"https_address"`
-	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url"`
+	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url" env:"REDIRECT_URL"`
 	ClientID     string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
 	ClientSecret string `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
 	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
@@ -44,7 +44,7 @@ type Options struct {
 	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 
-	Upstreams         []string `flag:"upstream" cfg:"upstreams"`
+	Upstreams         []string `flag:"upstream" cfg:"upstreams" env:"UPSTREAM"`
 	SkipAuthRegex     []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth     bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
