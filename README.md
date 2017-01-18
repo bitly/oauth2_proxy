@@ -197,7 +197,7 @@ Usage of oauth2_proxy:
   -request-logging=true: Log requests to stdout
   -scope="": Oauth scope specification
   -signature-key="": GAP-Signature request signature key (algorithm:secretkey)
-  -skip-auth-regex=: bypass authentication for requests path's that match (may be given multiple times)
+  -skip-auth-regex=: bypass authentication for requests path's that match (may be given multiple times) i.e.: /status,/logs
   -skip-provider-button=false: will skip sign-in-page to directly reach the next step: oauth/start
   -tls-cert="": path to certificate file
   -tls-key="": path to private key file
