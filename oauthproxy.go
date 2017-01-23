@@ -59,6 +59,7 @@ type OAuthProxy struct {
 	DisplayHtpasswdForm bool
 	serveMux            http.Handler
 	PassBasicAuth       bool
+	ReturnAuthenticatedEmail bool
 	SkipProviderButton  bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
@@ -196,6 +197,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		skipAuthRegex:      opts.SkipAuthRegex,
 		compiledRegex:      opts.CompiledRegex,
 		PassBasicAuth:      opts.PassBasicAuth,
+		ReturnAuthenticatedEmail: opts.ReturnAuthenticatedEmail,
 		BasicAuthPassword:  opts.BasicAuthPassword,
 		PassAccessToken:    opts.PassAccessToken,
 		SkipProviderButton: opts.SkipProviderButton,
@@ -609,6 +611,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		if session.Email != "" {
 			req.Header["X-Forwarded-Email"] = []string{session.Email}
 		}
+	}
+	if p.ReturnAuthenticatedEmail {
+		rw.Header().Set("X-Authenticated-Email", session.Email)
 	}
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
