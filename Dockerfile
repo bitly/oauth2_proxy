@@ -16,7 +16,7 @@ RUN addgroup -S oauth2_proxy && \
     adduser -D -S -s /sbin/nologin -G oauth2_proxy oauth2_proxy
 
 RUN go get github.com/brunnels/oauth2_proxy &&
-    go install -v github.com/bitly/oauth2_proxy
+    go install -v github.com/brunnels/oauth2_proxy
 
 # cleanup
 RUN apk del build-deps && \
