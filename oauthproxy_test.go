@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"encoding/base64"
 	"github.com/18F/hmacauth"
-	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/brunnels/oauth2_proxy/providers"
 	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"
