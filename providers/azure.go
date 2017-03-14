@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"github.com/brunnels/go-simplejson"
+	"github.com/bitly/go-simplejson"
 )
 
 type AzureProvider struct {
