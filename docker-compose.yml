@@ -1,0 +1,19 @@
+authproxy:
+  build: .
+  container_name: oauth2-proxy
+  ports:
+    - "80:4180"
+  volumes:
+    - /opt/NetDATA/oauth2_proxy/oauth2_proxy_dev.cfg:/etc/oauth2_proxy.cfg:Z
+    - /opt/NetDATA/oauth2_proxy/ca-certificates:/usr/local/share/ca-certificates:ro
+
+# NGINX example app
+upstream:
+    container_name: nginx-test-upstream
+    image: nginx
+    expose:
+        - "80"
+    volumes:
+        - /opt/NetDATA/oauth2_proxy:/usr/share/nginx/html:ro
+#        - /opt/NetDATA/oauth2_proxy/nginx/nginx.conf:/etc/nginx.conf
+#        - /opt/NetDATA/oauth2_proxy/nginx/sites-enabled:/etc/nginx/sites-enabled
