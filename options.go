@@ -31,6 +31,7 @@ type Options struct {
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
+	JhipsterAuthority        string   `flag:"jhipster-authority" cfg:"jhipster_authority"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
@@ -123,7 +124,7 @@ func (o *Options) Validate() error {
 	if o.ClientID == "" {
 		msgs = append(msgs, "missing setting: client-id")
 	}
-	if o.ClientSecret == "" {
+	if o.ClientSecret == "" && o.Provider != "jhipsteruaa"{
 		msgs = append(msgs, "missing setting: client-secret")
 	}
 	if o.AuthenticatedEmailsFile == "" && len(o.EmailDomains) == 0 && o.HtpasswdFile == "" {
@@ -229,6 +230,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
+	case *providers.JhipsterUaaProvider:
+		p.SetAuthority(o.JhipsterAuthority)
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)

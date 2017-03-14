@@ -30,6 +30,8 @@ func New(provider string, p *ProviderData) Provider {
 		return NewAzureProvider(p)
 	case "gitlab":
 		return NewGitLabProvider(p)
+	case "jhipsteruaa":
+		return NewJhipsterUaaProvider(p)
 	default:
 		return NewGoogleProvider(p)
 	}
