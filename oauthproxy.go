@@ -417,7 +417,9 @@ func (p *OAuthProxy) IsWhitelistedPath(path string) (ok bool) {
 }
 
 func (p *OAuthProxy) IsWhitelistedHost(host string) (ok bool) {
+	log.Printf("checking whitelisted path %s", host)
 	for _, u := range p.hostCompiledRegex {
+		log.Printf("checking regex %s", u.String())
 		ok = u.MatchString(host)
 		if ok {
 			return
