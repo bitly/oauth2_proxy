@@ -436,16 +436,14 @@ func getRemoteAddr(req *http.Request) (s string) {
 
 func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
-	if(p.IsWhitelistedPath(req.URL.Hostname())) {
-		p.serveMux.ServeHTTP(rw, req)
-	}
-
 	switch path := req.URL.Path; {
 	case path == p.RobotsPath:
 		p.RobotsTxt(rw)
 	case path == p.PingPath:
 		p.PingPage(rw)
 	case p.IsWhitelistedPath(path):
+		p.serveMux.ServeHTTP(rw, req)
+	case p.IsWhitelistedPath(req.URL.Hostname()):
 		p.serveMux.ServeHTTP(rw, req)
 	case path == p.SignInPath:
 		p.SignIn(rw, req)
