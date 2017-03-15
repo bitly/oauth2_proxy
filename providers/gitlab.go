@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/bitly/oauth2_proxy/api"
-	"fmt"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"github.com/bitly/oauth2_proxy/api"
+	"io/ioutil"
 )
 
 type GitLabProvider struct {
@@ -55,7 +55,7 @@ func (p *GitLabProvider) hasGroup(accessToken string) (bool, error) {
 		Group string `json:"name"`
 	}
 
-	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/api/v3/groups?access_token="+accessToken
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/api/v3/groups?access_token=" + accessToken
 	req, _ := http.NewRequest("GET", endpoint, nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -76,7 +76,7 @@ func (p *GitLabProvider) hasGroup(accessToken string) (bool, error) {
 	}
 
 	for _, group := range groups {
-		if( p.Group == group.Group) {
+		if p.Group == group.Group {
 			// Found the group
 			return true, nil
 		}
@@ -85,7 +85,6 @@ func (p *GitLabProvider) hasGroup(accessToken string) (bool, error) {
 	log.Printf("Group %s not found in %s", p.Group, groups)
 	return false, nil
 }
-
 
 func (p *GitLabProvider) GetEmailAddress(s *SessionState) (string, error) {
 
