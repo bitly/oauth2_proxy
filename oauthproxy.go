@@ -437,9 +437,7 @@ func getRemoteAddr(req *http.Request) (s string) {
 }
 
 func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-
-	log.Printf("requst host %s", req.Host)
-
+	host := req.Host
 	switch path := req.URL.Path; {
 	case path == p.RobotsPath:
 		p.RobotsTxt(rw)
@@ -447,7 +445,7 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.PingPage(rw)
 	case p.IsWhitelistedPath(path):
 		p.serveMux.ServeHTTP(rw, req)
-	case p.IsWhitelistedHost(req.URL.Host):
+	case p.IsWhitelistedHost(host):
 		p.serveMux.ServeHTTP(rw, req)
 	case path == p.SignInPath:
 		p.SignIn(rw, req)
@@ -458,9 +456,6 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.AuthOnlyPath:
 		p.AuthenticateOnly(rw, req)
 	default:
-		if(p.IsWhitelistedPath(req.Host)) {
-			p.serveMux.ServeHTTP(rw, req)
-		}
 		p.Proxy(rw, req)
 	}
 }
