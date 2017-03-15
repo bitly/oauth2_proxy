@@ -50,6 +50,7 @@ type Options struct {
 
 	Upstreams          []string `flag:"upstream" cfg:"upstreams"`
 	SkipAuthRegex      []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
+	HostSkipAuthRegex  []string `flag:"host-skip-auth-regex" cfg:"host_skip_auth_regex"`
 	PassBasicAuth      bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword  string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken    bool     `flag:"pass-access-token" cfg:"pass_access_token"`
@@ -75,6 +76,7 @@ type Options struct {
 	redirectURL   *url.URL
 	proxyURLs     []*url.URL
 	CompiledRegex []*regexp.Regexp
+	HostCompiledRegex []*regexp.Regexp
 	provider      providers.Provider
 	signatureData *SignatureData
 }
@@ -154,6 +156,16 @@ func (o *Options) Validate() error {
 		}
 		o.CompiledRegex = append(o.CompiledRegex, CompiledRegex)
 	}
+
+	for _, u := range o.HostSkipAuthRegex {
+		HostCompiledRegex, err := regexp.Compile(u)
+		if err != nil {
+			msgs = append(msgs, fmt.Sprintf(
+				"error compiling regex=%q %s", u, err))
+		}
+		o.HostCompiledRegex = append(o.HostCompiledRegex, HostCompiledRegex)
+	}
+
 	msgs = parseProviderInfo(o, msgs)
 
 	if o.PassAccessToken || (o.CookieRefresh != time.Duration(0)) {

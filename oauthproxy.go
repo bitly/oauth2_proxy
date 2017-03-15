@@ -65,6 +65,8 @@ type OAuthProxy struct {
 	CookieCipher        *cookie.Cipher
 	skipAuthRegex       []string
 	compiledRegex       []*regexp.Regexp
+	hostSkipAuthRegex   []string
+	hostCompiledRegex   []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
 }
@@ -152,6 +154,10 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		log.Printf("compiled skip-auth-regex => %q", u)
 	}
 
+	for _, u := range opts.HostCompiledRegex {
+		log.Printf("compiled host-skip-auth-regex => %q", u)
+	}
+
 	redirectURL := opts.redirectURL
 	redirectURL.Path = fmt.Sprintf("%s/callback", opts.ProxyPrefix)
 
@@ -199,6 +205,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		redirectURL:        redirectURL,
 		skipAuthRegex:      opts.SkipAuthRegex,
 		compiledRegex:      opts.CompiledRegex,
+		hostSkipAuthRegex:  opts.HostSkipAuthRegex,
+		hostCompiledRegex:  opts.HostCompiledRegex,
 		PassBasicAuth:      opts.PassBasicAuth,
 		BasicAuthPassword:  opts.BasicAuthPassword,
 		PassAccessToken:    opts.PassAccessToken,
@@ -408,6 +416,16 @@ func (p *OAuthProxy) IsWhitelistedPath(path string) (ok bool) {
 	return
 }
 
+func (p *OAuthProxy) IsWhitelistedHost(host string) (ok bool) {
+	for _, u := range p.hostCompiledRegex {
+		ok = u.MatchString(host)
+		if ok {
+			return
+		}
+	}
+	return
+}
+
 func getRemoteAddr(req *http.Request) (s string) {
 	s = req.RemoteAddr
 	if req.Header.Get("X-Real-IP") != "" {
@@ -417,6 +435,11 @@ func getRemoteAddr(req *http.Request) (s string) {
 }
 
 func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+
+	if(p.IsWhitelistedPath(req.URL.Hostname())) {
+		p.serveMux.ServeHTTP(rw, req)
+	}
+
 	switch path := req.URL.Path; {
 	case path == p.RobotsPath:
 		p.RobotsTxt(rw)

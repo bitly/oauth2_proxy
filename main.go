@@ -20,6 +20,7 @@ func main() {
 	emailDomains := StringArray{}
 	upstreams := StringArray{}
 	skipAuthRegex := StringArray{}
+	hostSkipAuthRegex := StringArray{}
 	googleGroups := StringArray{}
 
 	config := flagSet.String("config", "", "path to config file")
@@ -36,6 +37,7 @@ func main() {
 	flagSet.Bool("pass-access-token", false, "pass OAuth access_token to upstream via X-Forwarded-Access-Token header")
 	flagSet.Bool("pass-host-header", true, "pass the request Host Header to upstream")
 	flagSet.Var(&skipAuthRegex, "skip-auth-regex", "bypass authentication for requests path's that match (may be given multiple times)")
+	flagSet.Var(&hostSkipAuthRegex, "host-skip-auth-regex", "bypass authentication for requests hosts's that match (may be given multiple times)")
 	flagSet.Bool("skip-provider-button", false, "will skip sign-in-page to directly reach the next step: oauth/start")
 
 	flagSet.Var(&emailDomains, "email-domain", "authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email")
