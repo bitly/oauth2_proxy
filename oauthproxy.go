@@ -122,7 +122,13 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		switch u.Scheme {
 		case "http", "https":
 			u.Path = ""
-			log.Printf("mapping path %q => upstream %q", path, u)
+			if(strings.ContainsAny(path, ".")) {
+			  	path = fmt.Sprintf("%s/", strings.TrimPrefix(path, "/"))
+				log.Printf("mapping url %q => upstream %q", path, u)
+			} else {
+				log.Printf("mapping path %q => upstream %q", path, u)
+			}
+
 			proxy := NewReverseProxy(u)
 			if !opts.PassHostHeader {
 				setProxyUpstreamHostHeader(proxy, u)
