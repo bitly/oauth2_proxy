@@ -443,7 +443,7 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.PingPage(rw)
 	case p.IsWhitelistedPath(path):
 		p.serveMux.ServeHTTP(rw, req)
-	case p.IsWhitelistedPath(req.URL.Host):
+	case p.IsWhitelistedHost(req.URL.Host):
 		p.serveMux.ServeHTTP(rw, req)
 	case path == p.SignInPath:
 		p.SignIn(rw, req)
