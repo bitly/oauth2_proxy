@@ -27,6 +27,8 @@ func main() {
 	showVersion := flagSet.Bool("version", false, "print version string")
 
 	flagSet.String("http-address", "127.0.0.1:4180", "[http://]<addr>:<port> or unix://<path> to listen on for HTTP clients")
+	flagSet.String("https-redirector-address", ":80", "<addr>:<port> to listen on for HTTPS clients")
+	flagSet.Bool("redirect-http-to-https", false, "Listens on the port specified in https-redirector-address and rewrites to the host and protocol of redirect-url.")
 	flagSet.String("https-address", ":443", "<addr>:<port> to listen on for HTTPS clients")
 	flagSet.String("tls-cert", "", "path to certificate file")
 	flagSet.String("tls-key", "", "path to private key file")
