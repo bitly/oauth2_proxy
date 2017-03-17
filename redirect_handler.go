@@ -22,7 +22,7 @@ func (h RedirectHandler) buildRedirectURL(requestURL url.URL) (string, error) {
 		target += "?" + requestURL.RawQuery
 	}
 	log.Printf("redirect to: %s", target)
-	return target
+	return target, nil
 }
 
 func (h RedirectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
