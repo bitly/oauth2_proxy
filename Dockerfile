@@ -1,9 +1,7 @@
-FROM golang:1.6
-
-ENV http_proxy http://agproxy.agint:8081
-ENV https_proxy http://agproxy.agint:8081
-
-RUN go get -v github.com/brunnels/oauth2_proxy && \
-    go install -v github.com/brunnels/oauth2_proxy
-
+FROM docker.io/schasse/oauth2_proxy:latest
+MAINTAINER kraven@kraven.org
+COPY dist/oauth2_proxy /go/bin
+COPY contrib/oauth2_proxy.cfg.example /etc/oauth2_proxy.cfg
+RUN chmod +x /go/bin/oauth2_proxy
+CMD["-config", "/etc/oauth2_proxy.cfg"]
 ENTRYPOINT ["oauth2_proxy"]

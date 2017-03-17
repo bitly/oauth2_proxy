@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"net/url"
 	"log"
 )
 
@@ -16,20 +15,22 @@ func NewRedirectHandler(opts Options) RedirectHandler {
 	}
 }
 
-func (h RedirectHandler) buildRedirectURL(requestURL url.URL) (string, error) {
-	target := "https://" + requestURL.Host + requestURL.Path
-	if len(requestURL.RawQuery) > 0 {
-		target += "?" + requestURL.RawQuery
+func (h RedirectHandler) buildRedirectURL(req http.Request) (string, error) {
+	target := req.Host + req.URL.Path
+	if len(req.URL.RawQuery) > 0 {
+		target += "?" + req.URL.RawQuery
 	}
-	log.Printf("redirect to: %s", target)
-	return target, nil
+
+	log.Printf("redirect from: http://%s to: https://%s", target, target)
+
+	return "https://" + target, nil
 }
 
 func (h RedirectHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	u, err := h.buildRedirectURL(*r.URL)
+	u, err := h.buildRedirectURL(*r)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	http.Redirect(w, r, u, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, u, http.StatusMovedPermanently)
 }
