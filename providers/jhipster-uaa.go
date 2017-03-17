@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"time"
 	"errors"
+	"crypto/tls"
 )
 
 type JhipsterUaaProvider struct {
@@ -76,6 +77,10 @@ func (p *JhipsterUaaProvider) Redeem(redirectURL, code string) (s *SessionState,
 	params.Add("client_id", p.ClientID)
 	params.Add("code", code)
 	params.Add("grant_type", "authorization_code")
+
+	cfg := &tls.Config{ InsecureSkipVerify: true, }
+	http.DefaultClient.Transport = &http.Transport{ TLSClientConfig: cfg, }
+
 	var req *http.Request
 	req, err = http.NewRequest("POST", p.RedeemURL.String(), bytes.NewBufferString(params.Encode()))
 	if err != nil {
