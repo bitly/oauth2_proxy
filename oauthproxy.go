@@ -16,6 +16,7 @@ import (
 
 	"github.com/18F/hmacauth"
 	"github.com/bitly/oauth2_proxy/cookie"
+	"github.com/bitly/oauth2_proxy/discovery"
 	"github.com/bitly/oauth2_proxy/providers"
 )
 
@@ -54,6 +55,7 @@ type OAuthProxy struct {
 
 	redirectURL         *url.URL // the url to receive requests at
 	provider            providers.Provider
+	discovery           discovery.Discovery
 	ProxyPrefix         string
 	SignInMessage       string
 	HtpasswdFile        *HtpasswdFile
@@ -111,6 +113,21 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 	return http.StripPrefix(path, http.FileServer(http.Dir(filesystemPath)))
 }
 
+type httpHandleAllocator struct {
+	auth           hmacauth.HmacAuth
+	passHostHeader bool
+}
+
+func (h *httpHandleAllocator) NewHandler(u *url.URL) http.Handler {
+	proxy := NewReverseProxy(u)
+	if !h.passHostHeader {
+		setProxyUpstreamHostHeader(proxy, u)
+	} else {
+		setProxyDirector(proxy)
+	}
+	return &UpstreamProxy{u.Host, proxy, h.auth}
+}
+
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
 	var auth hmacauth.HmacAuth
@@ -118,20 +135,14 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
 			SignatureHeader, SignatureHeaders)
 	}
+	proxyAllocator := &httpHandleAllocator{auth, opts.PassHostHeader}
 	for _, u := range opts.proxyURLs {
 		path := u.Path
 		switch u.Scheme {
 		case "http", "https":
 			u.Path = ""
 			log.Printf("mapping path %q => upstream %q", path, u)
-			proxy := NewReverseProxy(u)
-			if !opts.PassHostHeader {
-				setProxyUpstreamHostHeader(proxy, u)
-			} else {
-				setProxyDirector(proxy)
-			}
-			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, auth})
+			serveMux.Handle(path, proxyAllocator.NewHandler(u))
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
@@ -171,6 +182,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		}
 	}
 
+	discovery := discovery.Create(opts.Discovery, proxyAllocator.NewHandler)
 	return &OAuthProxy{
 		CookieName:     opts.CookieName,
 		CookieSeed:     opts.CookieSecret,
@@ -191,7 +203,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 
 		ProxyPrefix:        opts.ProxyPrefix,
 		provider:           opts.provider,
-		serveMux:           serveMux,
+		discovery:          discovery,
+		serveMux:           discovery.NewServeMux(serveMux),
 		redirectURL:        redirectURL,
 		skipAuthRegex:      opts.SkipAuthRegex,
 		compiledRegex:      opts.CompiledRegex,
