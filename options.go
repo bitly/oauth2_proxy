@@ -37,6 +37,8 @@ type Options struct {
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
 	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
+	Title                    string   `flag:"title" cfg:"title"`
+	Header                   string   `flag:"header" cfg:"header"`
 	Footer                   string   `flag:"footer" cfg:"footer"`
 
 	CookieName     string        `flag:"cookie-name" cfg:"cookie_name" env:"OAUTH2_PROXY_COOKIE_NAME"`
@@ -49,6 +51,7 @@ type Options struct {
 
 	Upstreams          []string `flag:"upstream" cfg:"upstreams"`
 	SkipAuthRegex      []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
+	ReturnAuthenticatedEmail bool `flag:"return-authenticated-email" cfg:"return_authenticated_email"`
 	PassBasicAuth      bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword  string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken    bool     `flag:"pass-access-token" cfg:"pass_access_token"`
@@ -94,6 +97,7 @@ func NewOptions() *Options {
 		CookieHttpOnly:      true,
 		CookieExpire:        time.Duration(168) * time.Hour,
 		CookieRefresh:       time.Duration(0),
+		ReturnAuthenticatedEmail: false,
 		PassBasicAuth:       true,
 		PassAccessToken:     false,
 		PassHostHeader:      true,

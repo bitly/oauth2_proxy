@@ -60,6 +60,7 @@ type OAuthProxy struct {
 	DisplayHtpasswdForm bool
 	serveMux            http.Handler
 	PassBasicAuth       bool
+	ReturnAuthenticatedEmail bool
 	SkipProviderButton  bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
@@ -67,6 +68,8 @@ type OAuthProxy struct {
 	skipAuthRegex       []string
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
+	Title               string
+	Header              string
 	Footer              string
 }
 
@@ -196,11 +199,14 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		skipAuthRegex:      opts.SkipAuthRegex,
 		compiledRegex:      opts.CompiledRegex,
 		PassBasicAuth:      opts.PassBasicAuth,
+		ReturnAuthenticatedEmail: opts.ReturnAuthenticatedEmail,
 		BasicAuthPassword:  opts.BasicAuthPassword,
 		PassAccessToken:    opts.PassAccessToken,
 		SkipProviderButton: opts.SkipProviderButton,
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
+		Title:              opts.Title,
+		Header:             opts.Header,
 		Footer:             opts.Footer,
 	}
 }
@@ -348,6 +354,8 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		Redirect      string
 		Version       string
 		ProxyPrefix   string
+		Title         string
+		Header        template.HTML
 		Footer        template.HTML
 	}{
 		ProviderName:  p.provider.Data().ProviderName,
@@ -356,6 +364,8 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 		Redirect:      redirect_url,
 		Version:       VERSION,
 		ProxyPrefix:   p.ProxyPrefix,
+		Title:         p.Title,
+		Header:        template.HTML(p.Header),
 		Footer:        template.HTML(p.Footer),
 	}
 	p.templates.ExecuteTemplate(rw, "sign_in.html", t)
@@ -610,6 +620,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		if session.Email != "" {
 			req.Header["X-Forwarded-Email"] = []string{session.Email}
 		}
+	}
+	if p.ReturnAuthenticatedEmail {
+		rw.Header().Set("X-Authenticated-Email", session.Email)
 	}
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
