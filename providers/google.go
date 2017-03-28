@@ -194,7 +194,10 @@ func userInGroup(service *admin.Service, groups []string, email string) bool {
 	id := user.Id
 	custID := user.CustomerId
 
-	for _, group := range groups {
+	groups = groups[:]
+	for i := 0; i < len(groups); i++ {
+		group := groups[i]
+
 		members, err := fetchGroupMembers(service, group)
 		if err != nil {
 			log.Printf("error fetching group members: %v", err)
@@ -211,7 +214,20 @@ func userInGroup(service *admin.Service, groups []string, email string) bool {
 				if member.Id == id {
 					return true
 				}
+			case "GROUP":
+				if !containsString(groups, member.Email) {
+					groups = append(groups, member.Email)
+				}
 			}
+		}
+	}
+	return false
+}
+
+func containsString(elems []string, s string) bool {
+	for _, e := range elems {
+		if e == s {
+			return true
 		}
 	}
 	return false
