@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -54,6 +55,7 @@ type Options struct {
 	PassAccessToken    bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader     bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 	SkipProviderButton bool     `flag:"skip-provider-button" cfg:"skip_provider_button"`
+	SkipCertValidation bool     `flag:"skip-cert-validation" cfg:"skip_cert_validation"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
@@ -100,6 +102,7 @@ func NewOptions() *Options {
 		SkipProviderButton:  false,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
+		SkipCertValidation:  false,
 	}
 }
 
@@ -202,6 +205,13 @@ func (o *Options) Validate() error {
 
 	msgs = parseSignatureKey(o, msgs)
 	msgs = validateCookieName(o, msgs)
+
+	if o.SkipCertValidation {
+		insecureTransport := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		http.DefaultClient = &http.Client{Transport: insecureTransport}
+	}
 
 	if len(msgs) != 0 {
 		return fmt.Errorf("Invalid configuration:\n  %s",
