@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"crypto/tls"
 
 	"github.com/bitly/oauth2_proxy/cookie"
 )
@@ -19,12 +20,20 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 		return
 	}
 
+
 	params := url.Values{}
 	params.Add("redirect_uri", redirectURL)
 	params.Add("client_id", p.ClientID)
 	params.Add("client_secret", p.ClientSecret)
 	params.Add("code", code)
 	params.Add("grant_type", "authorization_code")
+
+	fmt.Printf("Before Request -> SSL: %t", p.EnableInsecure)
+
+	cfg := &tls.Config{ InsecureSkipVerify: p.EnableInsecure, }
+
+	http.DefaultClient.Transport = &http.Transport{ TLSClientConfig: cfg, }
+
 	if p.ProtectedResource != nil && p.ProtectedResource.String() != "" {
 		params.Add("resource", p.ProtectedResource.String())
 	}

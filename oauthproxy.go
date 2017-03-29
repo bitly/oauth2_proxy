@@ -68,6 +68,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	EnableInsecure	    bool
 }
 
 type UpstreamProxy struct {
@@ -151,6 +152,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	redirectURL.Path = fmt.Sprintf("%s/callback", opts.ProxyPrefix)
 
 	log.Printf("OAuthProxy configured for %s Client ID: %s", opts.provider.Data().ProviderName, opts.ClientID)
+	opts.provider.Data().EnableInsecure = opts.EnableInsecure
+	log.Printf("OAuthProxy Insecure SSL: %t", opts.provider.Data().EnableInsecure)
 	domain := opts.CookieDomain
 	if domain == "" {
 		domain = "<default>"
@@ -202,6 +205,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		EnableInsecure:	   opts.EnableInsecure,
 	}
 }
 

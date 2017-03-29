@@ -157,6 +157,7 @@ func TestBasicAuthPassword(t *testing.T) {
 	opts.CookieSecure = false
 	opts.PassBasicAuth = true
 	opts.BasicAuthPassword = "This is a secure password"
+	opts.EnableInsecure = false
 	opts.Validate()
 
 	provider_url, _ := url.Parse(provider_server.URL)
