@@ -8,31 +8,15 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/18F/hmacauth"
+	"github.com/bitly/oauth2_proxy/backends"
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
 )
-
-const SignatureHeader = "GAP-Signature"
-
-var SignatureHeaders []string = []string{
-	"Content-Length",
-	"Content-Md5",
-	"Content-Type",
-	"Date",
-	"Authorization",
-	"X-Forwarded-User",
-	"X-Forwarded-Email",
-	"X-Forwarded-Access-Token",
-	"Cookie",
-	"Gap-Auth",
-}
 
 type OAuthProxy struct {
 	CookieSeed     string
@@ -71,79 +55,16 @@ type OAuthProxy struct {
 	Footer              string
 }
 
-type UpstreamProxy struct {
-	upstream string
-	handler  http.Handler
-	auth     hmacauth.HmacAuth
-}
-
-func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("GAP-Upstream-Address", u.upstream)
-	if u.auth != nil {
-		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
-		u.auth.SignRequest(r)
-	}
-	u.handler.ServeHTTP(w, r)
-}
-
-func NewReverseProxy(target *url.URL) (proxy *httputil.ReverseProxy) {
-	return httputil.NewSingleHostReverseProxy(target)
-}
-func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
-	director := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		director(req)
-		// use RequestURI so that we aren't unescaping encoded slashes in the request path
-		req.Host = target.Host
-		req.URL.Opaque = req.RequestURI
-		req.URL.RawQuery = ""
-	}
-}
-func setProxyDirector(proxy *httputil.ReverseProxy) {
-	director := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		director(req)
-		// use RequestURI so that we aren't unescaping encoded slashes in the request path
-		req.URL.Opaque = req.RequestURI
-		req.URL.RawQuery = ""
-	}
-}
-func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
-	return http.StripPrefix(path, http.FileServer(http.Dir(filesystemPath)))
-}
-
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
-	var auth hmacauth.HmacAuth
-	if sigData := opts.signatureData; sigData != nil {
-		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
-			SignatureHeader, SignatureHeaders)
+
+	for _, b := range opts.proxyURLs {
+		backends.Register(b.BackendType, b.Url, &backends.Options{
+			SignatureData:  opts.signatureData,
+			PassHostHeader: opts.PassHostHeader,
+		}, serveMux)
 	}
-	for _, u := range opts.proxyURLs {
-		path := u.Path
-		switch u.Scheme {
-		case "http", "https":
-			u.Path = ""
-			log.Printf("mapping path %q => upstream %q", path, u)
-			proxy := NewReverseProxy(u)
-			if !opts.PassHostHeader {
-				setProxyUpstreamHostHeader(proxy, u)
-			} else {
-				setProxyDirector(proxy)
-			}
-			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, auth})
-		case "file":
-			if u.Fragment != "" {
-				path = u.Fragment
-			}
-			log.Printf("mapping path %q => file system %q", path, u.Path)
-			proxy := NewFileServer(path, u.Path)
-			serveMux.Handle(path, &UpstreamProxy{path, proxy, nil})
-		default:
-			panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
-		}
-	}
+
 	for _, u := range opts.CompiledRegex {
 		log.Printf("compiled skip-auth-regex => %q", u)
 	}
