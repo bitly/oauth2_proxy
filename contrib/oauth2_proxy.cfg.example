@@ -42,6 +42,9 @@
 ## Pass OAuth Access token to upstream via "X-Forwarded-Access-Token"
 # pass_access_token = false
 
+## Pass roles the user has via X-Forwarded-Roles
+# pass_roles_header = false
+
 ## Authenticated Email Addresses File (one email per line)
 # authenticated_emails_file = ""
 

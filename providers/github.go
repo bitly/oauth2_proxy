@@ -13,8 +13,15 @@ import (
 
 type GitHubProvider struct {
 	*ProviderData
-	Org  string
-	Team string
+	Org       string
+	Team      string
+	userRoles []struct {
+		Name string `json:"name"`
+		Slug string `json:"slug"`
+		Org  struct {
+			Login string `json:"login"`
+		} `json:"organization"`
+	}
 }
 
 func NewGitHubProvider(p *ProviderData) *GitHubProvider {
@@ -46,6 +53,7 @@ func NewGitHubProvider(p *ProviderData) *GitHubProvider {
 	}
 	return &GitHubProvider{ProviderData: p}
 }
+
 func (p *GitHubProvider) SetOrgTeam(org, team string) {
 	p.Org = org
 	p.Team = team
@@ -73,6 +81,7 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 		RawQuery: params.Encode(),
 	}
 	req, _ := http.NewRequest("GET", endpoint.String(), nil)
+
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -106,17 +115,9 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 	return false, nil
 }
 
-func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
+func (p *GitHubProvider) SetUserRoles(accessToken string) (bool, error) {
+
 	// https://developer.github.com/v3/orgs/teams/#list-user-teams
-
-	var teams []struct {
-		Name string `json:"name"`
-		Slug string `json:"slug"`
-		Org  struct {
-			Login string `json:"login"`
-		} `json:"organization"`
-	}
-
 	params := url.Values{
 		"access_token": {accessToken},
 		"limit":        {"100"},
@@ -145,14 +146,21 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 			"got %d from %q %s", resp.StatusCode, stripToken(endpoint.String()), body)
 	}
 
-	if err := json.Unmarshal(body, &teams); err != nil {
+	if err := json.Unmarshal(body, &p.userRoles); err != nil {
 		return false, fmt.Errorf("%s unmarshaling %s", err, body)
 	}
+
+	log.Printf("Returned roles - %v", p.userRoles)
+
+	return true, nil
+}
+
+func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 
 	var hasOrg bool
 	presentOrgs := make(map[string]bool)
 	var presentTeams []string
-	for _, team := range teams {
+	for _, team := range p.userRoles {
 		presentOrgs[team.Org.Login] = true
 		if p.Org == team.Org.Login {
 			hasOrg = true
@@ -183,6 +191,10 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	var emails []struct {
 		Email   string `json:"email"`
 		Primary bool   `json:"primary"`
+	}
+
+	if ok, err := p.SetUserRoles(s.AccessToken); err != nil || !ok {
+		return "", err
 	}
 
 	// if we require an Org or Team, check that first
@@ -236,4 +248,26 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	}
 
 	return "", nil
+}
+
+// Return a filtered list of all teams assigned to a user by the organization defined in the configuration
+func (p *GitHubProvider) GetUserRoles() string {
+
+	// Todo - could abstract this filtering and refactor hasOrgAndTeam()
+	presentOrgs := make(map[string]bool)
+	var presentRoles []string
+	for _, team := range p.userRoles {
+		presentOrgs[team.Org.Login] = true
+		if p.Org == team.Org.Login {
+			ts := strings.Split(p.Team, ",")
+			for _, t := range ts {
+				if t == team.Slug {
+					log.Printf("Found Github Organization:%q Team:%q (Name:%q)", team.Org.Login, team.Slug, team.Name)
+				}
+			}
+			presentRoles = append(presentRoles, team.Slug)
+		}
+	}
+
+	return strings.Join(presentRoles, ",")
 }

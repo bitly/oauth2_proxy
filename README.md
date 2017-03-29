@@ -189,6 +189,7 @@ Usage of oauth2_proxy:
   -pass-basic-auth=true: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
   -pass-user-headers=true: pass X-Forwarded-User and X-Forwarded-Email information to upstream
   -pass-host-header=true: pass the request Host Header to upstream
+  -pass-roles-header=false: pass user's roles upstream via X-Forwarded-Roles header
   -profile-url="": Profile access endpoint
   -provider="google": OAuth provider
   -proxy-prefix="/oauth2": the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in)
