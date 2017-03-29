@@ -60,6 +60,7 @@ type OAuthProxy struct {
 	DisplayHtpasswdForm bool
 	serveMux            http.Handler
 	PassBasicAuth       bool
+	PassUserId          bool
 	SkipProviderButton  bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
@@ -196,11 +197,12 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		skipAuthRegex:      opts.SkipAuthRegex,
 		compiledRegex:      opts.CompiledRegex,
 		PassBasicAuth:      opts.PassBasicAuth,
+		PassUserId:         opts.PassUserId,
 		BasicAuthPassword:  opts.BasicAuthPassword,
 		PassAccessToken:    opts.PassAccessToken,
-		SkipProviderButton: opts.SkipProviderButton,
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
+		SkipProviderButton: opts.SkipProviderButton,
 		Footer:             opts.Footer,
 	}
 }
@@ -240,6 +242,9 @@ func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, e
 	if s.Email == "" {
 		s.Email, err = p.provider.GetEmailAddress(s)
 	}
+
+	s.UserId, err = p.provider.GetUserId(s)
+
 	return
 }
 
@@ -615,6 +620,12 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 			req.Header["X-Forwarded-Email"] = []string{session.Email}
 		}
 	}
+
+	if p.PassUserId {
+		log.Printf("Passing UserId header %s", session.UserId)
+		req.Header["X-Forwarded-UserId"] = []string{session.UserId}
+	}
+
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
 	}

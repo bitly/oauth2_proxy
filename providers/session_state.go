@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/bitly/oauth2_proxy/cookie"
 )
 
@@ -15,6 +14,7 @@ type SessionState struct {
 	RefreshToken string
 	Email        string
 	User         string
+	UserId	     string
 }
 
 func (s *SessionState) IsExpired() bool {
@@ -72,7 +72,16 @@ func (s *SessionState) EncryptedString(c *cookie.Cipher) (string, error) {
 			return "", err
 		}
 	}
-	return fmt.Sprintf("%s|%s|%d|%s", s.userOrEmail(), a, s.ExpiresOn.Unix(), r), nil
+
+	u := s.UserId
+	if u != "" {
+		u, err = c.Encrypt(u)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return fmt.Sprintf("%s|%s|%d|%s|%s", s.userOrEmail(), a, s.ExpiresOn.Unix(), r, u), nil
 }
 
 func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error) {
@@ -85,8 +94,8 @@ func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error)
 		return &SessionState{User: v}, nil
 	}
 
-	if len(chunks) != 4 {
-		err = fmt.Errorf("invalid number of fields (got %d expected 4)", len(chunks))
+	if len(chunks) != 5 {
+		err = fmt.Errorf("invalid number of fields (got %d expected 5)", len(chunks))
 		return
 	}
 
@@ -103,6 +112,14 @@ func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error)
 			return nil, err
 		}
 	}
+
+	if c!=nil && chunks[4] != "" {
+		s.UserId, err = c.Decrypt(chunks[4])
+		if err !=nil {
+			return nil, err
+		}
+	}
+
 	if u := chunks[0]; strings.Contains(u, "@") {
 		s.Email = u
 		s.User = strings.Split(u, "@")[0]

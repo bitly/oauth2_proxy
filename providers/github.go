@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"path"
 	"strings"
 )
@@ -237,3 +238,45 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	return "", nil
 }
+
+func (p *GitHubProvider) GetUserId(s *SessionState) (string, error) {
+
+	var userData struct {
+		UserId int `json:"id"`
+	}
+
+	params := url.Values{
+		"access_token": {s.AccessToken},
+	}
+	
+	endpoint := &url.URL{
+		Scheme:   p.ValidateURL.Scheme,
+		Host:     p.ValidateURL.Host,
+		Path:     path.Join(p.ValidateURL.Path, "/user"),
+		RawQuery: params.Encode(),
+	}
+	resp, err := http.DefaultClient.Get(endpoint.String())
+
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
+	} else {
+		log.Printf("got %d from %q %s", resp.StatusCode, endpoint, body)
+	}
+
+	if err := json.Unmarshal(body, &userData); err != nil {
+		return "", fmt.Errorf("%s unmarshaling %s", err, body)
+	}
+
+	var id = strconv.Itoa(userData.UserId)
+
+	log.Printf("User ID is", id)
+
+	return id, nil
+
+}
+
