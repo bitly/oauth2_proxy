@@ -360,9 +360,10 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	p.ClearSessionCookie(rw, req)
 	rw.WriteHeader(code)
 
-	redirect_url := req.URL.RequestURI()
-	if redirect_url == p.SignInPath {
-		redirect_url = "/"
+	redirect_url, err := p.GetRedirect(req)
+	if err != nil {
+		p.ErrorPage(rw, 500, "Internal Error", err.Error())
+		return
 	}
 
 	t := struct {
