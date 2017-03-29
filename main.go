@@ -19,6 +19,7 @@ func main() {
 
 	emailDomains := StringArray{}
 	upstreams := StringArray{}
+	awsUpstreams := StringArray{}
 	skipAuthRegex := StringArray{}
 	googleGroups := StringArray{}
 
@@ -75,6 +76,10 @@ func main() {
 	flagSet.String("approval-prompt", "force", "OAuth approval_prompt")
 
 	flagSet.String("signature-key", "", "GAP-Signature request signature key (algorithm:secretkey)")
+
+	flagSet.Var(&awsUpstreams, "aws-upstream", "the http url(s) of upstream servers that expect requests to be signed with AWS HMAC signatures.")
+	flagSet.String("aws-access-key-id", "", "the aws access key id to use when generating hmac signatures for aws-upstreams")
+	flagSet.String("aws-secret-access-key", "", "the aws secret access key to use when generating hmac signatures for aws-upstreams")
 
 	flagSet.Parse(os.Args[1:])
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/18F/hmacauth"
+	"github.com/bitly/oauth2_proxy/backends"
 	"github.com/bitly/oauth2_proxy/providers"
 )
 
@@ -71,17 +71,24 @@ type Options struct {
 
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
+	// These options allow for defining a list of aws upstream servers. Requests to these upstreams will be signed with
+	// the provided key/secret provided as well. Env vars are read from the standard aws env var names.
+	AwsUpstreams       []string `flag:"aws-upstream" cfg:"aws_upstreams"`
+	AwsAccessKeyId     string   `flag:"aws-access-key-id" cfg:"aws_access_key_id" env:"AWS_ACCESS_KEY"`
+	AwsSecretAccessKey string   `flag:"aws-secret-access-key" cfg:"aws_secret_access_key" env:"AWS_SECRET_KEY"`
+
 	// internal values that are set after config validation
 	redirectURL   *url.URL
-	proxyURLs     []*url.URL
+	proxyURLs     []*proxyURL
 	CompiledRegex []*regexp.Regexp
 	provider      providers.Provider
-	signatureData *SignatureData
+	signatureData *backends.GAPSignatureData
 }
 
-type SignatureData struct {
-	hash crypto.Hash
-	key  string
+type proxyURL struct {
+	Url         *url.URL
+	BackendType string
+	Options     *backends.Options
 }
 
 func NewOptions() *Options {
@@ -114,10 +121,18 @@ func parseURL(to_parse string, urltype string, msgs []string) (*url.URL, []strin
 	return parsed, msgs
 }
 
+func parseUpstreamUrl(u string, msgs []string) (*url.URL, []string) {
+	upstreamURL, msgs := parseURL(u, "upstream", msgs)
+	if upstreamURL.Path == "" {
+		upstreamURL.Path = "/"
+	}
+	return upstreamURL, msgs
+}
+
 func (o *Options) Validate() error {
 	msgs := make([]string, 0)
-	if len(o.Upstreams) < 1 {
-		msgs = append(msgs, "missing setting: upstream")
+	if len(o.Upstreams) < 1 && len(o.AwsUpstreams) < 1 {
+		msgs = append(msgs, "missing setting: upstreams or aws-upstreams required")
 	}
 	if o.CookieSecret == "" {
 		msgs = append(msgs, "missing setting: cookie-secret")
@@ -134,17 +149,32 @@ func (o *Options) Validate() error {
 
 	o.redirectURL, msgs = parseURL(o.RedirectURL, "redirect", msgs)
 
+	msgs = parseSignatureKey(o, msgs)
+
 	for _, u := range o.Upstreams {
-		upstreamURL, err := url.Parse(u)
-		if err != nil {
-			msgs = append(msgs, fmt.Sprintf(
-				"error parsing upstream=%q %s",
-				upstreamURL, err))
-		}
-		if upstreamURL.Path == "" {
-			upstreamURL.Path = "/"
-		}
-		o.proxyURLs = append(o.proxyURLs, upstreamURL)
+		var upstreamURL *url.URL
+		upstreamURL, msgs = parseUpstreamUrl(u, msgs)
+		o.proxyURLs = append(o.proxyURLs, &proxyURL{
+			Url:         upstreamURL,
+			BackendType: backends.BackendTypeDefault,
+			Options: &backends.Options{
+				SignatureData:  o.signatureData,
+				PassHostHeader: o.PassHostHeader,
+			},
+		})
+	}
+
+	for _, u := range o.AwsUpstreams {
+		var upstreamURL *url.URL
+		upstreamURL, msgs = parseUpstreamUrl(u, msgs)
+		o.proxyURLs = append(o.proxyURLs, &proxyURL{
+			Url:         upstreamURL,
+			BackendType: backends.BackendTypeAws,
+			Options: &backends.Options{
+				AwsAccessKeyId:     o.AwsAccessKeyId,
+				AwsSecretAccessKey: o.AwsSecretAccessKey,
+			},
+		})
 	}
 
 	for _, u := range o.SkipAuthRegex {
@@ -202,7 +232,6 @@ func (o *Options) Validate() error {
 		}
 	}
 
-	msgs = parseSignatureKey(o, msgs)
 	msgs = validateCookieName(o, msgs)
 
 	if len(msgs) != 0 {
@@ -260,7 +289,7 @@ func parseSignatureKey(o *Options, msgs []string) []string {
 		return append(msgs, "unsupported signature hash algorithm: "+
 			o.SignatureKey)
 	} else {
-		o.signatureData = &SignatureData{hash, secretKey}
+		o.signatureData = &backends.GAPSignatureData{hash, secretKey}
 	}
 	return msgs
 }
