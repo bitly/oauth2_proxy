@@ -155,7 +155,7 @@ To generate a strong cookie secret use `python -c 'import os,base64; print base6
 
 An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is in the contrib directory. It can be used by specifying `-config=/etc/oauth2_proxy.cfg`
 
-### Command Line Options
+### Command Line/Config File Options
 
 ```
 Usage of oauth2_proxy:
@@ -208,21 +208,7 @@ Usage of oauth2_proxy:
   -version=false: print version string
 ```
 
-### Config File Options
-
-The config file options are not always the same as command line options. Details on config file options: (information needed)
-
-Example config file:
-```
-provider="azure"
-client_id="$clientID"
-client_secret="$appsecret"
-cookie_secret="$cookiesecret"
-cookie-secure="false"
-email_domains="$emaildomain"
-upstreams="http://127.0.0.1:8080/"
-skip-provider-button="true"
-```
+Values defined in [options.go](options.go)
 
 See below for provider specific options
 
