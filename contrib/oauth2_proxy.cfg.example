@@ -14,7 +14,7 @@
 # redirect_url = "https://internalapp.yourcompany.com/oauth2/callback"
 
 ## the http url(s) of the upstream endpoint. If multiple, routing is based on path
-# upstreams = [
+# upstream = [
 #     "http://127.0.0.1:8080/"
 # ]
 
