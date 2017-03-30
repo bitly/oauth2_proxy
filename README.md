@@ -157,6 +157,9 @@ An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is i
 
 ### Command Line/Config File Options
 
+Note: Config file parameter words are delimited with underscores while command line flags are delimited using hyphens
+e.g. command line flag would be `-approval-prompt="force"` and config file parameter would be `approval_prompt="force"`
+
 ```
 Usage of oauth2_proxy:
   -approval-prompt="force": Oauth approval_prompt
