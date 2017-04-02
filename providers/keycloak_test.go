@@ -29,13 +29,14 @@ func testKeycloakProvider(hostname string) *KeycloakProvider {
 
 func testKeycloakBackend(payload string) *httptest.Server {
 	path := "/api/v3/user"
-	query := "access_token=imaginary_access_token"
 
 	return httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			url := r.URL
-			if url.Path != path || url.RawQuery != query {
+			if url.Path != path {
 				w.WriteHeader(404)
+			} else if r.Header.Get("Authorization") != "Bearer imaginary_access_token" {
+					w.WriteHeader(403)	
 			} else {
 				w.WriteHeader(200)
 				w.Write([]byte(payload))

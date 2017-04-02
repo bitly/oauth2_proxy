@@ -44,7 +44,7 @@ func NewKeycloakProvider(p *ProviderData) *KeycloakProvider {
 func (p *KeycloakProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	req, err := http.NewRequest("GET", p.ValidateURL.String(), nil)
-	req.Header.Set("Authorization:", "Bearer "+s.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+s.AccessToken)
 	if err != nil {
 		log.Printf("failed building request %s", err)
 		return "", err
