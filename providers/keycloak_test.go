@@ -36,7 +36,7 @@ func testKeycloakBackend(payload string) *httptest.Server {
 			if url.Path != path {
 				w.WriteHeader(404)
 			} else if r.Header.Get("Authorization") != "Bearer imaginary_access_token" {
-					w.WriteHeader(403)	
+				w.WriteHeader(403)
 			} else {
 				w.WriteHeader(200)
 				w.Write([]byte(payload))

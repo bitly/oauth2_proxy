@@ -31,7 +31,7 @@ func New(provider string, p *ProviderData) Provider {
 	case "gitlab":
 		return NewGitLabProvider(p)
 	case "keycloak":
-		return NewKeycloakProvider(p)	
+		return NewKeycloakProvider(p)
 	default:
 		return NewGoogleProvider(p)
 	}
