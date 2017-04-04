@@ -9,7 +9,7 @@ import (
 	"github.com/bmizerany/assert"
 )
 
-func testKeycloakProvider(hostname string) *KeycloakProvider {
+func testKeycloakProvider(hostname, group string) *KeycloakProvider {
 	p := NewKeycloakProvider(
 		&ProviderData{
 			ProviderName: "",
@@ -18,6 +18,11 @@ func testKeycloakProvider(hostname string) *KeycloakProvider {
 			ProfileURL:   &url.URL{},
 			ValidateURL:  &url.URL{},
 			Scope:        ""})
+
+	if group != "" {
+		p.SetGroup(group)
+	}
+
 	if hostname != "" {
 		updateURL(p.Data().LoginURL, hostname)
 		updateURL(p.Data().RedeemURL, hostname)
@@ -45,7 +50,7 @@ func testKeycloakBackend(payload string) *httptest.Server {
 }
 
 func TestKeycloakProviderDefaults(t *testing.T) {
-	p := testKeycloakProvider("")
+	p := testKeycloakProvider("", "")
 	assert.NotEqual(t, nil, p)
 	assert.Equal(t, "Keycloak", p.Data().ProviderName)
 	assert.Equal(t, "https://keycloak.org/oauth/authorize",
@@ -89,7 +94,20 @@ func TestKeycloakProviderGetEmailAddress(t *testing.T) {
 	defer b.Close()
 
 	b_url, _ := url.Parse(b.URL)
-	p := testKeycloakProvider(b_url.Host)
+	p := testKeycloakProvider(b_url.Host, "")
+
+	session := &SessionState{AccessToken: "imaginary_access_token"}
+	email, err := p.GetEmailAddress(session)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "michael.bland@gsa.gov", email)
+}
+
+func TestKeycloakProviderGetEmailAddressAndGroup(t *testing.T) {
+	b := testKeycloakBackend("{\"email\": \"michael.bland@gsa.gov\", \"groups\": [\"test-grp1\", \"test-grp2\"]}")
+	defer b.Close()
+
+	b_url, _ := url.Parse(b.URL)
+	p := testKeycloakProvider(b_url.Host, "test-grp1")
 
 	session := &SessionState{AccessToken: "imaginary_access_token"}
 	email, err := p.GetEmailAddress(session)
@@ -104,7 +122,7 @@ func TestKeycloakProviderGetEmailAddressFailedRequest(t *testing.T) {
 	defer b.Close()
 
 	b_url, _ := url.Parse(b.URL)
-	p := testKeycloakProvider(b_url.Host)
+	p := testKeycloakProvider(b_url.Host, "")
 
 	// We'll trigger a request failure by using an unexpected access
 	// token. Alternatively, we could allow the parsing of the payload as
@@ -120,7 +138,7 @@ func TestKeycloakProviderGetEmailAddressEmailNotPresentInPayload(t *testing.T) {
 	defer b.Close()
 
 	b_url, _ := url.Parse(b.URL)
-	p := testKeycloakProvider(b_url.Host)
+	p := testKeycloakProvider(b_url.Host, "")
 
 	session := &SessionState{AccessToken: "imaginary_access_token"}
 	email, err := p.GetEmailAddress(session)

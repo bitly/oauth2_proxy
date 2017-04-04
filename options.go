@@ -28,6 +28,7 @@ type Options struct {
 	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file"`
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
+	KeycloakGroup            string   `flag:"keycloak-group" cfg:"keycloak_group"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
@@ -241,6 +242,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
+	case *providers.KeycloakProvider:
+		p.SetGroup(o.KeycloakGroup)
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)

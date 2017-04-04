@@ -10,6 +10,7 @@ import (
 
 type KeycloakProvider struct {
 	*ProviderData
+	Group string
 }
 
 func NewKeycloakProvider(p *ProviderData) *KeycloakProvider {
@@ -41,6 +42,10 @@ func NewKeycloakProvider(p *ProviderData) *KeycloakProvider {
 	return &KeycloakProvider{ProviderData: p}
 }
 
+func (p *KeycloakProvider) SetGroup(group string) {
+	p.Group = group
+}
+
 func (p *KeycloakProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	req, err := http.NewRequest("GET", p.ValidateURL.String(), nil)
@@ -54,5 +59,27 @@ func (p *KeycloakProvider) GetEmailAddress(s *SessionState) (string, error) {
 		log.Printf("failed making request %s", err)
 		return "", err
 	}
+
+	if p.Group != "" {
+		var groups, err = json.Get("groups").Array()
+		if err != nil {
+			log.Printf("groups not found %s", err)
+			return "", err
+		}
+
+		var found = false
+		for i := range groups {
+			if groups[i].(string) == p.Group {
+				found = true
+				break
+			}
+		}
+
+		if found != true {
+			log.Printf("group not found, access denied")
+			return "", nil
+		}
+	}
+
 	return json.Get("email").String()
 }
