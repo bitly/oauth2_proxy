@@ -27,9 +27,10 @@ type Options struct {
 	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
 	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file"`
 
-	LetsEncryptEnabled    bool   `flag:"letsencrypt-enabled" cfg:"letsencrypt-enabled"`
-	LetsEncryptCacheDir   string `flag:"letsencrypt-cache-dir" cfg:"letsencrypt-cache-dir"`
-	LetsEncryptAdminEmail string `flag:"letsencrypt-admin-email" cfg:"letsencrypt-admin-email"`
+	LetsEncryptEnabled    bool     `flag:"letsencrypt-enabled" cfg:"letsencrypt_enabled"`
+	LetsEncryptHosts      []string `flag:"letsencrypt-host" cfg:"letsencrypt_hosts"`
+	LetsEncryptCacheDir   string   `flag:"letsencrypt-cache-dir" cfg:"letsencrypt_cache_dir"`
+	LetsEncryptAdminEmail string   `flag:"letsencrypt-admin-email" cfg:"letsencrypt_admin_email"`
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
@@ -109,6 +110,7 @@ func NewOptions() *Options {
 		PassHostHeader:      true,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
+		LetsEncryptCacheDir: "./",
 	}
 }
 
@@ -145,6 +147,14 @@ func (o *Options) Validate() error {
 
 	if o.LetsEncryptEnabled && o.LetsEncryptAdminEmail == "" {
 		msgs = append(msgs, "must set letsencrypt-admin-email if letsencrypt is enabled")
+	}
+
+	if o.LetsEncryptEnabled && o.LetsEncryptCacheDir == "" {
+		msgs = append(msgs, "must set letsencrypt-cache-dir if letsencrypt is enabled")
+	}
+
+	if o.LetsEncryptEnabled && len(o.LetsEncryptHosts) == 0 {
+		msgs = append(msgs, "must provide at least one letsencrypt-host if letsencrypt is enabled")
 	}
 
 	o.redirectURL, msgs = parseURL(o.RedirectURL, "redirect", msgs)

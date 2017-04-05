@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"rsc.io/letsencrypt"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 type Server struct {
@@ -18,7 +18,7 @@ type Server struct {
 }
 
 func (s *Server) ListenAndServe() {
-	if s.Opts.TLSKeyFile != "" || s.Opts.TLSCertFile != "" {
+	if s.Opts.TLSKeyFile != "" || s.Opts.TLSCertFile != "" || s.Opts.LetsEncryptEnabled {
 		s.ServeHTTPS()
 	} else {
 		s.ServeHTTP()
@@ -67,18 +67,15 @@ func (s *Server) ServeHTTPS() {
 	}
 
 	if s.Opts.LetsEncryptEnabled {
-		var m letsencrypt.Manager
-		if err := m.CacheFile(s.Opts.LetsEncryptCacheDir); err != nil {
-			log.Fatal(err)
+		manager := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			Cache:      autocert.DirCache(s.Opts.LetsEncryptCacheDir),
+			HostPolicy: autocert.HostWhitelist(s.Opts.LetsEncryptHosts...),
 		}
-
-		m.Register(s.Opts.LetsEncryptAdminEmail, func(_ string) bool {
-			return true
-		})
-
-		m.SetHosts([]string{addr})
-
-		config.GetCertificate = m.GetCertificate
+		if s.Opts.LetsEncryptAdminEmail != "" {
+			manager.Email = s.Opts.LetsEncryptAdminEmail
+		}
+		config.GetCertificate = manager.GetCertificate
 	} else {
 		var err error
 		config.Certificates = make([]tls.Certificate, 1)

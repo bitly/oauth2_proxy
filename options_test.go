@@ -58,12 +58,16 @@ func TestLetsEncryptOptions(t *testing.T) {
 	o := testOptions()
 	o.LetsEncryptEnabled = true
 	o.TLSCertFile = "key.keyfile"
+	o.LetsEncryptCacheDir = ""
 	err := o.Validate()
 	assert.NotEqual(t, nil, err)
 
 	expected := errorMsg([]string{
 		"cannot enable letsencrypt AND specify a TLS keypair",
-		"must set letsencrypt-admin-email if letsencrypt is enabled"})
+		"must set letsencrypt-admin-email if letsencrypt is enabled",
+		"must set letsencrypt-cache-dir if letsencrypt is enabled",
+		"must provide at least one letsencrypt-host if letsencrypt is enabled",
+	})
 	assert.Equal(t, expected, err.Error())
 }
 
