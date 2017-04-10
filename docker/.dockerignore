@@ -1,0 +1,5 @@
+*
+
+# Only include these files:
+!oauth2_proxy
+!ca-certificates.crt
