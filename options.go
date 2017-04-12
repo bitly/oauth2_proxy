@@ -30,10 +30,10 @@ type Options struct {
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
-	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
+	EmailDomains             []string `flag:"email-domain" cfg:"email_domains" env:"OAUTH2_EMAIL_DOMAIN"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
-	JhipsterAuthority        string   `flag:"jhipster-authority" cfg:"jhipster_authority"`
+	JhipsterAuthority        string   `flag:"jhipster-authority" cfg:"jhipster_authority" env:"OAUTH2_JHIPSTER_AUTHORITY"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
@@ -47,30 +47,30 @@ type Options struct {
 	CookieDomain   string        `flag:"cookie-domain" cfg:"cookie_domain" env:"OAUTH2_PROXY_COOKIE_DOMAIN"`
 	CookieExpire   time.Duration `flag:"cookie-expire" cfg:"cookie_expire" env:"OAUTH2_PROXY_COOKIE_EXPIRE"`
 	CookieRefresh  time.Duration `flag:"cookie-refresh" cfg:"cookie_refresh" env:"OAUTH2_PROXY_COOKIE_REFRESH"`
-	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
-	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
+	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure" env:"OAUTH2_PROXY_COOKIE_SECURE"`
+	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly" env:"OAUTH2_PROXY_COOKIE_HTTPONLY"`
 
-	Upstreams          []string `flag:"upstream" cfg:"upstreams"`
+	Upstreams          []string `flag:"upstream" cfg:"upstreams" env:"OAUTH2_UPSTREAM"`
 	SkipAuthRegex      []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	HostSkipAuthRegex  []string `flag:"host-skip-auth-regex" cfg:"host_skip_auth_regex"`
 	PassBasicAuth      bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword  string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken    bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader     bool     `flag:"pass-host-header" cfg:"pass_host_header"`
-	SkipProviderButton bool     `flag:"skip-provider-button" cfg:"skip_provider_button"`
+	SkipProviderButton bool     `flag:"skip-provider-button" cfg:"skip_provider_button" env:"OAUTH2_SKIP_PROVIDER_BUTTON"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
-	Provider          string `flag:"provider" cfg:"provider"`
-	LoginURL          string `flag:"login-url" cfg:"login_url"`
-	RedeemURL         string `flag:"redeem-url" cfg:"redeem_url"`
-	ProfileURL        string `flag:"profile-url" cfg:"profile_url"`
+	Provider          string `flag:"provider" cfg:"provider" env:"OAUTH2_PROVIDER"`
+	LoginURL          string `flag:"login-url" cfg:"login_url" env:"OAUTH2_LOGIN_URL"`
+	RedeemURL         string `flag:"redeem-url" cfg:"redeem_url" env:"OAUTH2_REDEEM_URL"`
+	ProfileURL        string `flag:"profile-url" cfg:"profile_url" env:"OAUTH2_PROFILE_URL"`
 	ProtectedResource string `flag:"resource" cfg:"resource"`
-	ValidateURL       string `flag:"validate-url" cfg:"validate_url"`
-	Scope             string `flag:"scope" cfg:"scope"`
+	ValidateURL       string `flag:"validate-url" cfg:"validate_url" env:"OAUTH2_VALIDATE_URL"`
+	Scope             string `flag:"scope" cfg:"scope" env:"OAUTH2_SCOPE"`
 	ApprovalPrompt    string `flag:"approval-prompt" cfg:"approval_prompt"`
 
-	RequestLogging bool `flag:"request-logging" cfg:"request_logging"`
+	RequestLogging bool `flag:"request-logging" cfg:"request_logging" env:"OAUTH2_REQUEST_LOGGING"`
 
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
@@ -91,7 +91,7 @@ type SignatureData struct {
 func NewOptions() *Options {
 	return &Options{
 		ProxyPrefix:         "/oauth2",
-		HttpAddress:         "127.0.0.1:4180",
+		HttpAddress:         "0.0.0.0:4180",
 		HttpsAddress:        ":443",
 		DisplayHtpasswdForm: true,
 		CookieName:          "_oauth2_proxy",
