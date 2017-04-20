@@ -35,6 +35,7 @@ Valid providers are :
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
 * [MyUSA](#myusa-auth-provider)
+* [Zendesk](#zendesk-auth-provider)
 
 The provider can be selected using the `provider` configuration value.
 
@@ -135,6 +136,13 @@ For LinkedIn, the registration steps are:
 
 The [MyUSA](https://alpha.my.usa.gov) authentication service ([GitHub](https://github.com/18F/myusa))
 
+### Zendesk Auth Provider
+
+1. Follow these steps to register Zendesk OAuth2 application: [Register your application with Zendesk](https://support.zendesk.com/hc/en-us/articles/203663836-Using-OAuth-authentication-with-your-application#topic_s21_lfs_qk).
+2. For "Redirect URLs", provide `https://internal.yourcompany.com/oauth2/callback`.
+3. Provide **Unique Identifier** (passed as `--client-id`) and take note of **Secret** (passed as `--client-secret`).
+3. Provide your subdomain via the `--zendesk-subdomain=<YOUR SUBDOMAIN>` option.
+
 ### Microsoft Azure AD Provider
 
 For adding an application to the Microsoft Azure AD follow [these steps to add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/).
@@ -207,6 +215,7 @@ Usage of oauth2_proxy:
   -upstream=: the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
   -validate-url="": Access token validation endpoint
   -version=false: print version string
+  -zendesk-subodmain="": subdomain for Zendesk
 ```
 
 See below for provider specific options

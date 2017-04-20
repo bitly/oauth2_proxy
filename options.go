@@ -35,6 +35,7 @@ type Options struct {
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
+	ZendeskSubdomain         string   `flag:"zendesk-subdomain" cfg:"zendesk_subdomain"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
 	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
@@ -243,6 +244,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
+	case *providers.ZendeskProvider:
+		p.Configure(o.ZendeskSubdomain)
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)
