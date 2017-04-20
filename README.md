@@ -102,6 +102,7 @@ The GitHub auth provider supports two additional parameters to restrict authenti
 
     -github-org="": restrict logins to members of this organisation
     -github-team="": restrict logins to members of any of these teams, separated by a comma
+    -github-user="": restrict logins to any of these users, separated by a comma
 
 If you are using GitHub enterprise, make sure you set the following to the appropriate url:
 
@@ -178,6 +179,7 @@ Usage of oauth2_proxy:
   -email-domain=: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
   -github-org="": restrict logins to members of this organisation
   -github-team="": restrict logins to members of this team
+  -github-user="": restrict logins to these users
   -google-admin-email="": the google admin to impersonate for api calls
   -google-group=: restrict logins to members of this google group (may be given multiple times).
   -google-service-account-json="": the path to the service account json credentials

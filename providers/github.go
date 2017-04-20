@@ -15,6 +15,7 @@ type GitHubProvider struct {
 	*ProviderData
 	Org  string
 	Team string
+	User string
 }
 
 func NewGitHubProvider(p *ProviderData) *GitHubProvider {
@@ -46,9 +47,10 @@ func NewGitHubProvider(p *ProviderData) *GitHubProvider {
 	}
 	return &GitHubProvider{ProviderData: p}
 }
-func (p *GitHubProvider) SetOrgTeam(org, team string) {
+func (p *GitHubProvider) SetOrgTeamUser(org, team, user string) {
 	p.Org = org
 	p.Team = team
+	p.User = user
 	if org != "" || team != "" {
 		p.Scope += " read:org"
 	}
@@ -178,6 +180,58 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 	return false, nil
 }
 
+func (p *GitHubProvider) hasUser(accessToken string) (bool, error) {
+	// https://developer.github.com/v3/users/#get-the-authenticated-user
+
+	var user struct {
+		Login string `json:"login"`
+	}
+
+	params := url.Values{
+		"access_token": {accessToken},
+		"limit":        {"100"},
+	}
+
+	endpoint := &url.URL{
+		Scheme:   p.ValidateURL.Scheme,
+		Host:     p.ValidateURL.Host,
+		Path:     path.Join(p.ValidateURL.Path, "/user"),
+		RawQuery: params.Encode(),
+	}
+	req, _ := http.NewRequest("GET", endpoint.String(), nil)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode != 200 {
+		return false, fmt.Errorf(
+			"got %d from %q %s", resp.StatusCode, stripToken(endpoint.String()), body)
+	}
+
+	if err := json.Unmarshal(body, &user); err != nil {
+		return false, err
+	}
+
+	presentUsers := []string{user.Login}
+	us := strings.Split(p.User, ",")
+	for _, u := range us {
+		if u == user.Login {
+			log.Printf("Found Github User: %q", user.Login)
+			return true, nil
+		}
+	}
+
+	log.Printf("Missing User:%q in %v", p.User, presentUsers)
+	return false, nil
+}
+
 func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	var emails []struct {
@@ -195,6 +249,10 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 			if ok, err := p.hasOrg(s.AccessToken); err != nil || !ok {
 				return "", err
 			}
+		}
+	} else if p.User != "" {
+		if ok, err := p.hasUser(s.AccessToken); err != nil || !ok {
+			return "", err
 		}
 	}
 
