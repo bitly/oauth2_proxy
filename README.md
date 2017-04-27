@@ -33,6 +33,7 @@ Valid providers are :
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
 * [MyUSA](#myusa-auth-provider)
+* [BitBucket](#bitbucket-auth-provider)
 
 The provider can be selected using the `provider` configuration value.
 
@@ -138,6 +139,12 @@ The [MyUSA](https://alpha.my.usa.gov) authentication service ([GitHub](https://g
 For adding an application to the Microsoft Azure AD follow [these steps to add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/).
 
 Take note of your `TenantId` if applicable for your situation. The `TenantId` can be used to override the default `common` authorization server with a tenant specific server.
+
+## BitBucket Auth Provider
+
+The [BitBucket](https://bitbucket.org) provider.
+
+For BitBucket, follow the [registration steps to create an OAuth client](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html#OAuthonBitbucketCloud-Createaconsumer).
 
 ## Email Authentication
 
