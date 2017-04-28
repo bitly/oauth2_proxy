@@ -12,6 +12,7 @@ import (
 
 type BitBucketProvider struct {
 	*ProviderData
+	Team string
 }
 
 func NewBitBucketProvider(p *ProviderData) *BitBucketProvider {
@@ -43,6 +44,10 @@ func NewBitBucketProvider(p *ProviderData) *BitBucketProvider {
 	return &BitBucketProvider{ProviderData: p}
 }
 
+func (p *BitBucketProvider) SetTeam(team string) {
+	p.Team = team
+}
+
 func debug(data []byte, err error) {
 	if err == nil {
 		fmt.Printf("%s\n\n", data)
@@ -59,6 +64,11 @@ func (p *BitBucketProvider) GetEmailAddress(s *SessionState) (string, error) {
 			Primary bool   `json:"is_primary"`
 		}
 	}
+	var teams struct {
+		Values []struct {
+			Name string `json:"username"`
+		}
+	}
 	req, err := http.NewRequest("GET",
 		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
 	if err != nil {
@@ -72,9 +82,38 @@ func (p *BitBucketProvider) GetEmailAddress(s *SessionState) (string, error) {
 		return "", err
 	}
 
+	if p.Team != "" {
+		log.Printf("Filtering against membership in team %s\n", p.Team)
+		teamURL := p.ValidateURL
+		teamURL.Path = "/2.0/teams"
+		req, err = http.NewRequest("GET",
+			p.ValidateURL.String()+"?role=member&access_token="+s.AccessToken, nil)
+		if err != nil {
+			log.Printf("failed building request %s", err)
+			return "", err
+		}
+		err = api.RequestJson(req, &teams)
+		if err != nil {
+			log.Printf("failed requesting teams membership %s", err)
+			debug(httputil.DumpRequestOut(req, true))
+			return "", err
+		}
+		var found = false
+		log.Printf("%+v\n", teams)
+		for _, team := range teams.Values {
+			if p.Team == team.Name {
+				found = true
+				break
+			}
+		}
+		if found != true {
+			log.Printf("team membership test failed, access denied")
+			return "", nil
+		}
+	}
+
 	for _, email := range emails.Values {
 		if email.Primary {
-			log.Printf("got here, returning %s\n", email.Email)
 			return email.Email, nil
 		}
 	}
