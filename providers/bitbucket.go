@@ -10,13 +10,13 @@ import (
 	"github.com/bitly/oauth2_proxy/api"
 )
 
-type BitBucketProvider struct {
+type BitbucketProvider struct {
 	*ProviderData
 	Team string
 }
 
-func NewBitBucketProvider(p *ProviderData) *BitBucketProvider {
-	p.ProviderName = "BitBucket"
+func NewBitbucketProvider(p *ProviderData) *BitbucketProvider {
+	p.ProviderName = "Bitbucket"
 	if p.LoginURL == nil || p.LoginURL.String() == "" {
 		p.LoginURL = &url.URL{
 			Scheme: "https",
@@ -41,10 +41,10 @@ func NewBitBucketProvider(p *ProviderData) *BitBucketProvider {
 	if p.Scope == "" {
 		p.Scope = "account team"
 	}
-	return &BitBucketProvider{ProviderData: p}
+	return &BitbucketProvider{ProviderData: p}
 }
 
-func (p *BitBucketProvider) SetTeam(team string) {
+func (p *BitbucketProvider) SetTeam(team string) {
 	p.Team = team
 }
 
@@ -56,7 +56,7 @@ func debug(data []byte, err error) {
 	}
 }
 
-func (p *BitBucketProvider) GetEmailAddress(s *SessionState) (string, error) {
+func (p *BitbucketProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	var emails struct {
 		Values []struct {
