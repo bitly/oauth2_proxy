@@ -641,6 +641,32 @@ func TestAuthOnlyEndpointSetXAuthRequestHeaders(t *testing.T) {
 	assert.Equal(t, "oauth_user@example.com", pc_test.rw.HeaderMap["X-Auth-Request-Email"][0])
 }
 
+func NewUserInfoEndpointTest() *ProcessCookieTest {
+	pc_test := NewProcessCookieTestWithDefaults()
+	pc_test.req, _ = http.NewRequest("GET",
+		pc_test.opts.ProxyPrefix+"/userinfo", nil)
+	return pc_test
+}
+
+func TestUserInfoEndpointAccepted(t *testing.T) {
+	test := NewUserInfoEndpointTest()
+	startSession := &providers.SessionState{
+		Email: "michael.bland@gsa.gov", AccessToken: "my_access_token"}
+	test.SaveSession(startSession, time.Now())
+
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusOK, test.rw.Code)
+	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
+	assert.Equal(t, "{\"email\":\"michael.bland@gsa.gov\"}", string(bodyBytes))
+}
+
+func TestUserInfoEndpointUnauthorizedOnNoCookieSetError(t *testing.T) {
+	test := NewUserInfoEndpointTest()
+
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusUnauthorized, test.rw.Code)
+}
+
 func TestAuthSkippedForPreflightRequests(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
