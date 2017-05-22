@@ -410,6 +410,11 @@ func (p *OAuthProxy) ManualSignIn(rw http.ResponseWriter, req *http.Request) (st
 }
 
 func (p *OAuthProxy) GetRedirect(req *http.Request) (redirect string, err error) {
+	if p.SkipProviderButton {
+		redirect = req.RequestURI
+		return
+	}
+
 	err = req.ParseForm()
 	if err != nil {
 		return
