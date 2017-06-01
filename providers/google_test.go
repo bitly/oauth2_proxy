@@ -34,7 +34,7 @@ func TestGoogleProviderDefaults(t *testing.T) {
 	p := newGoogleProvider()
 	assert.NotEqual(t, nil, p)
 	assert.Equal(t, "Google", p.Data().ProviderName)
-	assert.Equal(t, "https://accounts.google.com/o/oauth2/auth?access_type=offline",
+	assert.Equal(t, "https://accounts.google.com/o/oauth2/auth?access_type=online",
 		p.Data().LoginURL.String())
 	assert.Equal(t, "https://www.googleapis.com/oauth2/v3/token",
 		p.Data().RedeemURL.String())
