@@ -130,14 +130,13 @@ func getTemplates() *template.Template {
 	</div>
 	{{ end }}
 	<script>
-		if (window.location.hash) {
-			(function() {
-				var inputs = document.getElementsByName('rd');
-				for (var i = 0; i < inputs.length; i++) {
-					inputs[i].value += window.location.hash;
-				}
-			})();
-		}
+		(function() {
+			var inputs = document.getElementsByName('rd');
+			var redirect = window.location.pathname + window.location.hash;
+			for (var i = 0; i < inputs.length; i++) {
+				inputs[i].value = redirect;
+			}
+		})();
 	</script>
 	<footer>
 	{{ if eq .Footer "-" }}
