@@ -140,11 +140,17 @@ For adding an application to the Microsoft Azure AD follow [these steps to add a
 
 Take note of your `TenantId` if applicable for your situation. The `TenantId` can be used to override the default `common` authorization server with a tenant specific server.
 
-## Bitbucket Auth Provider
+### Bitbucket Auth Provider
 
 The [Bitbucket](https://bitbucket.org) provider.
 
 For Bitbucket, follow the [registration steps to create an OAuth client](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html#OAuthonBitbucketCloud-Createaconsumer).
+
+The Bitbucket auth provider supports one additional parameters to restrict
+authentication to members of a given Bitbucket team. Restricting by team is
+normally accompanied with `--email-domain=*`
+
+    -bitbucket-team="": restrict logins to members of this team
 
 ## Email Authentication
 
