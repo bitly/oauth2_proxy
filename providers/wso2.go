@@ -13,55 +13,70 @@ import (
 	"github.com/bitly/oauth2_proxy/api"
 )
 
-type GitLabProvider struct {
+type Wso2Provider struct {
 	*ProviderData
 }
 
-func NewGitLabProvider(p *ProviderData) *GitLabProvider {
-	p.ProviderName = "GitLab"
+func NewWso2Provider(p *ProviderData) *Wso2Provider {
+	p.ProviderName = "Wso2"
 	if p.LoginURL == nil || p.LoginURL.String() == "" {
 		p.LoginURL = &url.URL{
 			Scheme: "https",
-			Host:   "gitlab.com",
+			Host:   "identity.digitas.fr",
 			Path:   "/oauth/authorize",
 		}
 	}
 	if p.RedeemURL == nil || p.RedeemURL.String() == "" {
 		p.RedeemURL = &url.URL{
 			Scheme: "https",
-			Host:   "gitlab.com",
+			Host:   "identity.digitas.fr",
 			Path:   "/oauth/token",
 		}
 	}
 	if p.ValidateURL == nil || p.ValidateURL.String() == "" {
 		p.ValidateURL = &url.URL{
 			Scheme: "https",
-			Host:   "gitlab.com",
+			Host:   "identity.digitas.fr",
 			Path:   "/api/v3/user",
 		}
 	}
 	if p.Scope == "" {
 		p.Scope = "api"
 	}
-	return &GitLabProvider{ProviderData: p}
+	return &Wso2Provider{ProviderData: p}
 }
 
-func (p *GitLabProvider) GetEmailAddress(s *SessionState) (string, error) {
+func getWso2Header(access_token string) http.Header {
+	header := make(http.Header)
+	header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
+	return header
+}
+
+func (p *Wso2Provider) GetEmailAddress(s *SessionState) (string, error) {
 
 	req, err := http.NewRequest("GET",
-		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
+		p.ValidateURL.String()+"&access_token="+s.AccessToken, nil)
 	if err != nil {
 		log.Printf("failed building request %s", err)
 		return "", err
 	}
+	req.Header = getWso2Header(s.AccessToken)
 	json, err := api.Request(req)
 	if err != nil {
 		log.Printf("failed making request %s", err)
 		return "", err
 	}
-	return json.Get("email").String()
+	var email string
+	email, err = json.Get("email").String()
+	if err != nil {
+		email, err = json.Get("sub").String()
+	}
+	if err != nil {
+		return "", err
+	}
+	return email, err
 }
-func (p *GitLabProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
+func (p *Wso2Provider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	if s == nil || s.ExpiresOn.After(time.Now()) || s.RefreshToken == "" {
 		return false, nil
 	}
@@ -78,7 +93,7 @@ func (p *GitLabProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	return true, nil
 }
 
-func (p *GitLabProvider) redeemRefreshToken(refreshToken string) (token string, expires time.Duration, err error) {
+func (p *Wso2Provider) redeemRefreshToken(refreshToken string) (token string, expires time.Duration, err error) {
 	// https://developers.google.com/identity/protocols/OAuth2WebServer#refresh
 	params := url.Values{}
 	params.Add("client_id", p.ClientID)
