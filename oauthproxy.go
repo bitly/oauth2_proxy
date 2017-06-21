@@ -2,6 +2,7 @@ package main
 
 import (
 	b64 "encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -52,6 +53,7 @@ type OAuthProxy struct {
 	OAuthStartPath    string
 	OAuthCallbackPath string
 	AuthOnlyPath      string
+	UserInfoPath      string
 
 	redirectURL         *url.URL // the url to receive requests at
 	provider            providers.Provider
@@ -193,6 +195,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		OAuthStartPath:    fmt.Sprintf("%s/start", opts.ProxyPrefix),
 		OAuthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
 		AuthOnlyPath:      fmt.Sprintf("%s/auth", opts.ProxyPrefix),
+		UserInfoPath:      fmt.Sprintf("%s/userinfo", opts.ProxyPrefix),
 
 		ProxyPrefix:        opts.ProxyPrefix,
 		provider:           opts.provider,
@@ -464,6 +467,8 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.OAuthCallback(rw, req)
 	case path == p.AuthOnlyPath:
 		p.AuthenticateOnly(rw, req)
+	case path == p.UserInfoPath:
+		p.UserInfo(rw, req)
 	default:
 		p.Proxy(rw, req)
 	}
@@ -574,6 +579,23 @@ func (p *OAuthProxy) AuthenticateOnly(rw http.ResponseWriter, req *http.Request)
 		rw.WriteHeader(http.StatusAccepted)
 	} else {
 		http.Error(rw, "unauthorized request", http.StatusUnauthorized)
+	}
+}
+
+func (p *OAuthProxy) UserInfo(rw http.ResponseWriter, req *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+	var userInfo struct {
+		Email string `json:"email"`
+	}
+
+	status := p.Authenticate(rw, req)
+	if status == http.StatusAccepted {
+		session, _, _ := p.LoadCookiedSession(req)
+		userInfo.Email = session.Email
+		userJson, _ := json.Marshal(userInfo)
+		rw.Write(userJson)
+	} else {
+		rw.WriteHeader(http.StatusUnauthorized)
 	}
 }
 
