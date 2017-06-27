@@ -32,7 +32,6 @@ type Options struct {
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
-	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
@@ -51,6 +50,9 @@ type Options struct {
 	Upstreams             []string `flag:"upstream" cfg:"upstreams"`
 	SkipAuthRegex         []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
+	PassGroups            bool     `flag:"pass-groups" cfg:"pass_groups"`
+	FilterGroups          string   `flag:"filter-groups" cfg:"filter_groups"`
+	PermitGroups          []string `flag:"permit-groups" cfg:"permit_groups"`
 	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
 	PassAccessToken       bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader        bool     `flag:"pass-host-header" cfg:"pass_host_header"`
@@ -103,9 +105,11 @@ func NewOptions() *Options {
 		SkipAuthPreflight:   false,
 		PassBasicAuth:       true,
 		PassUserHeaders:     true,
+		PassGroups:          false,
+		FilterGroups:        "",
 		PassAccessToken:     false,
 		PassHostHeader:      true,
-		ApprovalPrompt:      "force",
+		ApprovalPrompt:      "",
 		RequestLogging:      true,
 	}
 }
@@ -130,7 +134,7 @@ func (o *Options) Validate() error {
 	if o.ClientID == "" {
 		msgs = append(msgs, "missing setting: client-id")
 	}
-	if o.ClientSecret == "" {
+	if o.ClientSecret == "" && o.Provider != "azure" {
 		msgs = append(msgs, "missing setting: client-secret")
 	}
 	if o.AuthenticatedEmailsFile == "" && len(o.EmailDomains) == 0 && o.HtpasswdFile == "" {
@@ -195,15 +199,17 @@ func (o *Options) Validate() error {
 			o.CookieExpire.String()))
 	}
 
-	if len(o.GoogleGroups) > 0 || o.GoogleAdminEmail != "" || o.GoogleServiceAccountJSON != "" {
-		if len(o.GoogleGroups) < 1 {
-			msgs = append(msgs, "missing setting: google-group")
-		}
-		if o.GoogleAdminEmail == "" {
-			msgs = append(msgs, "missing setting: google-admin-email")
-		}
-		if o.GoogleServiceAccountJSON == "" {
-			msgs = append(msgs, "missing setting: google-service-account-json")
+	if o.Provider == "google" {
+		if len(o.PermitGroups) > 0 || o.GoogleAdminEmail != "" || o.GoogleServiceAccountJSON != "" {
+			if len(o.PermitGroups) < 1 {
+				msgs = append(msgs, "missing setting: permit-groups")
+			}
+			if o.GoogleAdminEmail == "" {
+				msgs = append(msgs, "missing setting: google-admin-email")
+			}
+			if o.GoogleServiceAccountJSON == "" {
+				msgs = append(msgs, "missing setting: google-service-account-json")
+			}
 		}
 	}
 
@@ -237,10 +243,17 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 	p.ValidateURL, msgs = parseURL(o.ValidateURL, "validate", msgs)
 	p.ProtectedResource, msgs = parseURL(o.ProtectedResource, "resource", msgs)
 
-	o.provider = providers.New(o.Provider, p)
+	provider, err := providers.New(o.Provider, p)
+	o.provider = provider
+	if err != nil {
+		msgs = append(msgs, err.Error())
+	}
 	switch p := o.provider.(type) {
 	case *providers.AzureProvider:
 		p.Configure(o.AzureTenant)
+		if len(o.PermitGroups) > 0 {
+			p.SetGroupRestriction(o.PermitGroups)
+		}
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
 	case *providers.GoogleProvider:
@@ -249,7 +262,7 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 			if err != nil {
 				msgs = append(msgs, "invalid Google credentials file: "+o.GoogleServiceAccountJSON)
 			} else {
-				p.SetGroupRestriction(o.GoogleGroups, o.GoogleAdminEmail, file)
+				p.SetGroupRestriction(o.PermitGroups, o.GoogleAdminEmail, file)
 			}
 		}
 	}
