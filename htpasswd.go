@@ -1,10 +1,10 @@
 package main
 
 import (
-	"golang.org/x/crypto/bcrypt"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/csv"
+	"golang.org/x/crypto/bcrypt"
 	"io"
 	"log"
 	"os"
