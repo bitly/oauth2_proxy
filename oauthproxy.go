@@ -72,6 +72,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	ForceBasicAuthFor   string
 }
 
 type UpstreamProxy struct {
@@ -210,6 +211,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		ForceBasicAuthFor:  opts.ForceBasicAuthFor,
 	}
 }
 
@@ -583,7 +585,10 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		p.ErrorPage(rw, http.StatusInternalServerError,
 			"Internal Error", "Internal Error")
 	} else if status == http.StatusForbidden {
-		if p.SkipProviderButton {
+		hasMatch, _ := regexp.MatchString(p.ForceBasicAuthFor, req.UserAgent())
+		if p.ForceBasicAuthFor != "" && hasMatch {
+			p.ErrorPage(rw, 403, "Permission Denied", "Basic Auth required, and failed to authenticate.")
+		} else if p.SkipProviderButton {
 			p.OAuthStart(rw, req)
 		} else {
 			p.SignInPage(rw, req, http.StatusForbidden)
