@@ -585,7 +585,13 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		p.ErrorPage(rw, http.StatusInternalServerError,
 			"Internal Error", "Internal Error")
 	} else if status == http.StatusForbidden {
-		hasMatch, _ := regexp.MatchString(p.ForceBasicAuthFor, req.UserAgent())
+		hasMatch := false
+		for _, header := range req.Header["Accept"] {
+			match, _ := regexp.MatchString(p.ForceBasicAuthFor, header)
+			if match {
+				hasMatch = match
+			}
+		}
 		if p.ForceBasicAuthFor != "" && hasMatch {
 			p.ErrorPage(rw, 403, "Permission Denied", "Basic Auth required, and failed to authenticate.")
 		} else if p.SkipProviderButton {

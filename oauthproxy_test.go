@@ -98,7 +98,7 @@ func TestForceBasicAuthFor(t *testing.T) {
 	htpasswd, _ := NewHtpasswd(file)
 
 	opts := NewOptions()
-	opts.ForceBasicAuthFor = "Java.*"
+	opts.ForceBasicAuthFor = "application/hal.*"
 	opts.Validate()
 
 	proxy := NewOAuthProxy(opts, func(string) bool { return true })
@@ -106,7 +106,7 @@ func TestForceBasicAuthFor(t *testing.T) {
 
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	req.Header.Set("User-Agent", "Java/1.8")
+	req.Header.Set("Accept", "application/hal+json, application/json")
 
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 403, rw.Code)
@@ -114,7 +114,6 @@ func TestForceBasicAuthFor(t *testing.T) {
 
 	rw = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/", nil)
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko) Version/10.1.2 Safari/603.3.8")
 
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 403, rw.Code)
