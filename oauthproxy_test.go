@@ -111,6 +111,7 @@ func TestForceBasicAuthFor(t *testing.T) {
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 401, rw.Code)
 	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required, and not provided."))
+	assert.Equal(t, "Basic", rw.HeaderMap.Get("WWW-Authenticate"))
 
 	rw = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/", nil)
