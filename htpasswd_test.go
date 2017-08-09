@@ -2,8 +2,9 @@ package main
 
 import (
 	"bytes"
-	"github.com/bmizerany/assert"
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 func TestHtpasswdSha(t *testing.T) {

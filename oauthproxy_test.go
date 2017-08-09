@@ -1,11 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"crypto"
 	"encoding/base64"
-	"github.com/18F/hmacauth"
-	"github.com/bitly/oauth2_proxy/providers"
-	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +15,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/18F/hmacauth"
+	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/bmizerany/assert"
 )
 
 func init() {
@@ -89,6 +91,33 @@ func TestRobotsTxt(t *testing.T) {
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 200, rw.Code)
 	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
+}
+
+func TestForceBasicAuthFor(t *testing.T) {
+	file := bytes.NewBuffer([]byte("testuser:{SHA}PaVBVZkYqAjCQCu6UBL2xgsnZhw=\n"))
+	htpasswd, _ := NewHtpasswd(file)
+
+	opts := NewOptions()
+	opts.ForceBasicAuthFor = "application/hal.*"
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	proxy.HtpasswdFile = htpasswd
+
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("Accept", "application/hal+json, application/json")
+
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, 403, rw.Code)
+	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required, and failed to authenticate."))
+
+	rw = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/", nil)
+
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, 403, rw.Code)
+	assert.Equal(t, false, strings.Contains(rw.Body.String(), "Basic Auth required, and failed to authenticate."))
 }
 
 type TestProvider struct {
