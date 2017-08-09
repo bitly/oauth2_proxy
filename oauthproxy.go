@@ -593,7 +593,7 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 			}
 		}
 		if p.ForceBasicAuthFor != "" && hasMatch {
-			p.ErrorPage(rw, 403, "Permission Denied", "Basic Auth required, and failed to authenticate.")
+			p.ErrorPage(rw, 401, "Permission Denied", "Basic Auth required, and not provided.")
 		} else if p.SkipProviderButton {
 			p.OAuthStart(rw, req)
 		} else {

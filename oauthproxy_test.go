@@ -109,15 +109,15 @@ func TestForceBasicAuthFor(t *testing.T) {
 	req.Header.Set("Accept", "application/hal+json, application/json")
 
 	proxy.ServeHTTP(rw, req)
-	assert.Equal(t, 403, rw.Code)
-	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required, and failed to authenticate."))
+	assert.Equal(t, 401, rw.Code)
+	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required, and not provided."))
 
 	rw = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/", nil)
 
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 403, rw.Code)
-	assert.Equal(t, false, strings.Contains(rw.Body.String(), "Basic Auth required, and failed to authenticate."))
+	assert.Equal(t, false, strings.Contains(rw.Body.String(), "Basic Auth required, and not provided."))
 }
 
 type TestProvider struct {
