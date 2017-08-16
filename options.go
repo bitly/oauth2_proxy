@@ -52,7 +52,8 @@ type Options struct {
 	SkipAuthRegex         []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
-	ForceBasicAuthFor     string   `flag:"force-basic-auth-for" cfg:"force_basic_auth_for"`
+	BasicAuthAccept       string   `flag:"basic-auth-accept" cfg:"basic_auth_accept"`
+	BasicAuthUserAgent    string   `flag:"basic-auth-user-agent" cfg:"basic_auth_user_agent"`
 	PassAccessToken       bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader        bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 	SkipProviderButton    bool     `flag:"skip-provider-button" cfg:"skip_provider_button"`

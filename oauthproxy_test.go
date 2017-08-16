@@ -93,12 +93,12 @@ func TestRobotsTxt(t *testing.T) {
 	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
 }
 
-func TestForceBasicAuthFor(t *testing.T) {
+func TestBasicAuthAccept(t *testing.T) {
 	file := bytes.NewBuffer([]byte("testuser:{SHA}PaVBVZkYqAjCQCu6UBL2xgsnZhw=\n"))
 	htpasswd, _ := NewHtpasswd(file)
 
 	opts := NewOptions()
-	opts.ForceBasicAuthFor = "application/hal.*"
+	opts.BasicAuthAccept = "application/hal.*"
 	opts.Validate()
 
 	proxy := NewOAuthProxy(opts, func(string) bool { return true })
@@ -110,7 +110,7 @@ func TestForceBasicAuthFor(t *testing.T) {
 
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 401, rw.Code)
-	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required, and not provided."))
+	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required for this Accept, not provided."))
 	assert.Equal(t, "Basic", rw.HeaderMap.Get("WWW-Authenticate"))
 
 	rw = httptest.NewRecorder()
@@ -118,7 +118,35 @@ func TestForceBasicAuthFor(t *testing.T) {
 
 	proxy.ServeHTTP(rw, req)
 	assert.Equal(t, 403, rw.Code)
-	assert.Equal(t, false, strings.Contains(rw.Body.String(), "Basic Auth required, and not provided."))
+	assert.Equal(t, false, strings.Contains(rw.Body.String(), "Basic Auth required for this Accept, not provided."))
+}
+
+func TestBasicAuthUserAgent(t *testing.T) {
+	file := bytes.NewBuffer([]byte("testuser:{SHA}PaVBVZkYqAjCQCu6UBL2xgsnZhw=\n"))
+	htpasswd, _ := NewHtpasswd(file)
+
+	opts := NewOptions()
+	opts.BasicAuthUserAgent = "Apache"
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	proxy.HtpasswdFile = htpasswd
+
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("User-Agent", "Apache")
+
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, 401, rw.Code)
+	assert.Equal(t, true, strings.Contains(rw.Body.String(), "Basic Auth required for this User-Agent, not provided."))
+	assert.Equal(t, "Basic", rw.HeaderMap.Get("WWW-Authenticate"))
+
+	rw = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/", nil)
+
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, 403, rw.Code)
+	assert.Equal(t, false, strings.Contains(rw.Body.String(), "Basic Auth required for this User-Agent, not provided."))
 }
 
 type TestProvider struct {

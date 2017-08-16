@@ -72,7 +72,8 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
-	ForceBasicAuthFor   string
+	BasicAuthAccept     string
+	BasicAuthUserAgent  string
 }
 
 type UpstreamProxy struct {
@@ -211,7 +212,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
-		ForceBasicAuthFor:  opts.ForceBasicAuthFor,
+		BasicAuthAccept:    opts.BasicAuthAccept,
+		BasicAuthUserAgent: opts.BasicAuthUserAgent,
 	}
 }
 
@@ -579,22 +581,33 @@ func (p *OAuthProxy) AuthenticateOnly(rw http.ResponseWriter, req *http.Request)
 	}
 }
 
+func (p *OAuthProxy) HeaderMatches(header []string, pattern string) bool {
+	hasMatch := false
+	for _, header := range header {
+		match, _ := regexp.MatchString(pattern, header)
+		if match {
+			hasMatch = match
+			break
+		}
+	}
+	return hasMatch
+}
+
 func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 	status := p.Authenticate(rw, req)
 	if status == http.StatusInternalServerError {
 		p.ErrorPage(rw, http.StatusInternalServerError,
 			"Internal Error", "Internal Error")
 	} else if status == http.StatusForbidden {
-		hasMatch := false
-		for _, header := range req.Header["Accept"] {
-			match, _ := regexp.MatchString(p.ForceBasicAuthFor, header)
-			if match {
-				hasMatch = match
-			}
-		}
-		if p.ForceBasicAuthFor != "" && hasMatch {
+		acceptMatch := p.HeaderMatches(req.Header["Accept"], p.BasicAuthAccept)
+		userAgentMatch := p.HeaderMatches(req.Header["User-Agent"], p.BasicAuthUserAgent)
+
+		if p.BasicAuthAccept != "" && acceptMatch {
 			rw.Header().Set("WWW-Authenticate", `Basic`)
-			p.ErrorPage(rw, 401, "Permission Denied", "Basic Auth required, and not provided.")
+			p.ErrorPage(rw, 401, "Permission Denied", "Basic Auth required for this Accept, not provided.")
+		} else if p.BasicAuthUserAgent != "" && userAgentMatch {
+			rw.Header().Set("WWW-Authenticate", `Basic`)
+			p.ErrorPage(rw, 401, "Permission Denied", "Basic Auth required for this User-Agent, not provided.")
 		} else if p.SkipProviderButton {
 			p.OAuthStart(rw, req)
 		} else {
