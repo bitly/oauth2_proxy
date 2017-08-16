@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/csv"
+	"golang.org/x/crypto/bcrypt"
 	"io"
 	"log"
 	"os"
@@ -53,8 +54,13 @@ func (h *HtpasswdFile) Validate(user string, password string) bool {
 		if realPassword[5:] == base64.StdEncoding.EncodeToString(d.Sum(nil)) {
 			return true
 		}
+	} else if realPassword[:2] == "$2" {
+		err := bcrypt.CompareHashAndPassword([]byte(realPassword), []byte(password))
+		if err == nil {
+			return true
+		}
 	} else {
-		log.Printf("Invalid htpasswd entry for %s. Must be a SHA entry.", user)
+		log.Printf("Invalid htpasswd entry for %s. Must be a SHA or bcrypt entry.", user)
 	}
 	return false
 }
