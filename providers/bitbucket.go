@@ -84,10 +84,11 @@ func (p *BitbucketProvider) GetEmailAddress(s *SessionState) (string, error) {
 
 	if p.Team != "" {
 		log.Printf("Filtering against membership in team %s\n", p.Team)
-		teamURL := p.ValidateURL
+		teamURL := &url.URL{}
+		*teamURL = *p.ValidateURL
 		teamURL.Path = "/2.0/teams"
 		req, err = http.NewRequest("GET",
-			p.ValidateURL.String()+"?role=member&access_token="+s.AccessToken, nil)
+			teamURL.String()+"?role=member&access_token="+s.AccessToken, nil)
 		if err != nil {
 			log.Printf("failed building request %s", err)
 			return "", err
