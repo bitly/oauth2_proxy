@@ -1,0 +1,7 @@
+version: '2'
+services:
+  oauth2_proxy:
+    image: twhtanghk/oauth2_proxy
+    container_name: oauth2_proxy
+    ports:
+      - 4180
