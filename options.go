@@ -142,6 +142,7 @@ func (o *Options) Validate() error {
 			msgs = append(msgs, fmt.Sprintf(
 				"error parsing upstream=%q %s",
 				upstreamURL, err))
+			continue
 		}
 		if upstreamURL.Path == "" {
 			upstreamURL.Path = "/"
@@ -154,6 +155,7 @@ func (o *Options) Validate() error {
 		if err != nil {
 			msgs = append(msgs, fmt.Sprintf(
 				"error compiling regex=%q %s", u, err))
+			continue
 		}
 		o.CompiledRegex = append(o.CompiledRegex, CompiledRegex)
 	}
