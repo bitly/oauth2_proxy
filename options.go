@@ -244,6 +244,7 @@ func (o *Options) Validate() error {
 
 func parseProviderInfo(o *Options, msgs []string) []string {
 	p := &providers.ProviderData{
+		HTTPBasicAuth:  false,
 		Scope:          o.Scope,
 		ClientID:       o.ClientID,
 		ClientSecret:   o.ClientSecret,

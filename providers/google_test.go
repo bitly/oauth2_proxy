@@ -3,21 +3,12 @@ package providers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/bmizerany/assert"
 )
-
-func newRedeemServer(body []byte) (*url.URL, *httptest.Server) {
-	s := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write(body)
-	}))
-	u, _ := url.Parse(s.URL)
-	return u, s
-}
 
 func newGoogleProvider() *GoogleProvider {
 	return NewGoogleProvider(
@@ -77,13 +68,6 @@ func TestGoogleProviderOverrides(t *testing.T) {
 	assert.Equal(t, "profile", p.Data().Scope)
 }
 
-type redeemResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int64  `json:"expires_in"`
-	IdToken      string `json:"id_token"`
-}
-
 func TestGoogleProviderGetEmailAddress(t *testing.T) {
 	p := newGoogleProvider()
 	body, err := json.Marshal(redeemResponse{
@@ -94,7 +78,7 @@ func TestGoogleProviderGetEmailAddress(t *testing.T) {
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
-	p.RedeemURL, server = newRedeemServer(body)
+	p.RedeemURL, server, _ = newRedeemServer(body)
 	defer server.Close()
 
 	session, err := p.Redeem("http://redirect/", "code1234")
@@ -131,7 +115,7 @@ func TestGoogleProviderGetEmailAddressInvalidEncoding(t *testing.T) {
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
-	p.RedeemURL, server = newRedeemServer(body)
+	p.RedeemURL, server, _ = newRedeemServer(body)
 	defer server.Close()
 
 	session, err := p.Redeem("http://redirect/", "code1234")
@@ -150,7 +134,7 @@ func TestGoogleProviderGetEmailAddressInvalidJson(t *testing.T) {
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
-	p.RedeemURL, server = newRedeemServer(body)
+	p.RedeemURL, server, _ = newRedeemServer(body)
 	defer server.Close()
 
 	session, err := p.Redeem("http://redirect/", "code1234")
@@ -169,7 +153,7 @@ func TestGoogleProviderGetEmailAddressEmailMissing(t *testing.T) {
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
-	p.RedeemURL, server = newRedeemServer(body)
+	p.RedeemURL, server, _ = newRedeemServer(body)
 	defer server.Close()
 
 	session, err := p.Redeem("http://redirect/", "code1234")
