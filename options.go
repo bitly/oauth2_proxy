@@ -73,6 +73,7 @@ type Options struct {
 	ValidateURL       string `flag:"validate-url" cfg:"validate_url"`
 	Scope             string `flag:"scope" cfg:"scope"`
 	ApprovalPrompt    string `flag:"approval-prompt" cfg:"approval_prompt"`
+	TwoFactor         bool   `flag:"two-factor" cfg:"two_factor"`
 
 	RequestLogging bool `flag:"request-logging" cfg:"request_logging"`
 
@@ -111,6 +112,7 @@ func NewOptions() *Options {
 		PassHostHeader:      true,
 		ApprovalPrompt:      "force",
 		RequestLogging:      true,
+		TwoFactor:           false,
 	}
 }
 
