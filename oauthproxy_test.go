@@ -428,6 +428,21 @@ func TestSignInPageDirectAccessRedirectsToRoot(t *testing.T) {
 	}
 }
 
+func TestSignInPageDirectAccessRedirectsToRdGetParam(t *testing.T) {
+	sip_test := NewSignInPageTest(false)
+	code, body := sip_test.GetEndpoint("/oauth2/sign_in?rd=/example/path")
+	assert.Equal(t, 200, code)
+
+	match := sip_test.sign_in_regexp.FindStringSubmatch(body)
+	if match == nil {
+		t.Fatal("Did not find pattern in body: " +
+			signInRedirectPattern + "\nBody:\n" + body)
+	}
+	if match[1] != "/example/path" {
+		t.Fatal(`expected redirect to "/example/path", but was "` + match[1] + `"`)
+	}
+}
+
 func TestSignInPageSkipProvider(t *testing.T) {
 	sip_test := NewSignInPageTest(true)
 	const endpoint = "/some/random/endpoint"
