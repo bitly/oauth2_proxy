@@ -11,3 +11,5 @@ cloud.google.com/go/compute/metadata     v0.8.0
 github.com/coreos/go-oidc                c797a55f1c1001ec3169f1d0fbb4c5523563bec6
 gopkg.in/square/go-jose.v2               v2.1.1
 github.com/pquerna/cachecontrol          9299cc36e57c32f83e47ffb3c25d8a3dec10ea0b
+github.com/kr/pretty                     cfb55aafdaf3ec08f0db22699ab822c50091b1c4
+github.com/kr/text                       7cafcd837844e784b526369c9bce262804aebc60
