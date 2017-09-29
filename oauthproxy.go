@@ -367,6 +367,8 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	redirect_url := req.URL.RequestURI()
 	if req.Header.Get("X-Auth-Request-Redirect") != "" {
 		redirect_url = req.Header.Get("X-Auth-Request-Redirect")
+	} else if req.URL.Query().Get("rd") != "" {
+		redirect_url = req.URL.Query().Get("rd")
 	}
 	if redirect_url == p.SignInPath {
 		redirect_url = "/"
