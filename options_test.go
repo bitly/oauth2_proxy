@@ -195,9 +195,9 @@ func TestBase64CookieSecret(t *testing.T) {
 
 func TestValidateSignatureKey(t *testing.T) {
 	o := testOptions()
-	o.SignatureKey = "sha1:secret"
+	o.SignatureKey = "sha256:secret"
 	assert.Equal(t, nil, o.Validate())
-	assert.Equal(t, o.signatureData.hash, crypto.SHA1)
+	assert.Equal(t, o.signatureData.hash, crypto.SHA256)
 	assert.Equal(t, o.signatureData.key, "secret")
 }
 

@@ -5,7 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -59,7 +59,7 @@ func SignedValue(seed string, key string, value string, now time.Time) string {
 }
 
 func cookieSignature(args ...string) string {
-	h := hmac.New(sha1.New, []byte(args[0]))
+	h := hmac.New(sha256.New, []byte(args[0]))
 	for _, arg := range args[1:] {
 		h.Write([]byte(arg))
 	}

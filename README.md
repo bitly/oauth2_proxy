@@ -330,7 +330,7 @@ If `signature_key` is defined, proxied requests will be signed with the
 of selected request information and the request body [see `SIGNATURE_HEADERS`
 in `oauthproxy.go`](./oauthproxy.go).
 
-`signature_key` must be of the form `algorithm:secretkey`, (ie: `signature_key = "sha1:secret0"`)
+`signature_key` must be of the form `algorithm:secretkey`, (ie: `signature_key = "sha256:secret0"`)
 
 For more information about HMAC request signature validation, read the
 following:
