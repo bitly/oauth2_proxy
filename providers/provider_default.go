@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/bitly/oauth2_proxy/cookie"
 )
@@ -89,7 +90,12 @@ func (p *ProviderData) GetLoginURL(redirectURI, state string) string {
 	params.Set("response_type", "code")
 	params.Add("state", state)
 	a.RawQuery = params.Encode()
-	return a.String()
+
+	// Default golang libs Encode space( ) as plus (+) instead of '%20'
+	// which is more proper.  Some OpenID servers do not accept this
+	// encoding.  Since there is no way to override the library, replace
+	// '+' characters with '%20' after the encoding.
+	return strings.Replace(a.String(), "+", "%20", -1)
 }
 
 // CookieForSession serializes a session state for storage in a cookie

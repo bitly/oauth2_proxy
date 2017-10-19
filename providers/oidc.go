@@ -2,12 +2,16 @@ package providers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"golang.org/x/oauth2"
 
 	oidc "github.com/coreos/go-oidc"
+
+	"github.com/bitly/oauth2_proxy/api"
 )
 
 type OIDCProvider struct {
@@ -57,10 +61,10 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 	}
 
 	if claims.Email == "" {
-		return nil, fmt.Errorf("id_token did not contain an email")
+		fmt.Errorf("id_token did not contain an email. Falling back on userprofile")
 	}
 	if claims.Verified != nil && !*claims.Verified {
-		return nil, fmt.Errorf("email in id_token (%s) isn't verified", claims.Email)
+		return nil, fmt.Errorf("id_token failed verification")
 	}
 
 	s = &SessionState{
@@ -82,4 +86,33 @@ func (p *OIDCProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	s.ExpiresOn = time.Now().Add(time.Second).Truncate(time.Second)
 	fmt.Printf("refreshed access token %s (expired on %s)\n", s, origExpiration)
 	return false, nil
+}
+
+func getOIDCHeader(access_token string) http.Header {
+	header := make(http.Header)
+	header.Set("Accept", "application/json")
+	header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
+	return header
+}
+
+func (p *OIDCProvider) GetEmailAddress(s *SessionState) (string, error) {
+	if s.AccessToken == "" {
+		return "", errors.New("missing access token")
+	}
+	req, err := http.NewRequest("GET", p.ProfileURL.String(), nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header = getOIDCHeader(s.AccessToken)
+
+	json, err := api.Request(req)
+	if err != nil {
+		return "", err
+	}
+
+	email, err := json.Get("email").String()
+	if err != nil {
+		return "", err
+	}
+	return email, nil
 }
