@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -61,7 +62,7 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 	}
 
 	if claims.Email == "" {
-		fmt.Errorf("id_token did not contain an email. Falling back on userprofile")
+		log.Printf("id_token did not contain an email. Falling back on userprofile\n")
 	}
 	if claims.Verified != nil && !*claims.Verified {
 		return nil, fmt.Errorf("id_token failed verification")
