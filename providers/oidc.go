@@ -62,7 +62,7 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 	}
 
 	if claims.Email == "" {
-		log.Printf("id_token did not contain an email. Falling back on userprofile\n")
+		log.Printf("id_token did not contain an email. Falling back on userinfo endpoint\n")
 	}
 	if claims.Verified != nil && !*claims.Verified {
 		return nil, fmt.Errorf("id_token failed verification")
