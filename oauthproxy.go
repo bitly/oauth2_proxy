@@ -72,6 +72,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	TwoFactor           bool
 }
 
 type UpstreamProxy struct {
@@ -155,6 +156,9 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	redirectURL.Path = fmt.Sprintf("%s/callback", opts.ProxyPrefix)
 
 	log.Printf("OAuthProxy configured for %s Client ID: %s", opts.provider.Data().ProviderName, opts.ClientID)
+	if opts.provider.Data().ProviderName == "GitLab" {
+		log.Printf("Two Factor check for %s:%v", opts.provider.Data().ProviderName, opts.TwoFactor)
+	}
 	domain := opts.CookieDomain
 	if domain == "" {
 		domain = "<default>"
@@ -210,6 +214,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		TwoFactor:          opts.TwoFactor,
 	}
 }
 
@@ -235,9 +240,9 @@ func (p *OAuthProxy) displayCustomLoginForm() bool {
 	return p.HtpasswdFile != nil && p.DisplayHtpasswdForm
 }
 
-func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, err error) {
+func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, twoFactorEnabled bool, twoFactorRedirect string, err error) {
 	if code == "" {
-		return nil, errors.New("missing code")
+		return nil, false, "", errors.New("missing code")
 	}
 	redirectURI := p.GetRedirectURI(host)
 	s, err = p.provider.Redeem(redirectURI, code)
@@ -247,6 +252,14 @@ func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, e
 
 	if s.Email == "" {
 		s.Email, err = p.provider.GetEmailAddress(s)
+	}
+
+	if p.TwoFactor {
+		// Only look up whether two factor is enabled if it's reuired.
+		gp, ok := p.provider.(*providers.GitLabProvider)
+		if ok {
+			twoFactorEnabled, twoFactorRedirect, err = gp.IsTwoFactorAuthEnabled(s)
+		}
 	}
 	return
 }
@@ -526,10 +539,18 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	session, err := p.redeemCode(req.Host, req.Form.Get("code"))
+	session, twoFactorEnabled, twoFactorRedirect, err := p.redeemCode(req.Host, req.Form.Get("code"))
 	if err != nil {
 		log.Printf("%s error redeeming code %s", remoteAddr, err)
+
 		p.ErrorPage(rw, 500, "Internal Error", "Internal Error")
+		return
+	}
+
+	// Redirect to the Gitlab Two Factor setup page if the user hasn't set up MFA yet.
+	if p.TwoFactor && !twoFactorEnabled {
+		log.Printf("oauthproxy: redirecting to %v because two factor auth is not enabled", twoFactorRedirect)
+		http.Redirect(rw, req, twoFactorRedirect, http.StatusFound)
 		return
 	}
 

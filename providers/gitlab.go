@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -42,7 +43,6 @@ func NewGitLabProvider(p *ProviderData) *GitLabProvider {
 }
 
 func (p *GitLabProvider) GetEmailAddress(s *SessionState) (string, error) {
-
 	req, err := http.NewRequest("GET",
 		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
 	if err != nil {
@@ -55,4 +55,24 @@ func (p *GitLabProvider) GetEmailAddress(s *SessionState) (string, error) {
 		return "", err
 	}
 	return json.Get("email").String()
+}
+
+func (p *GitLabProvider) IsTwoFactorAuthEnabled(s *SessionState) (hasTwoFactor bool, redirectTo string, err error) {
+	redirectTo = fmt.Sprintf("%v://%v/profile/two_factor_auth", p.LoginURL.Scheme, p.LoginURL.Host)
+
+	req, err := http.NewRequest("GET",
+		p.ValidateURL.String()+"?access_token="+s.AccessToken, nil)
+	if err != nil {
+		log.Printf("gitlab.IsTwoFactorAuthEnabled: failed building request %s", err)
+		return false, redirectTo, err
+	}
+	json, err := api.Request(req)
+	log.Printf("gitlab.IsTwoFactorAuthEnabled: received response: %v", json)
+	if err != nil {
+		log.Printf("failed making request %s", err)
+		return false, redirectTo, err
+	}
+
+	hasTwoFactor, err = json.Get("two_factor_enabled").Bool()
+	return
 }

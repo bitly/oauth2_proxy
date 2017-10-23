@@ -77,6 +77,7 @@ func main() {
 	flagSet.String("validate-url", "", "Access token validation endpoint")
 	flagSet.String("scope", "", "OAuth scope specification")
 	flagSet.String("approval-prompt", "force", "OAuth approval_prompt")
+	flagSet.Bool("two-factor", true, "check Gitlab two-factor is enabled on user")
 
 	flagSet.String("signature-key", "", "GAP-Signature request signature key (algorithm:secretkey)")
 
