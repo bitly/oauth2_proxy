@@ -419,6 +419,9 @@ func (p *OAuthProxy) GetRedirect(req *http.Request) (redirect string, err error)
 	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
 		redirect = req.URL.RequestURI()
 	}
+	if redirect == p.SignInPath || redirect == p.OAuthStartPath {
+		redirect = "/"
+	}
 
 	return
 }
