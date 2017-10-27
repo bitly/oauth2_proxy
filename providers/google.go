@@ -18,14 +18,20 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/admin/directory/v1"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/script/v1"
 )
 
 type GoogleProvider struct {
 	*ProviderData
 	RedeemRefreshURL *url.URL
-	// GroupValidator is a function that determines if the passed email is in
-	// the configured Google group.
-	GroupValidator func(string) bool
+
+	groups              []string
+	groupValidationMode string
+
+	adminService *admin.Service
+
+	groupValidationScriptId     string
+	groupValidationFunctionName string
 }
 
 func NewGoogleProvider(p *ProviderData) *GoogleProvider {
@@ -54,11 +60,6 @@ func NewGoogleProvider(p *ProviderData) *GoogleProvider {
 
 	return &GoogleProvider{
 		ProviderData: p,
-		// Set a default GroupValidator to just always return valid (true), it will
-		// be overwritten if we configured a Google group restriction.
-		GroupValidator: func(email string) bool {
-			return true
-		},
 	}
 }
 
@@ -161,10 +162,9 @@ func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err 
 // checked. CredentialsFile is the path to a json file containing a Google service
 // account credentials.
 func (p *GoogleProvider) SetGroupRestriction(groups []string, adminEmail string, credentialsReader io.Reader) {
-	adminService := getAdminService(adminEmail, credentialsReader)
-	p.GroupValidator = func(email string) bool {
-		return userInGroup(adminService, groups, email)
-	}
+	p.groups = groups
+	p.groupValidationMode = "admin"
+	p.adminService = getAdminService(adminEmail, credentialsReader)
 }
 
 func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Service {
@@ -186,7 +186,11 @@ func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Serv
 	return adminService
 }
 
-func userInGroup(service *admin.Service, groups []string, email string) bool {
+func (p *GoogleProvider) userInGroup(session *SessionState) bool {
+	service := p.adminService
+	groups := p.groups
+	email := session.Email
+
 	user, err := fetchUser(service, email)
 	if err != nil {
 		log.Printf("error fetching user: %v", err)
@@ -250,10 +254,97 @@ func fetchGroupMembers(service *admin.Service, group string) ([]*admin.Member, e
 	return members, nil
 }
 
+// SetGroupRestrictionByScript configures the GoogleProvider to restrict access to the
+// specified group(s). Google App Scripts that returns groups has to be setup, and ScriptId
+// and ScriptFunctionName has to be configured.
+func (p *GoogleProvider) SetGroupRestrictionGAS(groups []string, scriptId string, functionName string) {
+	p.groups = groups
+	p.groupValidationMode = "script"
+	p.groupValidationScriptId = scriptId
+	p.groupValidationFunctionName = functionName
+}
+
+func (p *GoogleProvider) getScriptService(s *SessionState) (*script.Service, error) {
+	conf := &oauth2.Config{
+		ClientID:     p.ClientID,
+		ClientSecret: p.ClientSecret,
+	}
+	token := &oauth2.Token{
+		AccessToken:  s.AccessToken,
+		TokenType:    "Bearer",
+		RefreshToken: s.RefreshToken,
+		Expiry:       s.ExpiresOn,
+	}
+	client := conf.Client(oauth2.NoContext, token)
+
+	return script.New(client)
+}
+
+func (p *GoogleProvider) userInGroupGAS(s *SessionState) bool {
+	service, err := p.getScriptService(s)
+	if err != nil {
+		log.Printf("error fetching groups: %v", err)
+		return false
+	}
+
+	grps, err := p.fetchGroupsGAS(service, s.Email)
+	if err != nil {
+		log.Printf("error fetching groups: %v", err)
+		return false
+	}
+
+	grpSet := make(map[string]struct{})
+	for _, g := range grps {
+		grpSet[g] = struct{}{}
+	}
+
+	for _, g := range p.groups {
+		if _, ok := grpSet[g]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *GoogleProvider) fetchGroupsGAS(service *script.Service, email string) ([]string, error) {
+	req := script.ExecutionRequest{
+		Function:   p.groupValidationFunctionName,
+		Parameters: []interface{}{email},
+	}
+
+	resp, err := service.Scripts.Run(p.groupValidationScriptId, &req).Do()
+	if err != nil {
+		log.Printf("error while calling GAS Execution API: %s", err)
+		return nil, err
+	}
+	if resp.Error != nil {
+		log.Printf("error while running GoogleAppScript: %s", err)
+		return nil, errors.New(string(resp.Error.Details[0]))
+	}
+
+	var r struct {
+		Result []string `json:"result"`
+	}
+	err = json.Unmarshal(resp.Response, &r)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result, nil
+}
+
 // ValidateGroup validates that the provided email exists in the configured Google
 // group(s).
-func (p *GoogleProvider) ValidateGroup(email string) bool {
-	return p.GroupValidator(email)
+func (p *GoogleProvider) ValidateGroup(session *SessionState) bool {
+	switch p.groupValidationMode {
+	case "admin":
+		return p.userInGroup(session)
+	case "script":
+		return p.userInGroupGAS(session)
+	default:
+		return true
+	}
 }
 
 func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
@@ -267,13 +358,16 @@ func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	}
 
 	// re-check that the user is in the proper google group(s)
-	if !p.ValidateGroup(s.Email) {
+	newSession := *s
+	newSession.AccessToken = newToken
+	newSession.ExpiresOn = time.Now().Add(duration).Truncate(time.Second)
+	if !p.ValidateGroup(&newSession) {
 		return false, fmt.Errorf("%s is no longer in the group(s)", s.Email)
 	}
 
 	origExpiration := s.ExpiresOn
-	s.AccessToken = newToken
-	s.ExpiresOn = time.Now().Add(duration).Truncate(time.Second)
+	s.AccessToken = newSession.AccessToken
+	s.ExpiresOn = newSession.ExpiresOn
 	log.Printf("refreshed access token %s (expired on %s)", s, origExpiration)
 	return true, nil
 }
