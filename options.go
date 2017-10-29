@@ -238,7 +238,7 @@ func (o *Options) Validate() error {
 			}
 		}
 
-		if o.GoogleScriptId == "" || o.GoogleScriptFunctionName == "" {
+		if o.GoogleScriptId == "" && o.GoogleScriptFunctionName == "" {
 			if o.GoogleAdminEmail == "" {
 				msgs = append(msgs, "missing setting: google-admin-email")
 			}

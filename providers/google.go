@@ -186,15 +186,16 @@ func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Serv
 	return adminService
 }
 
-func (p *GoogleProvider) userInGroup(session *SessionState) bool {
+func (p *GoogleProvider) fetchValidGroups(session *SessionState) (ret []string) {
 	service := p.adminService
 	groups := p.groups
 	email := session.Email
+	ret = []string{}
 
 	user, err := fetchUser(service, email)
 	if err != nil {
 		log.Printf("error fetching user: %v", err)
-		return false
+		return
 	}
 	id := user.Id
 	custID := user.CustomerId
@@ -206,7 +207,7 @@ func (p *GoogleProvider) userInGroup(session *SessionState) bool {
 				log.Printf("error fetching members for group %s: group does not exist", group)
 			} else {
 				log.Printf("error fetching group members: %v", err)
-				return false
+				return
 			}
 		}
 
@@ -214,16 +215,18 @@ func (p *GoogleProvider) userInGroup(session *SessionState) bool {
 			switch member.Type {
 			case "CUSTOMER":
 				if member.Id == custID {
-					return true
+					ret = append(ret, group)
+					return
 				}
 			case "USER":
 				if member.Id == id {
-					return true
+					ret = append(ret, group)
+					return
 				}
 			}
 		}
 	}
-	return false
+	return
 }
 
 func fetchUser(service *admin.Service, email string) (*admin.User, error) {
@@ -280,17 +283,18 @@ func (p *GoogleProvider) getScriptService(s *SessionState) (*script.Service, err
 	return script.New(client)
 }
 
-func (p *GoogleProvider) userInGroupGAS(s *SessionState) bool {
+func (p *GoogleProvider) fetchValidGroupsGAS(s *SessionState) (ret []string) {
 	service, err := p.getScriptService(s)
+	ret = []string{}
 	if err != nil {
 		log.Printf("error fetching groups: %v", err)
-		return false
+		return
 	}
 
 	grps, err := p.fetchGroupsGAS(service, s.Email)
 	if err != nil {
 		log.Printf("error fetching groups: %v", err)
-		return false
+		return
 	}
 
 	grpSet := make(map[string]struct{})
@@ -300,11 +304,11 @@ func (p *GoogleProvider) userInGroupGAS(s *SessionState) bool {
 
 	for _, g := range p.groups {
 		if _, ok := grpSet[g]; ok {
-			return true
+			ret = append(ret, g)
 		}
 	}
 
-	return false
+	return
 }
 
 func (p *GoogleProvider) fetchGroupsGAS(service *script.Service, email string) ([]string, error) {
@@ -337,14 +341,22 @@ func (p *GoogleProvider) fetchGroupsGAS(service *script.Service, email string) (
 // ValidateGroup validates that the provided email exists in the configured Google
 // group(s).
 func (p *GoogleProvider) ValidateGroup(session *SessionState) bool {
+	var groups []string
 	switch p.groupValidationMode {
 	case "admin":
-		return p.userInGroup(session)
+		groups = p.fetchValidGroups(session)
 	case "script":
-		return p.userInGroupGAS(session)
+		groups = p.fetchValidGroupsGAS(session)
 	default:
 		return true
 	}
+	if len(groups) == 0 {
+		return false
+	} else {
+		session.Groups = groups
+		return true
+	}
+
 }
 
 func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
