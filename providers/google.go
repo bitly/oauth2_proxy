@@ -258,7 +258,7 @@ func fetchGroupMembers(service *admin.Service, group string) ([]*admin.Member, e
 }
 
 // SetGroupRestrictionByScript configures the GoogleProvider to restrict access to the
-// specified group(s). Google App Scripts that returns groups has to be setup, and ScriptId
+// specified group(s). Google Apps Scripts that returns groups has to be setup, and ScriptId
 // and ScriptFunctionName has to be configured.
 func (p *GoogleProvider) SetGroupRestrictionGAS(groups []string, scriptId string, functionName string) {
 	p.groups = groups
@@ -323,7 +323,7 @@ func (p *GoogleProvider) fetchGroupsGAS(service *script.Service, email string) (
 		return nil, err
 	}
 	if resp.Error != nil {
-		log.Printf("error while running GoogleAppScript: %s", err)
+		log.Printf("error while running GoogleAppsScript: %s", err)
 		return nil, errors.New(string(resp.Error.Details[0]))
 	}
 

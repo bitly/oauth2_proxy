@@ -76,6 +76,29 @@ and the user will be checked against all the provided groups.
 
 Note: The user is checked against the group members list on initial authentication and every time the token is refreshed ( about once an hour ).
 
+#### Restrict auth to specific Google groups using Google Apps Script. (optional)
+
+1. Create a Google Apps Script that returns valid groups.
+
+    sample script:
+    ```
+    function listMyGroups() {
+      var groups = GroupsApp.getGroups();
+      return groups.map(function (group) {
+        return group.getEmail();
+      });
+    }
+    ```
+
+2. Take note of the Script ID and function name.
+3. Follow the steps on https://developers.google.com/apps-script/guides/rest/api to enable Execution API.
+4. Ensure that the script uses the same Cloud Platform project with your **Client ID** and **Client secret**.
+   Follow the steps on https://developers.google.com/apps-script/guides/rest/api to switch the project.
+5. Create or choose an existing email group and set that email to the ```google-group``` flag. You can pass multiple instances of this flag with different groups
+   and the user will be checked against all the provided groups.
+6. Set the Script ID and the function name to the ```google-script-id``` and ```google-script-function-name``` flag.
+7. Restart oauth2_proxy.
+
 ### Azure Auth Provider
 
 1. [Add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/) to your Azure Active Directory tenant.
@@ -188,6 +211,8 @@ Usage of oauth2_proxy:
   -footer string: custom footer string. Use "-" to disable default footer.
   -github-org string: restrict logins to members of this organisation
   -github-team string: restrict logins to members of any of these teams (slug), separated by a comma
+  -google-script-function-name string: the function name of a Google Apps Script that returns user groups
+  -google-script-id string: the script id of a Google Apps Script that returns user groups
   -google-admin-email string: the google admin to impersonate for api calls
   -google-group value: restrict logins to members of this google group (may be given multiple times).
   -google-service-account-json string: the path to the service account json credentials
