@@ -48,6 +48,8 @@ func TestGoogleGroupOptions(t *testing.T) {
 	assert.NotEqual(t, nil, err)
 
 	expected := errorMsg([]string{
+		"missing setting: google-script-id",
+		"missing setting: google-script-function-name",
 		"missing setting: google-admin-email",
 		"missing setting: google-service-account-json"})
 	assert.Equal(t, expected, err.Error())

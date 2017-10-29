@@ -65,15 +65,15 @@ func TestSessionStateSerializationNoCipher(t *testing.T) {
 	assert.Equal(t, "", ss.RefreshToken)
 }
 
-func TestSessionStateUserOrEmail(t *testing.T) {
+func TestSessionStateUserAndGroups(t *testing.T) {
 
 	s := &SessionState{
 		Email: "user@domain.com",
 		User:  "just-user",
 	}
-	assert.Equal(t, "user@domain.com", s.userOrEmail())
+	assert.Equal(t, "user@domain.com", s.userAndGroups())
 	s.Email = ""
-	assert.Equal(t, "just-user", s.userOrEmail())
+	assert.Equal(t, "just-user", s.userAndGroups())
 }
 
 func TestExpired(t *testing.T) {
