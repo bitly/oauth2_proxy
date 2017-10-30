@@ -97,6 +97,7 @@ Note: The user is checked against the group members list on initial authenticati
 5. Create or choose an existing email group and set that email to the ```google-group``` flag. You can pass multiple instances of this flag with different groups
    and the user will be checked against all the provided groups.
 6. Set the Script ID and the function name to the ```google-script-id``` and ```google-script-function-name``` flag.
+7. Set the additional scopes to execute the script to ```scope``` flag. For example, `-scope "profile email https://www.googleapis.com/auth/groups"`.
 7. Restart oauth2_proxy.
 
 ### Azure Auth Provider
