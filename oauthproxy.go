@@ -366,7 +366,9 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	if redirect_url == p.SignInPath {
 		redirect_url = "/"
 	}
-
+	if req.FormValue("rd") != "" {
+		redirect_url = req.FormValue("rd")
+	}
 	t := struct {
 		ProviderName  string
 		SignInMessage string
