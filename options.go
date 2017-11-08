@@ -37,6 +37,8 @@ type Options struct {
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
+	GoogleScriptId           string   `flag:"google-script-id" cfg:"google_script_id"`
+	GoogleScriptFunctionName string   `flag:"google-script-function-name" cfg:"google_script_function_name"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
 	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
@@ -220,15 +222,29 @@ func (o *Options) Validate() error {
 			o.CookieExpire.String()))
 	}
 
-	if len(o.GoogleGroups) > 0 || o.GoogleAdminEmail != "" || o.GoogleServiceAccountJSON != "" {
+	if len(o.GoogleGroups) > 0 || o.GoogleAdminEmail != "" || o.GoogleServiceAccountJSON != "" ||
+		o.GoogleScriptId != "" || o.GoogleScriptFunctionName != "" {
+
 		if len(o.GoogleGroups) < 1 {
 			msgs = append(msgs, "missing setting: google-group")
 		}
-		if o.GoogleAdminEmail == "" {
-			msgs = append(msgs, "missing setting: google-admin-email")
+
+		if o.GoogleAdminEmail == "" && o.GoogleServiceAccountJSON == "" {
+			if o.GoogleScriptId == "" {
+				msgs = append(msgs, "missing setting: google-script-id")
+			}
+			if o.GoogleScriptFunctionName == "" {
+				msgs = append(msgs, "missing setting: google-script-function-name")
+			}
 		}
-		if o.GoogleServiceAccountJSON == "" {
-			msgs = append(msgs, "missing setting: google-service-account-json")
+
+		if o.GoogleScriptId == "" && o.GoogleScriptFunctionName == "" {
+			if o.GoogleAdminEmail == "" {
+				msgs = append(msgs, "missing setting: google-admin-email")
+			}
+			if o.GoogleServiceAccountJSON == "" {
+				msgs = append(msgs, "missing setting: google-service-account-json")
+			}
 		}
 	}
 
@@ -269,6 +285,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 			} else {
 				p.SetGroupRestriction(o.GoogleGroups, o.GoogleAdminEmail, file)
 			}
+		} else if o.GoogleScriptId != "" {
+			p.SetGroupRestrictionGAS(o.GoogleGroups, o.GoogleScriptId, o.GoogleScriptFunctionName)
 		}
 	case *providers.OIDCProvider:
 		if o.oidcVerifier == nil {

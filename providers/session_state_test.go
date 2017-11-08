@@ -45,6 +45,30 @@ func TestSessionStateSerialization(t *testing.T) {
 	assert.NotEqual(t, s.RefreshToken, ss.RefreshToken)
 }
 
+func TestSessionStateSerializationWithGroups(t *testing.T) {
+	c, err := cookie.NewCipher([]byte(secret))
+	assert.Equal(t, nil, err)
+	s := &SessionState{
+		Email:        "user@domain.com",
+		AccessToken:  "token1234",
+		ExpiresOn:    time.Now().Add(time.Duration(1) * time.Hour),
+		RefreshToken: "refresh4321",
+		Groups:       []string{"group1", "group2"},
+	}
+	encoded, err := s.EncodeSessionState(c)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 3, strings.Count(encoded, "|"))
+
+	ss, err := DecodeSessionState(encoded, c)
+	t.Logf("%#v", ss)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, s.Email, ss.Email)
+	assert.Equal(t, s.AccessToken, ss.AccessToken)
+	assert.Equal(t, s.ExpiresOn.Unix(), ss.ExpiresOn.Unix())
+	assert.Equal(t, s.RefreshToken, ss.RefreshToken)
+	assert.Equal(t, s.Groups, ss.Groups)
+}
+
 func TestSessionStateSerializationNoCipher(t *testing.T) {
 
 	s := &SessionState{
@@ -71,9 +95,20 @@ func TestSessionStateUserOrEmail(t *testing.T) {
 		Email: "user@domain.com",
 		User:  "just-user",
 	}
-	assert.Equal(t, "user@domain.com", s.userOrEmail())
+	assert.Equal(t, "user@domain.com", s.userAndGroups())
 	s.Email = ""
-	assert.Equal(t, "just-user", s.userOrEmail())
+	assert.Equal(t, "just-user", s.userAndGroups())
+}
+
+func TestSessionStateUserAndGroups(t *testing.T) {
+	s := &SessionState{
+		Email:  "user@domain.com",
+		User:   "just-user",
+		Groups: []string{"group1", "group2"},
+	}
+	assert.Equal(t, "user@domain.com,group1,group2", s.userAndGroups())
+	s.Email = ""
+	assert.Equal(t, "just-user,group1,group2", s.userAndGroups())
 }
 
 func TestExpired(t *testing.T) {

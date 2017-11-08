@@ -15,6 +15,7 @@ type SessionState struct {
 	RefreshToken string
 	Email        string
 	User         string
+	Groups       []string
 }
 
 func (s *SessionState) IsExpired() bool {
@@ -25,7 +26,7 @@ func (s *SessionState) IsExpired() bool {
 }
 
 func (s *SessionState) String() string {
-	o := fmt.Sprintf("Session{%s", s.userOrEmail())
+	o := fmt.Sprintf("Session{%s", s.userAndGroups())
 	if s.AccessToken != "" {
 		o += " token:true"
 	}
@@ -40,17 +41,32 @@ func (s *SessionState) String() string {
 
 func (s *SessionState) EncodeSessionState(c *cookie.Cipher) (string, error) {
 	if c == nil || s.AccessToken == "" {
-		return s.userOrEmail(), nil
+		return s.userAndGroups(), nil
 	}
 	return s.EncryptedString(c)
 }
 
-func (s *SessionState) userOrEmail() string {
+func (s *SessionState) userAndGroups() string {
 	u := s.User
 	if s.Email != "" {
 		u = s.Email
 	}
+	if len(s.Groups) > 0 {
+		u += "," + strings.Join(s.Groups, ",")
+	}
 	return u
+}
+
+func decodeUserAndGroups(v string) (user string, email string, groups []string) {
+	vs := strings.Split(v, ",")
+	if u := vs[0]; strings.Contains(u, "@") {
+		email = vs[0]
+		user = strings.Split(u, "@")[0]
+	} else {
+		user = u
+	}
+	groups = vs[1:]
+	return
 }
 
 func (s *SessionState) EncryptedString(c *cookie.Cipher) (string, error) {
@@ -72,17 +88,16 @@ func (s *SessionState) EncryptedString(c *cookie.Cipher) (string, error) {
 			return "", err
 		}
 	}
-	return fmt.Sprintf("%s|%s|%d|%s", s.userOrEmail(), a, s.ExpiresOn.Unix(), r), nil
+	return fmt.Sprintf("%s|%s|%d|%s", s.userAndGroups(), a, s.ExpiresOn.Unix(), r), nil
 }
 
 func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error) {
 	chunks := strings.Split(v, "|")
+	s = &SessionState{}
+
 	if len(chunks) == 1 {
-		if strings.Contains(chunks[0], "@") {
-			u := strings.Split(v, "@")[0]
-			return &SessionState{Email: v, User: u}, nil
-		}
-		return &SessionState{User: v}, nil
+		s.User, s.Email, s.Groups = decodeUserAndGroups(chunks[0])
+		return
 	}
 
 	if len(chunks) != 4 {
@@ -90,7 +105,6 @@ func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error)
 		return
 	}
 
-	s = &SessionState{}
 	if c != nil && chunks[1] != "" {
 		s.AccessToken, err = c.Decrypt(chunks[1])
 		if err != nil {
@@ -103,12 +117,8 @@ func DecodeSessionState(v string, c *cookie.Cipher) (s *SessionState, err error)
 			return nil, err
 		}
 	}
-	if u := chunks[0]; strings.Contains(u, "@") {
-		s.Email = u
-		s.User = strings.Split(u, "@")[0]
-	} else {
-		s.User = u
-	}
+
+	s.User, s.Email, s.Groups = decodeUserAndGroups(chunks[0])
 	ts, _ := strconv.Atoi(chunks[2])
 	s.ExpiresOn = time.Unix(int64(ts), 0)
 	return
