@@ -34,6 +34,7 @@ type Options struct {
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
+	OpenshiftProject         string   `flag:"openshift-project" cfg:"openshift_project"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
@@ -261,6 +262,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
+	case *providers.OpenshiftProvider:
+		p.SetProject(o.OpenshiftProject)
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)
