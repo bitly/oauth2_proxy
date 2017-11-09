@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/acme/autocert"
 )
 
 type Server struct {
@@ -15,7 +17,7 @@ type Server struct {
 }
 
 func (s *Server) ListenAndServe() {
-	if s.Opts.TLSKeyFile != "" || s.Opts.TLSCertFile != "" {
+	if s.Opts.TLSKeyFile != "" || s.Opts.TLSCertFile != "" || s.Opts.LetsEncryptEnabled {
 		s.ServeHTTPS()
 	} else {
 		s.ServeHTTP()
@@ -59,6 +61,7 @@ func (s *Server) ServeHTTP() {
 
 func (s *Server) ServeHTTPS() {
 	addr := s.Opts.HttpsAddress
+
 	config := &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		MaxVersion: tls.VersionTLS12,
@@ -67,11 +70,23 @@ func (s *Server) ServeHTTPS() {
 		config.NextProtos = []string{"http/1.1"}
 	}
 
-	var err error
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.LoadX509KeyPair(s.Opts.TLSCertFile, s.Opts.TLSKeyFile)
-	if err != nil {
-		log.Fatalf("FATAL: loading tls config (%s, %s) failed - %s", s.Opts.TLSCertFile, s.Opts.TLSKeyFile, err)
+	if s.Opts.LetsEncryptEnabled {
+		manager := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			Cache:      autocert.DirCache(s.Opts.LetsEncryptCacheDir),
+			HostPolicy: autocert.HostWhitelist(s.Opts.LetsEncryptHosts...),
+		}
+		if s.Opts.LetsEncryptAdminEmail != "" {
+			manager.Email = s.Opts.LetsEncryptAdminEmail
+		}
+		config.GetCertificate = manager.GetCertificate
+	} else {
+		var err error
+		config.Certificates = make([]tls.Certificate, 1)
+		config.Certificates[0], err = tls.LoadX509KeyPair(s.Opts.TLSCertFile, s.Opts.TLSKeyFile)
+		if err != nil {
+			log.Fatalf("FATAL: loading tls config (%s, %s) failed - %s", s.Opts.TLSCertFile, s.Opts.TLSKeyFile, err)
+		}
 	}
 
 	ln, err := net.Listen("tcp", addr)

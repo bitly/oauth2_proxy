@@ -21,6 +21,7 @@ func main() {
 	upstreams := StringArray{}
 	skipAuthRegex := StringArray{}
 	googleGroups := StringArray{}
+	letsEncryptHosts := StringArray{}
 
 	config := flagSet.String("config", "", "path to config file")
 	showVersion := flagSet.Bool("version", false, "print version string")
@@ -29,6 +30,12 @@ func main() {
 	flagSet.String("https-address", ":443", "<addr>:<port> to listen on for HTTPS clients")
 	flagSet.String("tls-cert", "", "path to certificate file")
 	flagSet.String("tls-key", "", "path to private key file")
+
+	flagSet.Bool("letsencrypt-enabled", false, "use Let's Encrypt ACME certificates")
+	flagSet.String("letsencrypt-admin-email", "", "Admin contact email; sent to Let's Encrypt during registration during registration")
+	flagSet.Var(&letsEncryptHosts, "letsencrypt-host", "Obtain TLS certificates for this domain with Let's Encrypt (may be given multiple times)")
+	flagSet.String("letsencrypt-cache-dir", "./", "Let's Encrypt certificate cache directory")
+
 	flagSet.String("redirect-url", "", "the OAuth Redirect URL. ie: \"https://internalapp.yourcompany.com/oauth2/callback\"")
 	flagSet.Bool("set-xauthrequest", false, "set X-Auth-Request-User and X-Auth-Request-Email response headers (useful in Nginx auth_request mode)")
 	flagSet.Var(&upstreams, "upstream", "the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path")
