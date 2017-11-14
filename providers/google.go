@@ -187,67 +187,22 @@ func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Serv
 }
 
 func userInGroup(service *admin.Service, groups []string, email string) bool {
-	user, err := fetchUser(service, email)
-	if err != nil {
-		log.Printf("error fetching user: %v", err)
-		return false
-	}
-	id := user.Id
-	custID := user.CustomerId
 
 	for _, group := range groups {
-		members, err := fetchGroupMembers(service, group)
+		_, err := service.Members.Get(group, email).Do()
 		if err != nil {
 			if err, ok := err.(*googleapi.Error); ok && err.Code == 404 {
-				log.Printf("error fetching members for group %s: group does not exist", group)
+				log.Printf("%s is not a member of %s (or group does not exist)", email, group)
 			} else {
 				log.Printf("error fetching group members: %v", err)
 				return false
 			}
-		}
-
-		for _, member := range members {
-			switch member.Type {
-			case "CUSTOMER":
-				if member.Id == custID {
-					return true
-				}
-			case "USER":
-				if member.Id == id {
-					return true
-				}
-			}
+		} else {
+			log.Printf("%s found in %s, authorized", email, group)
+			return true
 		}
 	}
 	return false
-}
-
-func fetchUser(service *admin.Service, email string) (*admin.User, error) {
-	user, err := service.Users.Get(email).Do()
-	return user, err
-}
-
-func fetchGroupMembers(service *admin.Service, group string) ([]*admin.Member, error) {
-	members := []*admin.Member{}
-	pageToken := ""
-	for {
-		req := service.Members.List(group)
-		if pageToken != "" {
-			req.PageToken(pageToken)
-		}
-		r, err := req.Do()
-		if err != nil {
-			return nil, err
-		}
-		for _, member := range r.Members {
-			members = append(members, member)
-		}
-		if r.NextPageToken == "" {
-			break
-		}
-		pageToken = r.NextPageToken
-	}
-	return members, nil
 }
 
 // ValidateGroup validates that the provided email exists in the configured Google
