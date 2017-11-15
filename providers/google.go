@@ -17,7 +17,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/admin/directory/v1"
-	"google.golang.org/api/googleapi"
 )
 
 type GoogleProvider struct {
@@ -187,22 +186,31 @@ func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Serv
 }
 
 func userInGroup(service *admin.Service, groups []string, email string) bool {
-
-	for _, group := range groups {
-		_, err := service.Members.Get(group, email).Do()
-		if err != nil {
-			if err, ok := err.(*googleapi.Error); ok && err.Code == 404 {
-				log.Printf("%s is not a member of %s (or group does not exist)", email, group)
-			} else {
-				log.Printf("error fetching group members: %v", err)
-				return false
-			}
-		} else {
-			log.Printf("%s found in %s, authorized", email, group)
-			return true
+	pageToken := ""
+	for {
+		req := service.Groups.List().UserKey(email)
+		if pageToken != "" {
+			req.PageToken(pageToken)
 		}
+		resp, err := req.Do()
+		if err != nil {
+			log.Printf("Error calling service.Groups.List().userKey(%s)", email)
+			return false
+		}
+		for _, group := range resp.Groups {
+			for _, allowedgroup := range groups {
+				if group.Email == allowedgroup {
+					log.Printf("%s is a member of %s, authorized", email, allowedgroup)
+					return true
+				}
+			}
+		}
+		if resp.NextPageToken == "" {
+			log.Printf("%s not found in any allowed groups", email)
+			return false
+		}
+		pageToken = resp.NextPageToken
 	}
-	return false
 }
 
 // ValidateGroup validates that the provided email exists in the configured Google
