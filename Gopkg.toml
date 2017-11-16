@@ -1,0 +1,55 @@
+[[constraint]]
+  name = "github.com/BurntSushi/toml"
+  revision = "d94612f9fc140360834f9742158c70b5c5b5535b"
+
+[[constraint]]
+  name = "github.com/bitly/go-simplejson"
+  revision = "da1a8928f709389522c8023062a3739f3b4af419"
+
+[[constraint]]
+  name = "github.com/bitly/oauth2_proxy"
+  version = "=2.2.0"
+
+[[constraint]]
+  name = "github.com/coreos/go-oidc"
+  revision = "c797a55f1c1001ec3169f1d0fbb4c5523563bec6"
+
+[[constraint]]
+  name = "github.com/mbland/hmacauth"
+  version = "=1.0.2"
+
+[[constraint]]
+  name = "github.com/mreiferson/go-options"
+  revision = "77551d20752b54535462404ad9d877ebdb26e53d"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "=1.1.4"
+
+[[constraint]]
+  name = "golang.org/x/oauth2"
+  revision = "7fdf09982454086d5570c7db3e11f360194830ca"
+
+[[constraint]]
+  name = "google.golang.org/api"
+  revision = "650535c7d6201e8304c92f38c922a9a3a36c6877"
+
+[[constraint]]
+  name = "gopkg.in/fsnotify.v1"
+  version = "=1.2.0"
+
+[[override]]
+  name = "golang.org/x/net"
+  revision = "242b6b35177ec3909636b6cf6a47e8c2c6324b5d"
+
+[[override]]
+  name = "cloud.google.com/go"
+  version = "=0.7.0"
+
+[[override]]
+  name = "gopkg.in/square/go-jose.v2"
+  version = "=2.1.1"
+
+[[override]]
+  name = "github.com/pquerna/cachecontrol"
+  revision = "9299cc36e57c32f83e47ffb3c25d8a3dec10ea0b"
