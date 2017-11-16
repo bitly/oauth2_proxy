@@ -1,0 +1,15 @@
+language: go
+go:
+- 1.4.x
+- 1.9
+script:
+- go test ./...
+- go get -u github.com/axw/gocov/gocov
+- go get -u github.com/mattn/goveralls
+- go get golang.org/x/tools/cmd/cover
+- go test -v -covermode=count $pkg -coverprofile=profile.cov
+- go tool cover -func profile.cov
+- goveralls -coverprofile=profile.cov -service=travis-ci
+branches:
+  only:
+    - master
