@@ -232,7 +232,12 @@ func fetchGroupMembers(service *admin.Service, group string) ([]*admin.Member, e
 			return nil, err
 		}
 		for _, member := range r.Members {
-			members = append(members, member)
+			if member.Type == "GROUP" {
+				groupMembers, _ := fetchGroupMembers(service, member.Email)
+				members = append(members, groupMembers...)
+			} else {
+				members = append(members, member)
+			}
 		}
 		if r.NextPageToken == "" {
 			break
