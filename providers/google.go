@@ -179,6 +179,7 @@ func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Serv
 
 func userInGroup(service *admin.Service, groups []string, email string) bool {
 	for _, group := range groups {
+		log.Printf("Is user %s in group %s", email, group)
 		req, err := service.Members.HasMember(group, email).Do()
 		if err != nil {
 			log.Printf("Members API call hasMember error: %s", err)
