@@ -154,6 +154,7 @@ func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err 
 func (p *GoogleProvider) SetGroupRestriction(groups []string, adminEmail string, credentialsReader io.Reader) {
 	adminService := getAdminService(adminEmail, credentialsReader)
 	p.GroupValidator = func(email string) bool {
+		log.Printf("Validate user %s", email)
 		return userInGroup(adminService, groups, email)
 	}
 }
