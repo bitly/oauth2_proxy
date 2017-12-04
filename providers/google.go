@@ -196,6 +196,7 @@ func userInGroup(service *admin.Service, groups []string, email string) bool {
 // ValidateGroup validates that the provided email exists in the configured Google
 // group(s).
 func (p *GoogleProvider) ValidateGroup(email string) bool {
+	log.Printf("ValidateGroup %s", email)
 	return p.GroupValidator(email)
 }
 
