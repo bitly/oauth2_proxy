@@ -66,7 +66,7 @@ func emailFromIdToken(idToken string) (string, error) {
 	// id_token is a base64 encode ID token payload
 	// https://developers.google.com/accounts/docs/OAuth2Login#obtainuserinfo
 	jwt := strings.Split(idToken, ".")
-	b, err := base64.RawURLEncoding.DecodeString(jwt[1])
+	b, err := jwtDecodeSegment(jwt[1])
 	if err != nil {
 		return "", err
 	}
@@ -86,6 +86,14 @@ func emailFromIdToken(idToken string) (string, error) {
 		return "", fmt.Errorf("email %s not listed as verified", email.Email)
 	}
 	return email.Email, nil
+}
+
+func jwtDecodeSegment(seg string) ([]byte, error) {
+	if l := len(seg) % 4; l > 0 {
+		seg += strings.Repeat("=", 4-l)
+	}
+
+	return base64.URLEncoding.DecodeString(seg)
 }
 
 func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err error) {
@@ -154,7 +162,6 @@ func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err 
 func (p *GoogleProvider) SetGroupRestriction(groups []string, adminEmail string, credentialsReader io.Reader) {
 	adminService := getAdminService(adminEmail, credentialsReader)
 	p.GroupValidator = func(email string) bool {
-		log.Printf("Validate user %s", email)
 		return userInGroup(adminService, groups, email)
 	}
 }
@@ -179,24 +186,36 @@ func getAdminService(adminEmail string, credentialsReader io.Reader) *admin.Serv
 }
 
 func userInGroup(service *admin.Service, groups []string, email string) bool {
-	for _, group := range groups {
-		log.Printf("Is user %s in group %s", email, group)
-		req, err := service.Members.HasMember(group, email).Do()
+	pageToken := ""
+	for {
+		req := service.Groups.List().UserKey(email)
+		if pageToken != "" {
+			req.PageToken(pageToken)
+		}
+		resp, err := req.Do()
 		if err != nil {
-			log.Printf("Members API call hasMember error: %s", err)
+			log.Printf("Error calling service.Groups.List().userKey(%s)", email)
 			return false
 		}
-		if req.IsMember == true {
-			return true
+		for _, group := range resp.Groups {
+			for _, allowedgroup := range groups {
+				if group.Email == allowedgroup {
+					log.Printf("%s is a member of %s, authorized", email, allowedgroup)
+					return true
+				}
+			}
 		}
+		if resp.NextPageToken == "" {
+			log.Printf("%s not found in any allowed groups", email)
+			return false
+		}
+		pageToken = resp.NextPageToken
 	}
-	return false
 }
 
 // ValidateGroup validates that the provided email exists in the configured Google
 // group(s).
 func (p *GoogleProvider) ValidateGroup(email string) bool {
-	log.Printf("ValidateGroup %s", email)
 	return p.GroupValidator(email)
 }
 
