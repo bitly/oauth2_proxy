@@ -41,21 +41,29 @@ func TestNewOptions(t *testing.T) {
 	assert.Equal(t, expected, err.Error())
 }
 
-func TestGoogleGroupOptions(t *testing.T) {
+func TestGooglePermitGroupsOptions(t *testing.T) {
 	o := testOptions()
-	o.GoogleGroups = []string{"googlegroup"}
+	o.GoogleAdminEmail = "admin@example.com"
 	err := o.Validate()
 	assert.NotEqual(t, nil, err)
 
 	expected := errorMsg([]string{
-		"missing setting: google-admin-email",
+		"missing setting: permit-groups",
 		"missing setting: google-service-account-json"})
 	assert.Equal(t, expected, err.Error())
 }
 
-func TestGoogleGroupInvalidFile(t *testing.T) {
+func TestPermitGroupsOptions(t *testing.T) {
 	o := testOptions()
-	o.GoogleGroups = []string{"test_group"}
+	o.Provider = "azure"
+	o.PermitGroups = []string{"agoodgroup"}
+	err := o.Validate()
+	assert.Equal(t, nil, err)
+}
+
+func TestPermitGroupsInvalidFile(t *testing.T) {
+	o := testOptions()
+	o.PermitGroups = []string{"test_group"}
 	o.GoogleAdminEmail = "admin@example.com"
 	o.GoogleServiceAccountJSON = "file_doesnt_exist.json"
 	err := o.Validate()
