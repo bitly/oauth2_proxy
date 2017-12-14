@@ -37,6 +37,7 @@ Valid providers are :
 * [GitHub](#github-auth-provider)
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
+* [Yandex](#yandex-auth-provider)
 
 The provider can be selected using the `provider` configuration value.
 
@@ -132,6 +133,12 @@ For LinkedIn, the registration steps are:
    * In "OAuth 2.0 Redirect URLs", enter `https://internal.yourcompany.com/oauth2/callback`
 3. Fill in the remaining required fields and Save.
 4. Take note of the **Consumer Key / API Key** and **Consumer Secret / Secret Key**
+
+### Yandex Auth Provider
+
+For Yandex, follow the registration steps to create an OAuth client: 
+<https://tech.yandex.com/oauth/doc/dg/tasks/register-client-docpage>
+
 
 ### Microsoft Azure AD Provider
 
