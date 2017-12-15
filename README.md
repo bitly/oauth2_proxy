@@ -89,6 +89,14 @@ Note: The user is checked against the group members list on initial authenticati
 
 The Azure AD auth provider uses `openid` as it default scope. It uses `https://graph.windows.net` as a default protected resource. It call to `https://graph.windows.net/me` to get the email address of the user that logs in.
 
+Configuration should look something like this: 
+
+./oauth2_proxy --provider="azure" --email-domain="example.com" --upstream="" --cookie-secret=... --client-id=...  --client-secret=... --azure-tenant=...
+
+Or in the configuration file you have to add following line:
+provider = azure
+
+
 
 ### Facebook Auth Provider
 
