@@ -603,6 +603,11 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	var saveSession, clearSession, revalidated bool
 	remoteAddr := getRemoteAddr(req)
 
+	originalRequestUri := req.Header.Get("X-Original-URI")
+	if originalRequestUri != "" && p.IsWhitelistedPath(originalRequestUri){
+		return http.StatusAccepted
+	}
+
 	session, sessionAge, err := p.LoadCookiedSession(req)
 	if err != nil {
 		log.Printf("%s %s", remoteAddr, err)
