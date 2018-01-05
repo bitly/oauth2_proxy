@@ -2,9 +2,7 @@ package providers
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -62,7 +60,32 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 	}
 
 	if claims.Email == "" {
-		log.Printf("id_token did not contain an email. Falling back on userinfo endpoint\n")
+		if p.ProfileURL.String() == "" {
+			return nil, fmt.Errorf("id_token did not contain an email")
+		}
+
+		// If the userinfo endpoint profileURL is defined, then there
+		// is a chance the userinfo contents at the profileURL contain
+		// the email.  Make a query to the userinfo endpoint, and
+		// attempt to locate the email from there.
+
+		req, err := http.NewRequest("GET", p.ProfileURL.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header = getOIDCHeader(token.AccessToken)
+
+		json, err := api.Request(req)
+		if err != nil {
+			return nil, err
+		}
+
+		email, err := json.Get("email").String()
+		if err != nil {
+			return nil, fmt.Errorf("id_token nor userinfo endpoint did not contain an email")
+		}
+
+		claims.Email = email
 	}
 	if claims.Verified != nil && !*claims.Verified {
 		return nil, fmt.Errorf("id_token failed verification")
@@ -94,26 +117,4 @@ func getOIDCHeader(access_token string) http.Header {
 	header.Set("Accept", "application/json")
 	header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
 	return header
-}
-
-func (p *OIDCProvider) GetEmailAddress(s *SessionState) (string, error) {
-	if s.AccessToken == "" {
-		return "", errors.New("missing access token")
-	}
-	req, err := http.NewRequest("GET", p.ProfileURL.String(), nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header = getOIDCHeader(s.AccessToken)
-
-	json, err := api.Request(req)
-	if err != nil {
-		return "", err
-	}
-
-	email, err := json.Get("email").String()
-	if err != nil {
-		return "", err
-	}
-	return email, nil
 }
