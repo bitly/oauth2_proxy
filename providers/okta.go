@@ -67,3 +67,7 @@ func (p *OktaProvider) GetEmailAddress(s *SessionState) (string, error) {
 	}
 	return json.Get("email").String()
 }
+
+func (p *OktaProvider) ValidateSessionState(s *SessionState) bool {
+	return validateToken(p, s.AccessToken, getOktaHeader(s.AccessToken))
+}
