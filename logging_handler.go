@@ -149,10 +149,12 @@ func (h loggingHandler) writeLogLine(username, upstream string, req *http.Reques
 
 	var body string
 	if rbl {
-		bodyBytes, err := ioutil.ReadAll(req.Body)
-		if err == nil {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-			body = string(bodyBytes)
+		if req.Body != nil {
+			bodyBytes, err := ioutil.ReadAll(req.Body)
+			if err == nil {
+				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				body = string(bodyBytes)
+			}
 		}
 	}
 
