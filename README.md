@@ -210,6 +210,7 @@ Usage of oauth2_proxy:
   -redeem-url string: Token redemption endpoint
   -redirect-url string: the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
   -request-logging: Log requests to stdout (default true)
+  -request-body-logging: Allow the logger to read request bodies (default false)
   -request-logging-format: Template for request log lines (see "Logging Format" paragraph below)
   -resource string: The resource that is protected (Azure AD only)
   -scope string: OAuth scope specification
@@ -361,7 +362,9 @@ The default format is configured as follows:
 {{.Client}} - {{.Username}} [{{.Timestamp}}] {{.Host}} {{.RequestMethod}} {{.Upstream}} {{.RequestURI}} {{.Protocol}} {{.UserAgent}} {{.StatusCode}} {{.ResponseSize}} {{.RequestDuration}}
 ```
 
-[See `logMessageData` in `logging_handler.go`](./logging_handler.go) for all available variables.
+[See `logMessageData` in `logging_handler.go`](./logging_handler.go) for all available
+variables. By default, the request body will not be read for performance reasons. If the
+`{{.Body}}` variable is needed, the `request_body_logging` flag must be set to `true`.
 
 ## Adding a new Provider
 

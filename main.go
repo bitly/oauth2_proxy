@@ -67,6 +67,7 @@ func main() {
 	flagSet.Bool("cookie-httponly", true, "set HttpOnly cookie flag")
 
 	flagSet.Bool("request-logging", true, "Log requests to stdout")
+	flagSet.Bool("request-body-logging", false, "Allow the logger to read request bodies")
 	flagSet.String("request-logging-format", defaultRequestLoggingFormat, "Template for log lines")
 
 	flagSet.String("provider", "google", "OAuth provider")
@@ -126,7 +127,7 @@ func main() {
 	}
 
 	s := &Server{
-		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat),
+		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestBodyLogging, opts.RequestLoggingFormat),
 		Opts:    opts,
 	}
 	s.ListenAndServe()

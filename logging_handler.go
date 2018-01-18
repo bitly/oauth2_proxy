@@ -4,8 +4,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -78,6 +80,7 @@ type logMessageData struct {
 	RequestDuration,
 	RequestMethod,
 	RequestURI,
+	RequestBody,
 	ResponseSize,
 	StatusCode,
 	Timestamp,
@@ -91,14 +94,16 @@ type loggingHandler struct {
 	writer      io.Writer
 	handler     http.Handler
 	enabled     bool
+	bodyEnabled bool
 	logTemplate *template.Template
 }
 
-func LoggingHandler(out io.Writer, h http.Handler, v bool, requestLoggingTpl string) http.Handler {
+func LoggingHandler(out io.Writer, h http.Handler, v, rbl bool, requestLoggingTpl string) http.Handler {
 	return loggingHandler{
 		writer:      out,
 		handler:     h,
 		enabled:     v,
+		bodyEnabled: rbl,
 		logTemplate: template.Must(template.New("request-log").Parse(requestLoggingTpl)),
 	}
 }
@@ -111,13 +116,14 @@ func (h loggingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if !h.enabled {
 		return
 	}
-	h.writeLogLine(logger.authInfo, logger.upstream, req, url, t, logger.Status(), logger.Size())
+	h.writeLogLine(logger.authInfo, logger.upstream, req, h.bodyEnabled, url, t, logger.Status(), logger.Size())
 }
 
 // Log entry for req similar to Apache Common Log Format.
+// rbl is a flag to specify if request body logging is enabled.
 // ts is the timestamp with which the entry should be logged.
 // status, size are used to provide the response HTTP status and size.
-func (h loggingHandler) writeLogLine(username, upstream string, req *http.Request, url url.URL, ts time.Time, status int, size int) {
+func (h loggingHandler) writeLogLine(username, upstream string, req *http.Request, rbl bool, url url.URL, ts time.Time, status int, size int) {
 	if username == "" {
 		username = "-"
 	}
@@ -141,6 +147,15 @@ func (h loggingHandler) writeLogLine(username, upstream string, req *http.Reques
 
 	duration := float64(time.Now().Sub(ts)) / float64(time.Second)
 
+	var body string
+	if rbl {
+		bodyBytes, err := ioutil.ReadAll(req.Body)
+		if err == nil {
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			body = string(bodyBytes)
+		}
+	}
+
 	h.logTemplate.Execute(h.writer, logMessageData{
 		Client:          client,
 		Host:            req.Host,
@@ -148,6 +163,7 @@ func (h loggingHandler) writeLogLine(username, upstream string, req *http.Reques
 		RequestDuration: fmt.Sprintf("%0.3f", duration),
 		RequestMethod:   req.Method,
 		RequestURI:      fmt.Sprintf("%q", url.RequestURI()),
+		RequestBody:     body,
 		ResponseSize:    fmt.Sprintf("%d", size),
 		StatusCode:      fmt.Sprintf("%d", status),
 		Timestamp:       ts.Format("02/Jan/2006:15:04:05 -0700"),

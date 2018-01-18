@@ -20,6 +20,7 @@
 
 ## Log requests to stdout
 # request_logging = true
+# request_body_logging = false
 
 ## pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream
 # pass_basic_auth = true
