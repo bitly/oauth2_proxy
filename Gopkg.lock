@@ -69,6 +69,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/yhat/wsutil"
+  packages = ["."]
+  revision = "1d66fa95c997864ba4d8479f56609620fe542928"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ed25519","ed25519/internal/edwards25519"]
   revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
@@ -76,7 +82,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp"]
+  packages = ["context","context/ctxhttp","websocket"]
   revision = "9dfe39835686865bff950a07b394c12a98ddc811"
 
 [[projects]]
@@ -112,6 +118,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "efab48a0e196c2a849bfbe9aa02d2ae28d281ce1bfe9f23720d648858eefc8e6"
+  inputs-digest = "4f2a66b2fb155943410a163c43f977fbf1ed0bab8219779fe1e4682dbb61a188"
   solver-name = "gps-cdcl"
   solver-version = 1
