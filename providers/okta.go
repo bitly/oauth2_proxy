@@ -52,7 +52,6 @@ func getOktaHeader(access_token string) http.Header {
 }
 
 func (p *OktaProvider) GetEmailAddress(s *SessionState) (string, error) {
-
 	req, err := http.NewRequest("GET",
 		p.ValidateURL.String(), nil)
 	if err != nil {
@@ -66,6 +65,22 @@ func (p *OktaProvider) GetEmailAddress(s *SessionState) (string, error) {
 		return "", err
 	}
 	return json.Get("email").String()
+}
+
+func (p *OktaProvider) GetUserName(s *SessionState) (string, error) {
+	req, err := http.NewRequest("GET",
+		p.ValidateURL.String(), nil)
+	if err != nil {
+		log.Printf("failed building request %s", err)
+		return "", err
+	}
+	req.Header = getOktaHeader(s.AccessToken)
+	json, err := api.Request(req)
+	if err != nil {
+		log.Printf("failed making request %s", err)
+		return "", err
+	}
+	return json.Get("preferred_username").String()
 }
 
 func (p *OktaProvider) ValidateSessionState(s *SessionState) bool {
