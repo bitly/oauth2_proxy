@@ -90,7 +90,7 @@ func TestGoogleProviderGetEmailAddress(t *testing.T) {
 		AccessToken:  "a1234",
 		ExpiresIn:    10,
 		RefreshToken: "refresh12345",
-		IdToken:      "ignored prefix." + base64.URLEncoding.EncodeToString([]byte(`{"email": "michael.bland@gsa.gov", "email_verified":true}`)),
+		IdToken:      "ignored prefix." + base64.RawURLEncoding.EncodeToString([]byte(`{"email": "michael.bland@gsa.gov", "email_verified":true}`)),
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
@@ -103,6 +103,63 @@ func TestGoogleProviderGetEmailAddress(t *testing.T) {
 	assert.Equal(t, "michael.bland@gsa.gov", session.Email)
 	assert.Equal(t, "a1234", session.AccessToken)
 	assert.Equal(t, "refresh12345", session.RefreshToken)
+}
+
+func TestGoogleProviderVerifyHD(t *testing.T) {
+	p := newGoogleProvider()
+	p.HostedDomain = "gsa.gov"
+	body, err := json.Marshal(redeemResponse{
+		AccessToken:  "a1234",
+		ExpiresIn:    10,
+		RefreshToken: "refresh12345",
+		IdToken:      "ignored prefix." + base64.RawURLEncoding.EncodeToString([]byte(`{"email": "michael.bland@gsa.gov", "hd": "gsa.gov", "email_verified":true}`)),
+	})
+	assert.Equal(t, nil, err)
+	var server *httptest.Server
+	p.RedeemURL, server = newRedeemServer(body)
+	defer server.Close()
+
+	session, err := p.Redeem("http://redirect/", "code1234")
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, nil, session)
+}
+
+func TestGoogleProviderVerifyHDFailing(t *testing.T) {
+	p := newGoogleProvider()
+	p.HostedDomain = "gsa.gov"
+	body, err := json.Marshal(redeemResponse{
+		AccessToken:  "a1234",
+		ExpiresIn:    10,
+		RefreshToken: "refresh12345",
+		IdToken:      "ignored prefix." + base64.RawURLEncoding.EncodeToString([]byte(`{"email": "michael.bland@gsa.gov", "email_verified":true, "hd": "wrong.com"}`)),
+	})
+	assert.Equal(t, nil, err)
+	var server *httptest.Server
+	p.RedeemURL, server = newRedeemServer(body)
+	defer server.Close()
+
+	_, err = p.Redeem("http://redirect/", "code1234")
+	assert.NotEqual(t, nil, err)
+	assert.Equal(t, "hd did not match", err.Error())
+}
+
+func TestGoogleProviderVerifyHDMissing(t *testing.T) {
+	p := newGoogleProvider()
+	p.HostedDomain = "gsa.gov"
+	body, err := json.Marshal(redeemResponse{
+		AccessToken:  "a1234",
+		ExpiresIn:    10,
+		RefreshToken: "refresh12345",
+		IdToken:      "ignored prefix." + base64.RawURLEncoding.EncodeToString([]byte(`{"email": "michael.bland@gsa.gov", "email_verified":true}`)),
+	})
+	assert.Equal(t, nil, err)
+	var server *httptest.Server
+	p.RedeemURL, server = newRedeemServer(body)
+	defer server.Close()
+
+	_, err = p.Redeem("http://redirect/", "code1234")
+	assert.NotEqual(t, nil, err)
+	assert.Equal(t, "hd missing", err.Error())
 }
 
 func TestGoogleProviderValidateGroup(t *testing.T) {
@@ -146,7 +203,7 @@ func TestGoogleProviderGetEmailAddressInvalidJson(t *testing.T) {
 
 	body, err := json.Marshal(redeemResponse{
 		AccessToken: "a1234",
-		IdToken:     "ignored prefix." + base64.URLEncoding.EncodeToString([]byte(`{"email": michael.bland@gsa.gov}`)),
+		IdToken:     "ignored prefix." + base64.RawURLEncoding.EncodeToString([]byte(`{"email": michael.bland@gsa.gov}`)),
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
@@ -165,7 +222,7 @@ func TestGoogleProviderGetEmailAddressEmailMissing(t *testing.T) {
 	p := newGoogleProvider()
 	body, err := json.Marshal(redeemResponse{
 		AccessToken: "a1234",
-		IdToken:     "ignored prefix." + base64.URLEncoding.EncodeToString([]byte(`{"not_email": "missing"}`)),
+		IdToken:     "ignored prefix." + base64.RawURLEncoding.EncodeToString([]byte(`{"not_email": "missing"}`)),
 	})
 	assert.Equal(t, nil, err)
 	var server *httptest.Server
