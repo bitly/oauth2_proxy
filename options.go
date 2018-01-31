@@ -23,6 +23,7 @@ type Options struct {
 	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy-prefix"`
 	HttpAddress  string `flag:"http-address" cfg:"http_address"`
 	HttpsAddress string `flag:"https-address" cfg:"https_address"`
+	HostedDomain string `flag:"hosted-domain" cfg:"hosted_domain"` //  env:"OAUTH2_PROXY_HOSTED_DOMAIN"`
 	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url"`
 	ClientID     string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
 	ClientSecret string `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
@@ -250,6 +251,7 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		ClientID:       o.ClientID,
 		ClientSecret:   o.ClientSecret,
 		ApprovalPrompt: o.ApprovalPrompt,
+		HostedDomain:   o.HostedDomain,
 	}
 	p.LoginURL, msgs = parseURL(o.LoginURL, "login", msgs)
 	p.RedeemURL, msgs = parseURL(o.RedeemURL, "redeem", msgs)

@@ -1,0 +1,23 @@
+machine:
+  environment:
+    USERGOPATH: "/home/ubuntu/.go_workspace"
+    IMPORTPATH: "github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME"
+
+dependencies:
+  pre:
+    - go get github.com/tools/godep
+    - bundle install --without development
+  override:
+    - mkdir -p "$USERGOPATH/src/$IMPORTPATH"
+    - rsync -avzC --include='.git' --delete ./ "$USERGOPATH/src/$IMPORTPATH/"
+
+test:
+  override:
+    - cd "$USERGOPATH/src/$IMPORTPATH" && script/test
+
+deployment:
+  production:
+    branch: master
+    commands:
+      - cd "$USERGOPATH/src/$IMPORTPATH" && script/compile
+      - cd "$USERGOPATH/src/$IMPORTPATH" && script/build_deb

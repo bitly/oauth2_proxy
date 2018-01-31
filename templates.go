@@ -108,7 +108,7 @@ func getTemplates() *template.Template {
 	}
 	</style>
 </head>
-<body>
+<body{{ if not .Htpasswd }} onload="document.forms[0].submit()"{{ end }}>
 	<div class="signin center">
 	<form method="GET" action="{{.ProxyPrefix}}/start">
 	<input type="hidden" name="rd" value="{{.Redirect}}">

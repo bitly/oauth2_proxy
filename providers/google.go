@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/admin/directory/v1"
+	admin "google.golang.org/api/admin/directory/v1"
 	"google.golang.org/api/googleapi"
 )
 
@@ -37,6 +37,9 @@ func NewGoogleProvider(p *ProviderData) *GoogleProvider {
 			// to get a refresh token. see https://developers.google.com/identity/protocols/OAuth2WebServer#offline
 			RawQuery: "access_type=offline",
 		}
+		if p.HostedDomain != "" {
+			p.LoginURL.RawQuery += "&hd=" + p.HostedDomain
+		}
 	}
 	if p.RedeemURL.String() == "" {
 		p.RedeemURL = &url.URL{Scheme: "https",
@@ -51,7 +54,6 @@ func NewGoogleProvider(p *ProviderData) *GoogleProvider {
 	if p.Scope == "" {
 		p.Scope = "profile email"
 	}
-
 	return &GoogleProvider{
 		ProviderData: p,
 		// Set a default GroupValidator to just always return valid (true), it will
@@ -60,6 +62,40 @@ func NewGoogleProvider(p *ProviderData) *GoogleProvider {
 			return true
 		},
 	}
+}
+
+func verifyHD(idToken string, hd string) (err error) {
+	hdFromToken, err := hdFromIDToken(idToken)
+	if err != nil {
+		return err
+	}
+	if hd != hdFromToken {
+		return errors.New("hd did not match")
+	}
+	return nil
+}
+
+func hdFromIDToken(idToken string) (string, error) {
+	jwt := strings.Split(idToken, ".")
+	b, err := base64.RawURLEncoding.DecodeString(jwt[1])
+	if err != nil {
+		return "", err
+	}
+
+	var hd struct {
+		HD string `json:"hd"`
+	}
+
+	err = json.Unmarshal(b, &hd)
+	if err != nil {
+		return "", err
+	}
+
+	if hd.HD == "" {
+		return "", errors.New("hd missing")
+	}
+
+	return hd.HD, nil
 }
 
 func emailFromIdToken(idToken string) (string, error) {
@@ -138,6 +174,12 @@ func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err 
 	email, err = emailFromIdToken(jsonResponse.IdToken)
 	if err != nil {
 		return
+	}
+	if p.HostedDomain != "" {
+		err = verifyHD(jsonResponse.IdToken, p.HostedDomain)
+		if err != nil {
+			return
+		}
 	}
 	s = &SessionState{
 		AccessToken:  jsonResponse.AccessToken,
