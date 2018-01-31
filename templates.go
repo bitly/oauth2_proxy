@@ -3,7 +3,20 @@ package main
 import (
 	"html/template"
 	"log"
+	"path"
 )
+
+func loadTemplates(dir string) *template.Template {
+	if dir == "" {
+		return getTemplates()
+	}
+	log.Printf("using custom template directory %q", dir)
+	t, err := template.New("").ParseFiles(path.Join(dir, "sign_in.html"), path.Join(dir, "error.html"))
+	if err != nil {
+		log.Fatalf("failed parsing template %s", err)
+	}
+	return t
+}
 
 func getTemplates() *template.Template {
 	t, err := template.New("foo").Parse(`{{define "sign_in.html"}}
@@ -48,7 +61,7 @@ func getTemplates() *template.Template {
 	.btn:hover {
 		background-color: #3071a9;
 		border-color: #285e8e;
-		ext-decoration: none;
+		text-decoration: none;
 	}
 	label {
 		display: inline-block;
@@ -97,18 +110,18 @@ func getTemplates() *template.Template {
 </head>
 <body{{ if not .Htpasswd }} onload="document.forms[0].submit()"{{ end }}>
 	<div class="signin center">
-	<form method="GET" action="/oauth2/start">
+	<form method="GET" action="{{.ProxyPrefix}}/start">
 	<input type="hidden" name="rd" value="{{.Redirect}}">
 	{{ if .SignInMessage }}
 	<p>{{.SignInMessage}}</p>
 	{{ end}}
-	<button type="submit" class="btn">Sign in with a Google Account</button><br/>
+	<button type="submit" class="btn">Sign in with {{.ProviderName}}</button><br/>
 	</form>
 	</div>
-	
-	{{ if .Htpasswd }}
+
+	{{ if .CustomLogin }}
 	<div class="signin">
-	<form method="POST" action="/oauth2/sign_in">
+	<form method="POST" action="{{.ProxyPrefix}}/sign_in">
 		<input type="hidden" name="rd" value="{{.Redirect}}">
 		<label for="username">Username:</label><input type="text" name="username" id="username" size="10"><br/>
 		<label for="password">Password:</label><input type="password" name="password" id="password" size="10"><br/>
@@ -116,14 +129,29 @@ func getTemplates() *template.Template {
 	</form>
 	</div>
 	{{ end }}
+	<script>
+		if (window.location.hash) {
+			(function() {
+				var inputs = document.getElementsByName('rd');
+				for (var i = 0; i < inputs.length; i++) {
+					inputs[i].value += window.location.hash;
+				}
+			})();
+		}
+	</script>
 	<footer>
-	Secured with <a href="https://github.com/bitly/google_auth_proxy#google_auth_proxy">Google Auth Proxy</a> version {{.Version}}
+	{{ if eq .Footer "-" }}
+	{{ else if eq .Footer ""}}
+	Secured with <a href="https://github.com/bitly/oauth2_proxy#oauth2_proxy">OAuth2 Proxy</a> version {{.Version}}
+	{{ else }}
+	{{.Footer}}
+	{{ end }}
 	</footer>
 </body>
 </html>
 {{end}}`)
 	if err != nil {
-		log.Fatalf("failed parsing template %s", err.Error())
+		log.Fatalf("failed parsing template %s", err)
 	}
 
 	t, err = t.Parse(`{{define "error.html"}}
@@ -137,11 +165,11 @@ func getTemplates() *template.Template {
 	<h2>{{.Title}}</h2>
 	<p>{{.Message}}</p>
 	<hr>
-	<p><a href="/oauth2/sign_in">Sign In</a></p>
+	<p><a href="{{.ProxyPrefix}}/sign_in">Sign In</a></p>
 </body>
 </html>{{end}}`)
 	if err != nil {
-		log.Fatalf("failed parsing template %s", err.Error())
+		log.Fatalf("failed parsing template %s", err)
 	}
 	return t
 }

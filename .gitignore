@@ -1,4 +1,10 @@
-google_auth_proxy
+oauth2_proxy
+vendor
+dist
+.godeps
+*.exe
+
+
 # Go.gitignore
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
@@ -21,6 +27,5 @@ _cgo_export.*
 
 _testmain.go
 
-*.exe
-dist
-.godeps
+# Editor swap/temp files
+.*.swp
