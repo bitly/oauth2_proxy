@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -111,19 +112,31 @@ func LoggingHandler(out io.Writer, h http.Handler, v, rbl bool, requestLoggingTp
 func (h loggingHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	t := time.Now()
 	url := *req.URL
+
+	var body string
+	if h.enabled && h.bodyEnabled {
+		if req.Body != nil {
+			bodyBytes, err := ioutil.ReadAll(req.Body)
+			if err == nil {
+				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				body = strings.Replace(strings.Trim(string(bodyBytes), "\n"), "\n", " ", -1)
+			}
+		}
+	}
+
 	logger := &responseLogger{w: w}
 	h.handler.ServeHTTP(logger, req)
 	if !h.enabled {
 		return
 	}
-	h.writeLogLine(logger.authInfo, logger.upstream, req, h.bodyEnabled, url, t, logger.Status(), logger.Size())
+	h.writeLogLine(logger.authInfo, logger.upstream, req, body, url, t, logger.Status(), logger.Size())
 }
 
 // Log entry for req similar to Apache Common Log Format.
 // rbl is a flag to specify if request body logging is enabled.
 // ts is the timestamp with which the entry should be logged.
 // status, size are used to provide the response HTTP status and size.
-func (h loggingHandler) writeLogLine(username, upstream string, req *http.Request, rbl bool, url url.URL, ts time.Time, status int, size int) {
+func (h loggingHandler) writeLogLine(username, upstream string, req *http.Request, body string, url url.URL, ts time.Time, status int, size int) {
 	if username == "" {
 		username = "-"
 	}
@@ -146,17 +159,6 @@ func (h loggingHandler) writeLogLine(username, upstream string, req *http.Reques
 	}
 
 	duration := float64(time.Now().Sub(ts)) / float64(time.Second)
-
-	var body string
-	if rbl {
-		if req.Body != nil {
-			bodyBytes, err := ioutil.ReadAll(req.Body)
-			if err == nil {
-				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-				body = string(bodyBytes)
-			}
-		}
-	}
 
 	h.logTemplate.Execute(h.writer, logMessageData{
 		Client:          client,
