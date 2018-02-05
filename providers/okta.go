@@ -13,6 +13,14 @@ type OktaProvider struct {
 	*ProviderData
 }
 
+func NewOktaProvider(p *ProviderData) *OktaProvider {
+	p.ProviderName = "Okta"
+	if p.Scope == "" {
+		p.Scope = "openid profile email"
+	}
+	return &OktaProvider{ProviderData: p}
+}
+
 func (p *OktaProvider) SetOktaDomain(domain string) {
 	if p.LoginURL == nil || p.LoginURL.String() == "" {
 		p.LoginURL = &url.URL{
@@ -35,14 +43,6 @@ func (p *OktaProvider) SetOktaDomain(domain string) {
 			Path:   "/oauth2/v1/userinfo",
 		}
 	}
-}
-
-func NewOktaProvider(p *ProviderData) *OktaProvider {
-	p.ProviderName = "Okta"
-	if p.Scope == "" {
-		p.Scope = "openid profile email"
-	}
-	return &OktaProvider{ProviderData: p}
 }
 
 func getOktaHeader(access_token string) http.Header {
