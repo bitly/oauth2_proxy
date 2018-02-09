@@ -79,6 +79,7 @@ type Options struct {
 
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
+	SparkSpaceID string `flag:"spark-space-id" cfg:"spark_space_id" env:"SPARK_SPACE_ID"`
 	// internal values that are set after config validation
 	redirectURL   *url.URL
 	proxyURLs     []*url.URL
@@ -259,6 +260,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 
 	o.provider = providers.New(o.Provider, p)
 	switch p := o.provider.(type) {
+	case *providers.SparkProvider:
+		p.SetSparkSpaceID(o.SparkSpaceID)
 	case *providers.AzureProvider:
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
