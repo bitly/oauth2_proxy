@@ -3,9 +3,6 @@ package main
 import (
 	"crypto"
 	"encoding/base64"
-	"github.com/18F/hmacauth"
-	"github.com/bitly/oauth2_proxy/providers"
-	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/18F/hmacauth"
+	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/bmizerany/assert"
 )
 
 func init() {
@@ -128,6 +129,50 @@ func (tp *TestProvider) GetEmailAddress(session *providers.SessionState) (string
 
 func (tp *TestProvider) ValidateSessionState(session *providers.SessionState) bool {
 	return tp.ValidToken
+}
+
+func TestGetValidatedRedirect(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+
+	opts.AllowedURL = ".+\\.internals\\.example\\.com"
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	fallbackRedirect := "/"
+
+	noRD, err := proxy.getValidatedRedirect("")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, fallbackRedirect, noRD)
+
+	singleSlash, err := proxy.getValidatedRedirect("/redirect")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, singleSlash, singleSlash)
+
+	doubleSlash, err := proxy.getValidatedRedirect("//redirect")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, fallbackRedirect, doubleSlash)
+
+	validHttp, err := proxy.getValidatedRedirect("http://internals.example.com/redirect")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, validHttp, validHttp)
+
+	validHttps, err := proxy.getValidatedRedirect("https://internals.example.com/redirect")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, validHttps, validHttps)
+
+	invalidHttp, err := proxy.getValidatedRedirect("http://internals.corporate.com/redirect")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, fallbackRedirect, invalidHttp)
+
+	// Test for incorrect regexp
+	opts.AllowedURL = "*"
+	opts.Validate()
+	proxy = NewOAuthProxy(opts, func(string) bool { return true })
+	_, hasErr := proxy.getValidatedRedirect("http://internals.corporate.com/redirect")
+	assert.NotEqual(t, nil, hasErr)
 }
 
 func TestBasicAuthPassword(t *testing.T) {
