@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmizerany/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func testOptions() *Options {
@@ -35,7 +35,6 @@ func TestNewOptions(t *testing.T) {
 	assert.NotEqual(t, nil, err)
 
 	expected := errorMsg([]string{
-		"missing setting: upstream",
 		"missing setting: cookie-secret",
 		"missing setting: client-id",
 		"missing setting: client-secret"})
@@ -96,6 +95,18 @@ func TestProxyURLs(t *testing.T) {
 	assert.Equal(t, expected, o.proxyURLs)
 }
 
+func TestProxyURLsError(t *testing.T) {
+	o := testOptions()
+	o.Upstreams = append(o.Upstreams, "127.0.0.1:8081")
+	err := o.Validate()
+	assert.NotEqual(t, nil, err)
+
+	expected := errorMsg([]string{
+		"error parsing upstream: parse 127.0.0.1:8081: " +
+			"first path segment in URL cannot contain colon"})
+	assert.Equal(t, expected, err.Error())
+}
+
 func TestCompiledRegex(t *testing.T) {
 	o := testOptions()
 	regexps := []string{"/foo/.*", "/ba[rz]/quux"}
@@ -117,6 +128,15 @@ func TestCompiledRegexError(t *testing.T) {
 	expected := errorMsg([]string{
 		"error compiling regex=\"(foobaz\" error parsing regexp: " +
 			"missing closing ): `(foobaz`",
+		"error compiling regex=\"barquux)\" error parsing regexp: " +
+			"unexpected ): `barquux)`"})
+	assert.Equal(t, expected, err.Error())
+
+	o.SkipAuthRegex = []string{"foobaz", "barquux)"}
+	err = o.Validate()
+	assert.NotEqual(t, nil, err)
+
+	expected = errorMsg([]string{
 		"error compiling regex=\"barquux)\" error parsing regexp: " +
 			"unexpected ): `barquux)`"})
 	assert.Equal(t, expected, err.Error())

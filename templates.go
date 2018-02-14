@@ -61,7 +61,7 @@ func getTemplates() *template.Template {
 	.btn:hover {
 		background-color: #3071a9;
 		border-color: #285e8e;
-		ext-decoration: none;
+		text-decoration: none;
 	}
 	label {
 		display: inline-block;
@@ -115,7 +115,7 @@ func getTemplates() *template.Template {
 	{{ if .SignInMessage }}
 	<p>{{.SignInMessage}}</p>
 	{{ end}}
-	<button type="submit" class="btn">Sign in with a {{.ProviderName}} Account</button><br/>
+	<button type="submit" class="btn">Sign in with {{.ProviderName}}</button><br/>
 	</form>
 	</div>
 
