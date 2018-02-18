@@ -18,75 +18,74 @@ import (
 
 // Configuration Options that can be set by Command Line Flag, or Config File
 type Options struct {
-	ProxyPrefix  		string `flag:"proxy-prefix" cfg:"proxy-prefix"`
-	HttpAddress  		string `flag:"http-address" cfg:"http_address"`
-	HttpsAddress 		string `flag:"https-address" cfg:"https_address"`
-	HttpsRedirectorAddress 	string `flag:"https-redirector-address" cfg:"https_redirector_address"`
-	RedirectHttpToHttps    	bool   `flag:"redirect-http-to-https" cfg:"redirect_http_to_https"`
-	RedirectURL  		string `flag:"redirect-url" cfg:"redirect_url" env:"OAUTH2_PROXY_REDIRECT_URL"`
-	ClientID     		string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
-	ClientSecret 		string `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
-	TLSCertFile  		string `flag:"tls-cert" cfg:"tls_cert_file"`
-	TLSKeyFile   		string `flag:"tls-key" cfg:"tls_key_file"`
+	ProxyPrefix  			 string   `flag:"proxy-prefix" cfg:"proxy-prefix"`
+	HttpAddress  			 string   `flag:"http-address" cfg:"http_address"`
+	HttpsAddress 			 string   `flag:"https-address" cfg:"https_address"`
+	HttpsRedirectorAddress 	 string   `flag:"https-redirector-address" cfg:"https_redirector_address"`
+	RedirectHttpToHttps    	   bool   `flag:"redirect-http-to-https" cfg:"redirect_http_to_https"`
+	RedirectURL  			 string   `flag:"redirect-url" cfg:"redirect_url" env:"OAUTH2_PROXY_REDIRECT_URL"`
+	ClientID     			 string   `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
+	ClientSecret 			 string   `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
+	TLSCertFile  			 string   `flag:"tls-cert" cfg:"tls_cert_file"`
+	TLSKeyFile   			 string   `flag:"tls-key" cfg:"tls_key_file"`
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
-	EmailDomains             []string `flag:"email-domain" cfg:"email_domains" env:"OAUTH2_PROXY_EMAIL_DOMAIN"`
+	EmailDomains           []string   `flag:"email-domain" cfg:"email_domains" env:"OAUTH2_PROXY_EMAIL_DOMAIN"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
 	JhipsterAuthority        string   `flag:"jhipster-authority" cfg:"jhipster_authority" env:"OAUTH2_PROXY_JHIPSTER_AUTHORITY"`
-	//OwncloudAuthority        string   `flag:"owncloudr-authority" cfg:"owncloud_authority" env:"OAUTH2_PROXY_OWNCLOUD_AUTHORITY"`
-	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
+	GoogleGroups           []string   `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
-	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
+	DisplayHtpasswdForm        bool   `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
 	Footer                   string   `flag:"footer" cfg:"footer"`
 
-	CookieName     string        `flag:"cookie-name" cfg:"cookie_name" env:"OAUTH2_PROXY_COOKIE_NAME"`
-	CookieSecret   string        `flag:"cookie-secret" cfg:"cookie_secret" env:"OAUTH2_PROXY_COOKIE_SECRET"`
-	CookieDomain   string        `flag:"cookie-domain" cfg:"cookie_domain" env:"OAUTH2_PROXY_COOKIE_DOMAIN"`
-	CookieExpire   time.Duration `flag:"cookie-expire" cfg:"cookie_expire" env:"OAUTH2_PROXY_COOKIE_EXPIRE"`
-	CookieRefresh  time.Duration `flag:"cookie-refresh" cfg:"cookie_refresh" env:"OAUTH2_PROXY_COOKIE_REFRESH"`
-	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure" env:"OAUTH2_PROXY_COOKIE_SECURE"`
-	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly" env:"OAUTH2_PROXY_COOKIE_HTTPONLY"`
+	CookieName     			 string   `flag:"cookie-name" cfg:"cookie_name" env:"OAUTH2_PROXY_COOKIE_NAME"`
+	CookieSecret   			 string   `flag:"cookie-secret" cfg:"cookie_secret" env:"OAUTH2_PROXY_COOKIE_SECRET"`
+	CookieDomain   			 string   `flag:"cookie-domain" cfg:"cookie_domain" env:"OAUTH2_PROXY_COOKIE_DOMAIN"`
+	CookieExpire      time.Duration   `flag:"cookie-expire" cfg:"cookie_expire" env:"OAUTH2_PROXY_COOKIE_EXPIRE"`
+	CookieRefresh     time.Duration   `flag:"cookie-refresh" cfg:"cookie_refresh" env:"OAUTH2_PROXY_COOKIE_REFRESH"`
+	CookieSecure   			   bool   `flag:"cookie-secure" cfg:"cookie_secure" env:"OAUTH2_PROXY_COOKIE_SECURE"`
+	CookieHttpOnly 			   bool   `flag:"cookie-httponly" cfg:"cookie_httponly" env:"OAUTH2_PROXY_COOKIE_HTTPONLY"`
 
-	Upstreams             []string `flag:"upstream" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAM"`
-	SkipAuthRegex         []string `flag:"skip-auth-regex" cfg:"skip_auth_regex" env:"OAUTH2_PROXY_SKIP_AUTH_REGEX"`
-	HostSkipAuthRegex     []string `flag:"host-skip-auth-regex" cfg:"host_skip_auth_regex" env:"OAUTH2_PROXY_HOST_SKIP_AUTH_REGEX"`
-	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
-	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
-	PassAccessToken       bool     `flag:"pass-access-token" cfg:"pass_access_token"`
-	PassHostHeader        bool     `flag:"pass-host-header" cfg:"pass_host_header"`
-	SkipProviderButton    bool     `flag:"skip-provider-button" cfg:"skip_provider_button" env:"OAUTH2_PROXY_SKIP_PROVIDER_BUTTON"`
-	PassUserHeaders       bool     `flag:"pass-user-headers" cfg:"pass_user_headers"`
-	SSLInsecureSkipVerify bool     `flag:"ssl-insecure-skip-verify" cfg:"ssl_insecure_skip_verify"`
-	SetXAuthRequest       bool     `flag:"set-xauthrequest" cfg:"set_xauthrequest"`
-	SkipAuthPreflight     bool     `flag:"skip-auth-preflight" cfg:"skip_auth_preflight"`
+	Upstreams              []string	  `flag:"upstream" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAM"`
+	SkipAuthRegex          []string   `flag:"skip-auth-regex" cfg:"skip_auth_regex" env:"OAUTH2_PROXY_SKIP_AUTH_REGEX"`
+	HostSkipAuthRegex      []string   `flag:"host-skip-auth-regex" cfg:"host_skip_auth_regex" env:"OAUTH2_PROXY_HOST_SKIP_AUTH_REGEX"`
+	PassBasicAuth              bool   `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
+	BasicAuthPassword        string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
+	PassAccessToken       	   bool   `flag:"pass-access-token" cfg:"pass_access_token"`
+	PassHostHeader        	   bool   `flag:"pass-host-header" cfg:"pass_host_header"`
+	SkipProviderButton    	   bool   `flag:"skip-provider-button" cfg:"skip_provider_button" env:"OAUTH2_PROXY_SKIP_PROVIDER_BUTTON"`
+	PassUserHeaders       	   bool   `flag:"pass-user-headers" cfg:"pass_user_headers"`
+	SSLInsecureSkipVerify 	   bool   `flag:"ssl-insecure-skip-verify" cfg:"ssl_insecure_skip_verify"`
+	SetXAuthRequest       	   bool   `flag:"set-xauthrequest" cfg:"set_xauthrequest"`
+	SkipAuthPreflight     	   bool   `flag:"skip-auth-preflight" cfg:"skip_auth_preflight"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
-	Provider          string `flag:"provider" cfg:"provider" env:"OAUTH2_PROXY_PROVIDER"`
-	LoginURL          string `flag:"login-url" cfg:"login_url" env:"OAUTH2_PROXY_LOGIN_URL"`
-	RedeemURL         string `flag:"redeem-url" cfg:"redeem_url" env:"OAUTH2_PROXY_REDEEM_URL"`
-	ProfileURL        string `flag:"profile-url" cfg:"profile_url" env:"OAUTH2_PROXY_PROFILE_URL"`
-	ProtectedResource string `flag:"resource" cfg:"resource" env:"OAUTH2_PROXY_RESOURCE"`
-	ValidateURL       string `flag:"validate-url" cfg:"validate_url" env:"OAUTH2_PROXY_VALIDATE_URL"`
-	Scope             string `flag:"scope" cfg:"scope" env:"OAUTH2_PROXY_SCOPE"`
-	ApprovalPrompt    string `flag:"approval-prompt" cfg:"approval_prompt"`
+	Provider          		 string   `flag:"provider" cfg:"provider" env:"OAUTH2_PROXY_PROVIDER"`
+	LoginURL          		 string   `flag:"login-url" cfg:"login_url" env:"OAUTH2_PROXY_LOGIN_URL"`
+	RedeemURL         		 string   `flag:"redeem-url" cfg:"redeem_url" env:"OAUTH2_PROXY_REDEEM_URL"`
+	ProfileURL        		 string   `flag:"profile-url" cfg:"profile_url" env:"OAUTH2_PROXY_PROFILE_URL"`
+	ProtectedResource 		 string   `flag:"resource" cfg:"resource" env:"OAUTH2_PROXY_RESOURCE"`
+	ValidateURL       		 string   `flag:"validate-url" cfg:"validate_url" env:"OAUTH2_PROXY_VALIDATE_URL"`
+	Scope             		 string   `flag:"scope" cfg:"scope" env:"OAUTH2_PROXY_SCOPE"`
+	ApprovalPrompt    		 string   `flag:"approval-prompt" cfg:"approval_prompt"`
 
-	RequestLogging bool `flag:"request-logging" cfg:"request_logging" env:"OAUTH2_PROXY_REQUEST_LOGGING"`
+	RequestLogging 			   bool   `flag:"request-logging" cfg:"request_logging" env:"OAUTH2_PROXY_REQUEST_LOGGING"`
 
-	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
+	SignatureKey 			 string   `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
 	// internal values that are set after config validation
-	redirectURL   *url.URL
-	proxyURLs     []*url.URL
-	CompiledRegex []*regexp.Regexp
-	HostCompiledRegex []*regexp.Regexp
-	provider      providers.Provider
-	signatureData *SignatureData
+	redirectURL   		*url.URL
+	proxyURLs     		[]*url.URL
+	CompiledRegex 		[]*regexp.Regexp
+	HostCompiledRegex 	[]*regexp.Regexp
+	provider      		providers.Provider
+	signatureData 		*SignatureData
 }
 
 type SignatureData struct {

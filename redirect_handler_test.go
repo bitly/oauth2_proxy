@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/bmizerany/assert"
+	"net/http"
 )
 
 func testRedirectorOptions() *Options {
@@ -20,27 +20,27 @@ func testRedirectorOptions() *Options {
 
 func TestBuildRedirectURL(t *testing.T) {
 	opts := testRedirectorOptions()
-	url, _ := url.Parse("http://internal.com:9000/barkis?a=1&b=2")
+	req, _ := http.NewRequest("GET", "http://internal.com:9000/barkis?a=1&b=2", nil)
 	h := NewRedirectHandler(*opts)
-	out, _ := h.buildRedirectURL(*url)
+	out, _ := h.buildRedirectURL(*req)
 
 	assert.Equal(t, out, "https://external.com/barkis?a=1&b=2")
 }
 
 func TestBuildRedirectURLUserAndPass(t *testing.T) {
 	opts := testRedirectorOptions()
-	url, _ := url.Parse("http://charles:dickens@internal.com:9000/boffin?a=1&b=2")
+	req, _ := http.NewRequest("GET", "http://charles:dickens@internal.com:9000/boffin?a=1&b=2", nil)
 	h := NewRedirectHandler(*opts)
-	out, _ := h.buildRedirectURL(*url)
+	out, _ := h.buildRedirectURL(*req)
 
 	assert.Equal(t, out, "https://charles:dickens@external.com/boffin?a=1&b=2")
 }
 
 func TestBuildRedirectURLFragment(t *testing.T) {
 	opts := testRedirectorOptions()
-	url, _ := url.Parse("http://internal.com:9000/boffin/#test")
+	req, _ := http.NewRequest("GET", "http://internal.com:9000/boffin/#test", nil)
 	h := NewRedirectHandler(*opts)
-	out, _ := h.buildRedirectURL(*url)
+	out, _ := h.buildRedirectURL(*req)
 
 	assert.Equal(t, out, "https://external.com/boffin/#test")
 }
