@@ -3,9 +3,6 @@ package main
 import (
 	"crypto"
 	"encoding/base64"
-	"github.com/18F/hmacauth"
-	"github.com/brunnels/oauth2_proxy/providers"
-	"github.com/bmizerany/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/18F/hmacauth"
+	"github.com/brunnels/oauth2_proxy/providers"
+	"github.com/bmizerany/assert"
 )
 
 func init() {
@@ -156,6 +157,7 @@ func TestBasicAuthPassword(t *testing.T) {
 	opts.ClientSecret = "foobar"
 	opts.CookieSecure = false
 	opts.PassBasicAuth = true
+	opts.PassUserHeaders = true
 	opts.BasicAuthPassword = "This is a secure password"
 	opts.Validate()
 
@@ -169,10 +171,14 @@ func TestBasicAuthPassword(t *testing.T) {
 	})
 
 	rw := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/oauth2/callback?code=callback_code",
+	req, _ := http.NewRequest("GET", "/oauth2/callback?code=callback_code&state=nonce:",
 		strings.NewReader(""))
+	req.AddCookie(proxy.MakeCSRFCookie(req, "nonce", proxy.CookieExpire, time.Now()))
 	proxy.ServeHTTP(rw, req)
-	cookie := rw.HeaderMap["Set-Cookie"][0]
+	if rw.Code >= 400 {
+		t.Fatalf("expected 3xx got %d", rw.Code)
+	}
+	cookie := rw.HeaderMap["Set-Cookie"][1]
 
 	cookieName := proxy.CookieName
 	var value string
@@ -195,9 +201,11 @@ func TestBasicAuthPassword(t *testing.T) {
 		Expires:  time.Now().Add(time.Duration(24)),
 		HttpOnly: true,
 	})
+	req.AddCookie(proxy.MakeCSRFCookie(req, "nonce", proxy.CookieExpire, time.Now()))
 
 	rw = httptest.NewRecorder()
 	proxy.ServeHTTP(rw, req)
+
 	expectedHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(user_name+":"+opts.BasicAuthPassword))
 	assert.Equal(t, expectedHeader, rw.Body.String())
 	provider_server.Close()
@@ -262,13 +270,14 @@ func (pat_test *PassAccessTokenTest) Close() {
 func (pat_test *PassAccessTokenTest) getCallbackEndpoint() (http_code int,
 	cookie string) {
 	rw := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/oauth2/callback?code=callback_code",
+	req, err := http.NewRequest("GET", "/oauth2/callback?code=callback_code&state=nonce:",
 		strings.NewReader(""))
 	if err != nil {
 		return 0, ""
 	}
+	req.AddCookie(pat_test.proxy.MakeCSRFCookie(req, "nonce", time.Hour, time.Now()))
 	pat_test.proxy.ServeHTTP(rw, req)
-	return rw.Code, rw.HeaderMap["Set-Cookie"][0]
+	return rw.Code, rw.HeaderMap["Set-Cookie"][1]
 }
 
 func (pat_test *PassAccessTokenTest) getRootEndpoint(cookie string) (http_code int, access_token string) {
@@ -313,14 +322,18 @@ func TestForwardAccessTokenUpstream(t *testing.T) {
 
 	// A successful validation will redirect and set the auth cookie.
 	code, cookie := pat_test.getCallbackEndpoint()
-	assert.Equal(t, 302, code)
+	if code != 302 {
+		t.Fatalf("expected 302; got %d", code)
+	}
 	assert.NotEqual(t, nil, cookie)
 
 	// Now we make a regular request; the access_token from the cookie is
 	// forwarded as the "X-Forwarded-Access-Token" header. The token is
 	// read by the test provider server and written in the response body.
 	code, payload := pat_test.getRootEndpoint(cookie)
-	assert.Equal(t, 200, code)
+	if code != 200 {
+		t.Fatalf("expected 200; got %d", code)
+	}
 	assert.Equal(t, "my_auth_token", payload)
 }
 
@@ -332,37 +345,45 @@ func TestDoNotForwardAccessTokenUpstream(t *testing.T) {
 
 	// A successful validation will redirect and set the auth cookie.
 	code, cookie := pat_test.getCallbackEndpoint()
-	assert.Equal(t, 302, code)
+	if code != 302 {
+		t.Fatalf("expected 302; got %d", code)
+	}
 	assert.NotEqual(t, nil, cookie)
 
 	// Now we make a regular request, but the access token header should
 	// not be present.
 	code, payload := pat_test.getRootEndpoint(cookie)
-	assert.Equal(t, 200, code)
+	if code != 200 {
+		t.Fatalf("expected 200; got %d", code)
+	}
 	assert.Equal(t, "No access token found.", payload)
 }
 
 type SignInPageTest struct {
-	opts           *Options
-	proxy          *OAuthProxy
-	sign_in_regexp *regexp.Regexp
+	opts                    *Options
+	proxy                   *OAuthProxy
+	sign_in_regexp          *regexp.Regexp
+	sign_in_provider_regexp *regexp.Regexp
 }
 
 const signInRedirectPattern = `<input type="hidden" name="rd" value="(.*)">`
+const signInSkipProvider = `>Found<`
 
-func NewSignInPageTest() *SignInPageTest {
+func NewSignInPageTest(skipProvider bool) *SignInPageTest {
 	var sip_test SignInPageTest
 
 	sip_test.opts = NewOptions()
 	sip_test.opts.CookieSecret = "foobar"
 	sip_test.opts.ClientID = "bazquux"
 	sip_test.opts.ClientSecret = "xyzzyplugh"
+	sip_test.opts.SkipProviderButton = skipProvider
 	sip_test.opts.Validate()
 
 	sip_test.proxy = NewOAuthProxy(sip_test.opts, func(email string) bool {
 		return true
 	})
 	sip_test.sign_in_regexp = regexp.MustCompile(signInRedirectPattern)
+	sip_test.sign_in_provider_regexp = regexp.MustCompile(signInSkipProvider)
 
 	return &sip_test
 }
@@ -375,7 +396,7 @@ func (sip_test *SignInPageTest) GetEndpoint(endpoint string) (int, string) {
 }
 
 func TestSignInPageIncludesTargetRedirect(t *testing.T) {
-	sip_test := NewSignInPageTest()
+	sip_test := NewSignInPageTest(false)
 	const endpoint = "/some/random/endpoint"
 
 	code, body := sip_test.GetEndpoint(endpoint)
@@ -393,7 +414,7 @@ func TestSignInPageIncludesTargetRedirect(t *testing.T) {
 }
 
 func TestSignInPageDirectAccessRedirectsToRoot(t *testing.T) {
-	sip_test := NewSignInPageTest()
+	sip_test := NewSignInPageTest(false)
 	code, body := sip_test.GetEndpoint("/oauth2/sign_in")
 	assert.Equal(t, 200, code)
 
@@ -404,6 +425,34 @@ func TestSignInPageDirectAccessRedirectsToRoot(t *testing.T) {
 	}
 	if match[1] != "/" {
 		t.Fatal(`expected redirect to "/", but was "` + match[1] + `"`)
+	}
+}
+
+func TestSignInPageSkipProvider(t *testing.T) {
+	sip_test := NewSignInPageTest(true)
+	const endpoint = "/some/random/endpoint"
+
+	code, body := sip_test.GetEndpoint(endpoint)
+	assert.Equal(t, 302, code)
+
+	match := sip_test.sign_in_provider_regexp.FindStringSubmatch(body)
+	if match == nil {
+		t.Fatal("Did not find pattern in body: " +
+			signInSkipProvider + "\nBody:\n" + body)
+	}
+}
+
+func TestSignInPageSkipProviderDirect(t *testing.T) {
+	sip_test := NewSignInPageTest(true)
+	const endpoint = "/sign_in"
+
+	code, body := sip_test.GetEndpoint(endpoint)
+	assert.Equal(t, 302, code)
+
+	match := sip_test.sign_in_provider_regexp.FindStringSubmatch(body)
+	if match == nil {
+		t.Fatal("Did not find pattern in body: " +
+			signInSkipProvider + "\nBody:\n" + body)
 	}
 }
 
@@ -456,7 +505,7 @@ func NewProcessCookieTestWithDefaults() *ProcessCookieTest {
 }
 
 func (p *ProcessCookieTest) MakeCookie(value string, ref time.Time) *http.Cookie {
-	return p.proxy.MakeCookie(p.req, value, p.opts.CookieExpire, ref)
+	return p.proxy.MakeSessionCookie(p.req, value, p.opts.CookieExpire, ref)
 }
 
 func (p *ProcessCookieTest) SaveSession(s *providers.SessionState, ref time.Time) error {
@@ -464,7 +513,7 @@ func (p *ProcessCookieTest) SaveSession(s *providers.SessionState, ref time.Time
 	if err != nil {
 		return err
 	}
-	p.req.AddCookie(p.proxy.MakeCookie(p.req, value, p.proxy.CookieExpire, ref))
+	p.req.AddCookie(p.proxy.MakeSessionCookie(p.req, value, p.proxy.CookieExpire, ref))
 	return nil
 }
 
@@ -595,12 +644,68 @@ func TestAuthOnlyEndpointUnauthorizedOnEmailValidationFailure(t *testing.T) {
 	assert.Equal(t, "unauthorized request\n", string(bodyBytes))
 }
 
+func TestAuthOnlyEndpointSetXAuthRequestHeaders(t *testing.T) {
+	var pc_test ProcessCookieTest
+
+	pc_test.opts = NewOptions()
+	pc_test.opts.SetXAuthRequest = true
+	pc_test.opts.Validate()
+
+	pc_test.proxy = NewOAuthProxy(pc_test.opts, func(email string) bool {
+		return pc_test.validate_user
+	})
+	pc_test.proxy.provider = &TestProvider{
+		ValidToken: true,
+	}
+
+	pc_test.validate_user = true
+
+	pc_test.rw = httptest.NewRecorder()
+	pc_test.req, _ = http.NewRequest("GET",
+		pc_test.opts.ProxyPrefix+"/auth", nil)
+
+	startSession := &providers.SessionState{
+		User: "oauth_user", Email: "oauth_user@example.com", AccessToken: "oauth_token"}
+	pc_test.SaveSession(startSession, time.Now())
+
+	pc_test.proxy.ServeHTTP(pc_test.rw, pc_test.req)
+	assert.Equal(t, http.StatusAccepted, pc_test.rw.Code)
+	assert.Equal(t, "oauth_user", pc_test.rw.HeaderMap["X-Auth-Request-User"][0])
+	assert.Equal(t, "oauth_user@example.com", pc_test.rw.HeaderMap["X-Auth-Request-Email"][0])
+}
+
+func TestAuthSkippedForPreflightRequests(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("response"))
+	}))
+	defer upstream.Close()
+
+	opts := NewOptions()
+	opts.Upstreams = append(opts.Upstreams, upstream.URL)
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.SkipAuthPreflight = true
+	opts.Validate()
+
+	upstream_url, _ := url.Parse(upstream.URL)
+	opts.provider = NewTestProvider(upstream_url, "")
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return false })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("OPTIONS", "/preflight-request", nil)
+	proxy.ServeHTTP(rw, req)
+
+	assert.Equal(t, 200, rw.Code)
+	assert.Equal(t, "response", rw.Body.String())
+}
+
 type SignatureAuthenticator struct {
 	auth hmacauth.HmacAuth
 }
 
-func (v *SignatureAuthenticator) Authenticate(
-	w http.ResponseWriter, r *http.Request) {
+func (v *SignatureAuthenticator) Authenticate(w http.ResponseWriter, r *http.Request) {
 	result, headerSig, computedSig := v.auth.AuthenticateRequest(r)
 	if result == hmacauth.ResultNoSignature {
 		w.Write([]byte("no signature received"))
@@ -688,10 +793,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	if body != "" {
 		bodyBuf = ioutil.NopCloser(&fakeNetConn{reqBody: body})
 	}
-	req, err := http.NewRequest(method, "/foo/bar", bodyBuf)
-	if err != nil {
-		panic(err)
-	}
+	req := httptest.NewRequest(method, "/foo/bar", bodyBuf)
 	req.Header = st.header
 
 	state := &providers.SessionState{
@@ -700,7 +802,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	if err != nil {
 		panic(err)
 	}
-	cookie := proxy.MakeCookie(req, value, proxy.CookieExpire, time.Now())
+	cookie := proxy.MakeSessionCookie(req, value, proxy.CookieExpire, time.Now())
 	req.AddCookie(cookie)
 	// This is used by the upstream to validate the signature.
 	st.authenticator.auth = hmacauth.NewHmacAuth(

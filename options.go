@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -51,14 +52,18 @@ type Options struct {
 	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure" env:"OAUTH2_PROXY_COOKIE_SECURE"`
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly" env:"OAUTH2_PROXY_COOKIE_HTTPONLY"`
 
-	Upstreams          []string `flag:"upstream" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAM"`
-	SkipAuthRegex      []string `flag:"skip-auth-regex" cfg:"skip_auth_regex" env:"OAUTH2_PROXY_SKIP_AUTH_REGEX"`
-	HostSkipAuthRegex  []string `flag:"host-skip-auth-regex" cfg:"host_skip_auth_regex" env:"OAUTH2_PROXY_HOST_SKIP_AUTH_REGEX"`
-	PassBasicAuth      bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
-	BasicAuthPassword  string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
-	PassAccessToken    bool     `flag:"pass-access-token" cfg:"pass_access_token"`
-	PassHostHeader     bool     `flag:"pass-host-header" cfg:"pass_host_header"`
-	SkipProviderButton bool     `flag:"skip-provider-button" cfg:"skip_provider_button" env:"OAUTH2_PROXY_SKIP_PROVIDER_BUTTON"`
+	Upstreams             []string `flag:"upstream" cfg:"upstreams" env:"OAUTH2_PROXY_UPSTREAM"`
+	SkipAuthRegex         []string `flag:"skip-auth-regex" cfg:"skip_auth_regex" env:"OAUTH2_PROXY_SKIP_AUTH_REGEX"`
+	HostSkipAuthRegex     []string `flag:"host-skip-auth-regex" cfg:"host_skip_auth_regex" env:"OAUTH2_PROXY_HOST_SKIP_AUTH_REGEX"`
+	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
+	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
+	PassAccessToken       bool     `flag:"pass-access-token" cfg:"pass_access_token"`
+	PassHostHeader        bool     `flag:"pass-host-header" cfg:"pass_host_header"`
+	SkipProviderButton    bool     `flag:"skip-provider-button" cfg:"skip_provider_button" env:"OAUTH2_PROXY_SKIP_PROVIDER_BUTTON"`
+	PassUserHeaders       bool     `flag:"pass-user-headers" cfg:"pass_user_headers"`
+	SSLInsecureSkipVerify bool     `flag:"ssl-insecure-skip-verify" cfg:"ssl_insecure_skip_verify"`
+	SetXAuthRequest       bool     `flag:"set-xauthrequest" cfg:"set_xauthrequest"`
+	SkipAuthPreflight     bool     `flag:"skip-auth-preflight" cfg:"skip_auth_preflight"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
@@ -100,7 +105,10 @@ func NewOptions() *Options {
 		CookieHttpOnly:      true,
 		CookieExpire:        time.Duration(168) * time.Hour,
 		CookieRefresh:       time.Duration(0),
+		SetXAuthRequest:     false,
+		SkipAuthPreflight:   false,
 		PassBasicAuth:       true,
+		PassUserHeaders:     true,
 		PassAccessToken:     false,
 		PassHostHeader:      true,
 		SkipProviderButton:  false,
@@ -133,7 +141,8 @@ func (o *Options) Validate() error {
 		msgs = append(msgs, "missing setting: client-secret")
 	}
 	if o.AuthenticatedEmailsFile == "" && len(o.EmailDomains) == 0 && o.HtpasswdFile == "" {
-		msgs = append(msgs, "missing setting for email validation: email-domain or authenticated-emails-file required.\n      use email-domain=* to authorize all email addresses")
+		msgs = append(msgs, "missing setting for email validation: email-domain or authenticated-emails-file required."+
+			"\n      use email-domain=* to authorize all email addresses")
 	}
 
 	o.redirectURL, msgs = parseURL(o.RedirectURL, "redirect", msgs)
@@ -141,14 +150,13 @@ func (o *Options) Validate() error {
 	for _, u := range o.Upstreams {
 		upstreamURL, err := url.Parse(u)
 		if err != nil {
-			msgs = append(msgs, fmt.Sprintf(
-				"error parsing upstream=%q %s",
-				upstreamURL, err))
+			msgs = append(msgs, fmt.Sprintf("error parsing upstream: %s", err))
+		} else {
+			if upstreamURL.Path == "" {
+				upstreamURL.Path = "/"
+			}
+			o.proxyURLs = append(o.proxyURLs, upstreamURL)
 		}
-		if upstreamURL.Path == "" {
-			upstreamURL.Path = "/"
-		}
-		o.proxyURLs = append(o.proxyURLs, upstreamURL)
 	}
 
 	for _, u := range o.SkipAuthRegex {
@@ -218,6 +226,13 @@ func (o *Options) Validate() error {
 
 	msgs = parseSignatureKey(o, msgs)
 	msgs = validateCookieName(o, msgs)
+
+	if o.SSLInsecureSkipVerify {
+		insecureTransport := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		http.DefaultClient = &http.Client{Transport: insecureTransport}
+	}
 
 	if len(msgs) != 0 {
 		return fmt.Errorf("Invalid configuration:\n  %s",
