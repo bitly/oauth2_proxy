@@ -61,6 +61,8 @@ type Options struct {
 	SSLInsecureSkipVerify bool     `flag:"ssl-insecure-skip-verify" cfg:"ssl_insecure_skip_verify"`
 	SetXAuthRequest       bool     `flag:"set-xauthrequest" cfg:"set_xauthrequest"`
 	SkipAuthPreflight     bool     `flag:"skip-auth-preflight" cfg:"skip_auth_preflight"`
+	SignAWSRequestRegion  string   `flag:"sign-aws-request-region" cfg:"sign_aws_request_region"`
+	SignAWSRequestService string   `flag:"sign-aws-request-service" cfg:"sign_aws_request_service"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.

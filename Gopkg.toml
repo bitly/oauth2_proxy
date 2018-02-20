@@ -33,6 +33,10 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/bitly/oauth2_proxy"
+
+[[constraint]]
+  branch = "master"
   name = "google.golang.org/api"
 
 [[constraint]]
