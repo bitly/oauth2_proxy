@@ -49,6 +49,7 @@ func main() {
 	flagSet.Var(&googleGroups, "google-group", "restrict logins to members of this google group (may be given multiple times).")
 	flagSet.String("google-admin-email", "", "the google admin to impersonate for api calls")
 	flagSet.String("google-service-account-json", "", "the path to the service account json credentials")
+	flagSet.String("okta-domain", "", "the full domain for which your organization's okta is configured (example.okta.com)")
 	flagSet.String("client-id", "", "the OAuth Client ID: ie: \"123456.apps.googleusercontent.com\"")
 	flagSet.String("client-secret", "", "the OAuth Client Secret")
 	flagSet.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
@@ -67,6 +68,7 @@ func main() {
 	flagSet.Bool("cookie-httponly", true, "set HttpOnly cookie flag")
 
 	flagSet.Bool("request-logging", true, "Log requests to stdout")
+	flagSet.Bool("request-body-logging", false, "Allow the logger to read request bodies")
 	flagSet.String("request-logging-format", defaultRequestLoggingFormat, "Template for log lines")
 
 	flagSet.String("provider", "google", "OAuth provider")
@@ -126,7 +128,7 @@ func main() {
 	}
 
 	s := &Server{
-		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat),
+		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestBodyLogging, opts.RequestLoggingFormat),
 		Opts:    opts,
 	}
 	s.ListenAndServe()

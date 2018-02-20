@@ -37,6 +37,7 @@ Valid providers are :
 * [GitHub](#github-auth-provider)
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
+* [Okta](#okta-auth-provider)
 
 The provider can be selected using the `provider` configuration value.
 
@@ -155,6 +156,10 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
     -cookie-secure=false
     -email-domain example.com
 
+### Okta Auth Provider
+
+[Okta](https://www.okta.com/) is a hosted SSO provider. You will need to set the `okta-domain` to your organization's Okta domain.
+
 ## Email Authentication
 
 To authorize by email domain use `--email-domain=yourcompany.com`. To authorize individual email addresses use `--authenticated-emails-file=/path/to/file` with one email per line. To authorize all email addresses use `--email-domain=*`.
@@ -210,6 +215,7 @@ Usage of oauth2_proxy:
   -redeem-url string: Token redemption endpoint
   -redirect-url string: the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
   -request-logging: Log requests to stdout (default true)
+  -request-body-logging: Allow the logger to read request bodies (default false)
   -request-logging-format: Template for request log lines (see "Logging Format" paragraph below)
   -resource string: The resource that is protected (Azure AD only)
   -scope string: OAuth scope specification
@@ -361,7 +367,9 @@ The default format is configured as follows:
 {{.Client}} - {{.Username}} [{{.Timestamp}}] {{.Host}} {{.RequestMethod}} {{.Upstream}} {{.RequestURI}} {{.Protocol}} {{.UserAgent}} {{.StatusCode}} {{.ResponseSize}} {{.RequestDuration}}
 ```
 
-[See `logMessageData` in `logging_handler.go`](./logging_handler.go) for all available variables.
+[See `logMessageData` in `logging_handler.go`](./logging_handler.go) for all available
+variables. By default, the request body will not be read for performance reasons. If the
+`{{.Body}}` variable is needed, the `request_body_logging` flag must be set to `true`.
 
 ## Adding a new Provider
 
