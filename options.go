@@ -76,6 +76,7 @@ type Options struct {
 	ApprovalPrompt    string `flag:"approval-prompt" cfg:"approval_prompt"`
 
 	RequestLogging       bool   `flag:"request-logging" cfg:"request_logging"`
+	RequestBodyLogging   bool   `flag:"request-body-logging" cfg:"request_body_logging"`
 	RequestLoggingFormat string `flag:"request-logging-format" cfg:"request_logging_format"`
 
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
@@ -113,6 +114,7 @@ func NewOptions() *Options {
 		PassHostHeader:       true,
 		ApprovalPrompt:       "force",
 		RequestLogging:       true,
+		RequestBodyLogging:   false,
 		RequestLoggingFormat: defaultRequestLoggingFormat,
 	}
 }
