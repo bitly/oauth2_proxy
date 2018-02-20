@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -17,6 +19,10 @@ import (
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws/signer/v4"
 )
 
 const SignatureHeader = "GAP-Signature"
@@ -72,15 +78,27 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	AWSRegion           string
+	AWSService          string
 }
 
 type UpstreamProxy struct {
-	upstream string
-	handler  http.Handler
-	auth     hmacauth.HmacAuth
+	upstream   string
+	handler    http.Handler
+	auth       hmacauth.HmacAuth
+	signer     *v4.Signer
+	awsregion  string
+	awsservice string
 }
 
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Sign this request if an AWS signer has been configured
+	if u.signer != nil {
+		h := genAuthorizationHeader(r, u.signer, u.upstream, u.awsregion, u.awsservice)
+		if h != "" {
+			w.Header().Set("Authorization", h)
+		}
+	}
 	w.Header().Set("GAP-Upstream-Address", u.upstream)
 	if u.auth != nil {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
@@ -102,7 +120,7 @@ func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
 		req.URL.RawQuery = ""
 	}
 }
-func setProxyDirector(proxy *httputil.ReverseProxy) {
+func setProxyDirector(opts *Options, proxy *httputil.ReverseProxy) {
 	director := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		director(req)
@@ -118,6 +136,8 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
 	var auth hmacauth.HmacAuth
+	var signer *v4.Signer
+
 	if sigData := opts.signatureData; sigData != nil {
 		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
 			SignatureHeader, SignatureHeaders)
@@ -132,17 +152,24 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 			if !opts.PassHostHeader {
 				setProxyUpstreamHostHeader(proxy, u)
 			} else {
-				setProxyDirector(proxy)
+				setProxyDirector(opts, proxy)
+			}
+
+			if opts.SignAWSRequestRegion != "" {
+				sess := session.Must(session.NewSession())
+				sess.Config.Region = aws.String(opts.SignAWSRequestRegion)
+
+				signer = v4.NewSigner(sess.Config.Credentials)
 			}
 			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, auth})
+				&UpstreamProxy{u.Host, proxy, auth, signer, opts.SignAWSRequestRegion, opts.SignAWSRequestService})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
 			}
 			log.Printf("mapping path %q => file system %q", path, u.Path)
 			proxy := NewFileServer(path, u.Path)
-			serveMux.Handle(path, &UpstreamProxy{path, proxy, nil})
+			serveMux.Handle(path, &UpstreamProxy{path, proxy, nil, nil, "", ""})
 		default:
 			panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
 		}
@@ -206,6 +233,8 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		AWSRegion:          opts.SignAWSRequestRegion,
+		AWSService:         opts.SignAWSRequestService,
 	}
 }
 
@@ -457,6 +486,7 @@ func getRemoteAddr(req *http.Request) (s string) {
 }
 
 func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+
 	switch path := req.URL.Path; {
 	case path == p.RobotsPath:
 		p.RobotsTxt(rw)
@@ -703,6 +733,7 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	} else {
 		rw.Header().Set("GAP-Auth", session.Email)
 	}
+
 	return http.StatusAccepted
 }
 
@@ -731,4 +762,42 @@ func (p *OAuthProxy) CheckBasicAuth(req *http.Request) (*providers.SessionState,
 		return &providers.SessionState{User: pair[0]}, nil
 	}
 	return nil, fmt.Errorf("%s not in HtpasswdFile", pair[0])
+}
+
+func genAuthorizationHeader(req *http.Request, signer *v4.Signer, upstream string, awsregion string, awsservice string) string {
+	var err error
+
+	// Set the Host for this request to be our upstream host.  If we don't,
+	// the signed request will not be accepted by AWS.
+	req.Host = upstream
+
+	switch req.Body {
+	case nil:
+		log.Println("Signing a request with no body...")
+		_, err = signer.Sign(req, nil, awsservice, awsregion, time.Now())
+		if err != nil {
+			log.Println("Could not sign request:", err)
+			return ""
+		}
+
+	default:
+		b, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Println("Error reading request body:", err)
+		}
+		req.Body = ioutil.NopCloser(bytes.NewReader(b))
+
+		// Set the Connection header to "close", otherwise, the signature will fail.
+		req.Header.Set("Connection", "close")
+
+		// Sign the request
+		_, err = signer.Sign(req, bytes.NewReader(b), awsservice, awsregion, time.Now())
+		if err != nil {
+			log.Println("Could not sign request:", err)
+			return ""
+		}
+
+	}
+
+	return req.Header.Get("Authorization")
 }
