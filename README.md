@@ -343,8 +343,6 @@ in `oauthproxy.go`](./oauthproxy.go).
 For more information about HMAC request signature validation, read the
 following:
 
-* [Amazon Web Services: Signing and Authenticating REST
-  Requests](https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
 * [rc3.org: Using HMAC to authenticate Web service
   requests](http://rc3.org/2011/12/02/using-hmac-to-authenticate-web-service-requests/)
 
@@ -353,6 +351,11 @@ following:
 If `sign-aws-request-region` is defined, proxied requests will be signed with an `Authorization` header,
 which is used by AWS to authenticate requests to protected services (e.g. Kibana).  You must provide both
 the `sign-aws-request-region` and `sign-aws-request-service` flags for this feature to work.
+
+For more information about signing AWS requests, read the following:
+
+* [Amazon Web Services: Signing and Authenticating REST
+  Requests](https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
 
 ## Logging Format
 
