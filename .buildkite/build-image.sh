@@ -27,6 +27,10 @@ if [[ "$IMAGE_TAG" == "master" ]]; then
   EXTRA_TAGS="$EXTRA_TAGS --tag $IMAGE_NAME:latest"
 fi
 
+if [ ! -d build/public ]; then
+  mkdir -p build/public
+fi
+
 git log -1 > build/public/REVISION.txt
 
 # Build the new image
