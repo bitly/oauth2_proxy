@@ -1,0 +1,6 @@
+steps:
+  - name: ":oauth2_proxy: Build Proxy"
+    command: ./.buildkite/build-image.sh
+    env:
+      IMAGE_NAME: 024376647576.dkr.ecr.us-east-1.amazonaws.com/oauth2_proxy
+      AWS_ECR_LOGIN: true
