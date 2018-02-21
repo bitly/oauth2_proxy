@@ -7,7 +7,7 @@ CACHE_TAG=${IMAGE_TAG}
 
 # Determine the Dockerfile location
 if [ -z "$DOCKERFILE" ]; then
-  DOCKERFILE="$CONTEXT_DIR/Dockerfile"
+  DOCKERFILE="Dockerfile"
 fi
 
 # Pull the latest branch tag for caching, if it exists
@@ -39,7 +39,7 @@ docker build \
   --tag $IMAGE_NAME:$IMAGE_TAG \
   $EXTRA_TAGS \
   -f $DOCKERFILE \
-  $CONTEXT_DIR
+  .
 
 # Push to the repository
 docker push $IMAGE_NAME:$IMAGE_TAG
