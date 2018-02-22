@@ -7,7 +7,7 @@ CACHE_TAG=${IMAGE_TAG}
 
 # Determine the Dockerfile location
 if [ -z "$DOCKERFILE" ]; then
-  DOCKERFILE="Dockerfile"
+  DOCKERFILE="Dockerfile-buildimage"
 fi
 
 # Pull the latest branch tag for caching, if it exists
@@ -32,6 +32,9 @@ if [ ! -d build/public ]; then
 fi
 
 git log -1 > build/public/REVISION.txt
+
+# Retrieve our artifact
+builtkite-agent artifact download oauth2_proxy .
 
 # Build the new image
 docker build \
