@@ -10,7 +10,7 @@ IMAGE_NAME="oauth2_proxy-intermediate"
 
 # Determine the Dockerfile location
 if [ -z "$DOCKERFILE" ]; then
-  DOCKERFILE="Dockerfile-binary"
+  DOCKERFILE="Dockerfile-buildbinary"
 fi
 
 if [ ! -d build/public ]; then
