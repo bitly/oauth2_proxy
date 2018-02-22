@@ -1,6 +1,9 @@
 steps:
   - name: ":oauth2_proxy: Build Binary"
     Command: ./.buildkite/build-binary.sh
+
+  - wait
+
   - name: ":oauth2_proxy: Build Image"
     Command: ./.buildkite/build-image.sh
     env:
