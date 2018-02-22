@@ -34,7 +34,7 @@ fi
 git log -1 > build/public/REVISION.txt
 
 # Retrieve our artifact
-builtkite-agent artifact download oauth2_proxy .
+buildkite-agent artifact download oauth2_proxy .
 
 # Build the new image
 docker build \
