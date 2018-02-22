@@ -6,7 +6,7 @@ IMAGE_TAG=${BUILDKITE_BRANCH}
 CACHE_TAG=${IMAGE_TAG}
 
 # Set IMAGE_NAME to something intermediate
-IMAGE_NAME=${IMAGE_NAME}-intermediate
+IMAGE_NAME="oauth2_proxy-intermediate"
 
 # Determine the Dockerfile location
 if [ -z "$DOCKERFILE" ]; then
