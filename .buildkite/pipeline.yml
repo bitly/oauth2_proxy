@@ -1,11 +1,11 @@
 steps:
-  - name: ":oauth2_proxy: Build Binary"
-    Command: ./.buildkite/build-binary.sh
+  - label : ":oauth2_proxy: Build Binary"
+    command: "./.buildkite/build-binary.sh"
 
   - wait
 
-  - name: ":oauth2_proxy: Build Image"
-    Command: ./.buildkite/build-image.sh
+  - label: ":oauth2_proxy: Build Image"
+    command: "./.buildkite/build-image.sh"
     env:
       IMAGE_NAME: 024376647576.dkr.ecr.us-east-1.amazonaws.com/oauth2_proxy
       AWS_ECR_LOGIN: true
