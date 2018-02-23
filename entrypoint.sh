@@ -9,6 +9,7 @@ fi
 if [ "$1" = 'oauth2_proxy' ]; then
     # if no configfile is provided, generate one based on the environment variables
     if [ ! -f /conf/oauth2_proxy.cfg ]; then
+        mkdir /conf
         # if undefined, populate selected environment variables with sane defaults
         : ${OAUTH2_PROXY_EMAIL_DOMAIN="*"}
         : ${OAUTH2_PROXY_HTTP_ADDRESS="0.0.0.0:4180"}
