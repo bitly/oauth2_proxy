@@ -14,7 +14,7 @@ RUN apt-get update && \
     gpg --batch --verify /gosu.asc /gosu && \
     rm -r "$GNUPGHOME" /gosu.asc && \
     chmod +x /gosu && \
-    gosu nobody true
+    /gosu nobody true
 
 # Copy the binary over from the builder image
 COPY oauth2_proxy /
