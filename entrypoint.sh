@@ -6,11 +6,6 @@ if [ "${1:0:1}" = '-' ]; then
     set -- oauth2_proxy "$@"
 fi
 
-# allow the container to be started with `--user`
-if [ "$1" = 'oauth2_proxy' -a "$(id -u)" = '0' ]; then
-    exec su-exec oauth2_proxy "$0" "$@"
-fi
-
 if [ "$1" = 'oauth2_proxy' ]; then
     # if no configfile is provided, generate one based on the environment variables
     if [ ! -f /conf/oauth2_proxy.cfg ]; then
@@ -101,5 +96,5 @@ if [ "$1" = 'oauth2_proxy' ]; then
     fi
 fi
 
-exec "$@"
-
+echo "Launching oauth2_proxy..."
+exec /gosu nobody "$@"
