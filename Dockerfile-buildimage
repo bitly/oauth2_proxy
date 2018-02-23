@@ -8,6 +8,8 @@ RUN apt-get update && \
 COPY oauth2_proxy /
 
 COPY entrypoint.sh /
+RUN chmod 755 /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["oauth2_proxy", "--config", "/conf/oauth2_proxy.cfg"]
