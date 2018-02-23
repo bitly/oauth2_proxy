@@ -24,4 +24,4 @@ RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["oauth2_proxy", "--config", "/conf/oauth2_proxy.cfg"]
+CMD ["/oauth2_proxy", "--config", "/conf/oauth2_proxy.cfg"]
