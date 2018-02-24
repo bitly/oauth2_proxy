@@ -18,6 +18,7 @@ RUN apt-get update && \
 
 # Copy the binary over from the builder image
 COPY oauth2_proxy /
+RUN chmod +x /oauth2_proxy
 
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
