@@ -98,4 +98,5 @@ if [ "$1" = 'oauth2_proxy' ]; then
 fi
 
 echo "Launching oauth2_proxy..."
+ls -l /conf
 exec /gosu nobody "$@"
