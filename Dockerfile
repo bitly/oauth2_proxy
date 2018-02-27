@@ -11,5 +11,6 @@ COPY . .
 RUN CGO_ENABLED=0 go install
 
 FROM	alpine:3.7
+RUN   apk add --update ca-certificates
 COPY	--from=0 /go/bin/oauth2_proxy /bin/
 ENTRYPOINT [ "/bin/oauth2_proxy" ]
