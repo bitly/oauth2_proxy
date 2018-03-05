@@ -214,6 +214,8 @@ Usage of oauth2_proxy:
   -resource string: The resource that is protected (Azure AD only)
   -scope string: OAuth scope specification
   -set-xauthrequest: set X-Auth-Request-User and X-Auth-Request-Email response headers (useful in Nginx auth_request mode)
+  -sign-aws-request-region: sign requests with Authorization header for AWS authentication in this region (e.g. "us-east-1").  You must also provide the -sign-aws-request-service flag.
+  -sign-aws-request-service: sign requests with Authorization header for AWS authentication for this service (e.g. "es").  You must also provide the -sign-aws-request-region flag.
   -signature-key string: GAP-Signature request signature key (algorithm:secretkey)
   -skip-auth-preflight: will skip authentication for OPTIONS requests
   -skip-auth-regex value: bypass authentication for requests path's that match (may be given multiple times)
@@ -341,10 +343,19 @@ in `oauthproxy.go`](./oauthproxy.go).
 For more information about HMAC request signature validation, read the
 following:
 
-* [Amazon Web Services: Signing and Authenticating REST
-  Requests](https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
 * [rc3.org: Using HMAC to authenticate Web service
   requests](http://rc3.org/2011/12/02/using-hmac-to-authenticate-web-service-requests/)
+
+## Signing AWS Requests
+
+If `sign-aws-request-region` is defined, proxied requests will be signed with an `Authorization` header,
+which is used by AWS to authenticate requests to protected services (e.g. Kibana).  You must provide both
+the `sign-aws-request-region` and `sign-aws-request-service` flags for this feature to work.
+
+For more information about signing AWS requests, read the following:
+
+* [Amazon Web Services: Signing and Authenticating REST
+  Requests](https://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
 
 ## Logging Format
 
