@@ -35,7 +35,7 @@ if [ ! -z ${OAUTH2_PROXY_HTTP_ADDRESS+x} ]; then
    PROXY_ARGS="${PROXY_ARGS} -http-address ${OAUTH2_PROXY_HTTP_ADDRESS}"
 fi
 
-if [ ! -z ${OAUTH2_PROXY_HTTPS_ADDRESS+x} ]; then
+if [ ! -z ${OAUTH2_PROXY_HTTPS_ADDRESS+x} ] && [ ! -z $OAUTH2_PROXY_HTTPS_ADDRESS ]; then
    PROXY_ARGS="${PROXY_ARGS} -https-address ${OAUTH2_PROXY_HTTPS_ADDRESS}"
 fi
 
