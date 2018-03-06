@@ -20,7 +20,7 @@ if [ ! -z ${OAUTH2_PROXY_COOKIE_SECRET+x} ]; then
 fi
 
 if [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN+x} ]; then
-   PROXY_ARGS="${PROXY_ARGS} -email-domain ${OAUTH2_PROXY_EMAIL_DOMAIN}"
+   PROXY_ARGS="${PROXY_ARGS} -email-domain \"${OAUTH2_PROXY_EMAIL_DOMAIN}\""
 fi
 
 if [ ! -z ${OAUTH2_PROXY_GITHUB_TEAM+x} ]; then
