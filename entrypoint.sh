@@ -76,4 +76,5 @@ if [ ! -z ${OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY+x} ] && [ ! -z $OAUTH2_PROXY_AWS_
 fi 
 
 echo "Launching oauth2_proxy..."
+set -x
 exec /gosu nobody /oauth2_proxy ${PROXY_ARGS}
