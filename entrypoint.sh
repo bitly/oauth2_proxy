@@ -78,3 +78,6 @@ fi
 echo "Launching oauth2_proxy..."
 set -x
 exec /gosu nobody /oauth2_proxy ${PROXY_ARGS}
+if [ $? -ne 0 ]; then
+   echo "Launch failed: /oauth2_proxy ${PROXY_ARGS}"
+fi
