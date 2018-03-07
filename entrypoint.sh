@@ -19,8 +19,8 @@ if [ ! -z ${OAUTH2_PROXY_COOKIE_SECRET+x} ] && [ ! -z $OAUTH2_PROXY_COOKIE_SECRE
    PROXY_ARGS="${PROXY_ARGS} --cookie-secret=${OAUTH2_PROXY_COOKIE_SECRET}"
 fi
 
-if [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN+x} ] && [ ! -z $OAUTH2_PROXY_EMAIL_DOMAIN ]; then
-   PROXY_ARGS="${PROXY_ARGS} --email-domain='${OAUTH2_PROXY_EMAIL_DOMAIN}'"
+if [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN+x} ] && [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN} ]; then
+   PROXY_ARGS="${PROXY_ARGS} --email-domain=\'${OAUTH2_PROXY_EMAIL_DOMAIN}\'"
 fi
 
 if [ ! -z ${OAUTH2_PROXY_GITHUB_TEAM+x} ] && [ ! -z $OAUTH2_PROXY_GITHUB_TEAM ]; then
