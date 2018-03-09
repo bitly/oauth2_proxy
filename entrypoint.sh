@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -f
 
 export PATH=/bin:/usr/bin:/usr/local/bin:/usr/sbin:/
 
