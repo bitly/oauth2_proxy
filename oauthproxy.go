@@ -813,6 +813,12 @@ func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsre
 
 	for name, headers := range req.Header {
 		for _, h := range headers {
+			if name == "Referer" {
+				req.Header.Del(name)
+			}
+			if strings.Contains(name, "X-Forwarded-") {
+				req.Header.Del(name)
+			}
 			fmt.Printf("%v -> %v\n", name, h)
 		}
 	}
@@ -835,7 +841,7 @@ func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsre
 		req.Body = ioutil.NopCloser(bytes.NewReader(b))
 
 		// Set the Connection header to "close", otherwise, the signature will fail.
-		//req.Header.Set("Connection", "close")
+		req.Header.Set("Connection", "close")
 
 		// Sign the request
 		_, err = signer.Sign(req, bytes.NewReader(b), awsservice, awsregion, time.Now())
