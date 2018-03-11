@@ -69,18 +69,19 @@ if [ ! -z ${OAUTH2_PROXY_SIGN_AWS_REQUEST_SERVICE+x} ] && [ ! -z $OAUTH2_PROXY_S
 fi
 
 if [ ! -z ${OAUTH2_PROXY_AWS_ACCESS_KEY+x} ] && [ ! -z $OAUTH2_PROXY_AWS_ACCESS_KEY ]; then
-   AWS_ACCESS_KEY=$OAUTH2_PROXY_AWS_ACCESS_KEY
+   export AWS_ACCESS_KEY=$OAUTH2_PROXY_AWS_ACCESS_KEY
 fi
 
 if [ ! -z ${OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY+x} ] && [ ! -z $OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY ]; then
-   AWS_SECRET_ACCESS_KEY=$OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY
+   export AWS_SECRET_ACCESS_KEY=$OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY
 fi 
 
 echo "Environment:"
 set
 echo "Launching oauth2_proxy..."
 set -x
-exec /gosu nobody /oauth2_proxy ${PROXY_ARGS}
+#exec /gosu nobody /oauth2_proxy ${PROXY_ARGS}
+/oauth2_proxy ${PROXY_ARGS}
 if [ $? -ne 0 ]; then
    echo "Launch failed: /oauth2_proxy ${PROXY_ARGS}"
 fi
