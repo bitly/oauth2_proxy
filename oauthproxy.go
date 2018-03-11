@@ -94,10 +94,12 @@ type UpstreamProxy struct {
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Sign this request if an AWS signer has been configured
 	if u.signer != nil {
-		h := genAuthorizationHeader(r, u.signer, u.upstream, u.awsregion, u.awsservice)
-		if h != "" {
-			w.Header().Set("Authorization", h)
-		}
+		// h := genAuthorizationHeader(r, u.signer, u.upstream, u.awsregion, u.awsservice)
+		// if h != "" {
+		// 	w.Header().Set("Authorization", h)
+		// }
+		r = signAWSRequest(r, u.signer, u.upstream, u.awsregion, u.awsservice)
+
 	}
 	// w.Header().Set("GAP-Upstream-Address", u.upstream)
 	// if u.auth != nil {
@@ -771,8 +773,6 @@ func genAuthorizationHeader(req *http.Request, signer *v4.Signer, upstream strin
 	// the signed request will not be accepted by AWS.
 	req.Host = upstream
 
-	log.Printf("REQ ---> %+v\n", req)
-
 	switch req.Body {
 	case nil:
 		log.Println("Signing a request with no body...")
@@ -802,4 +802,43 @@ func genAuthorizationHeader(req *http.Request, signer *v4.Signer, upstream strin
 	}
 
 	return req.Header.Get("Authorization")
+}
+
+func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsregion string, awsservice string) *http.Request {
+	var err error
+
+	// Set the Host for this request to be our upstream host.  If we don't,
+	// the signed request will not be accepted by AWS.
+	req.Host = upstream
+
+	switch req.Body {
+	case nil:
+		log.Println("Signing a request with no body...")
+		_, err = signer.Sign(req, nil, awsservice, awsregion, time.Now())
+		if err != nil {
+			log.Println("Could not sign request:", err)
+			return nil
+		}
+
+	default:
+		b, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Println("Error reading request body:", err)
+		}
+		req.Body = ioutil.NopCloser(bytes.NewReader(b))
+
+		// Set the Connection header to "close", otherwise, the signature will fail.
+		req.Header.Set("Connection", "close")
+
+		// Sign the request
+		_, err = signer.Sign(req, bytes.NewReader(b), awsservice, awsregion, time.Now())
+		if err != nil {
+			log.Println("Could not sign request:", err)
+			return nil
+		}
+
+	}
+
+	return req
+
 }
