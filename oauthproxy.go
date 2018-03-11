@@ -811,6 +811,12 @@ func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsre
 	// the signed request will not be accepted by AWS.
 	req.Host = upstream
 
+	for name, headers := range req.Header {
+		for _, h := range headers {
+			fmt.Printf("%v -> %v\n", name, h)
+		}
+	}
+
 	switch req.Body {
 	case nil:
 		log.Println("Signing a request with no body...")
