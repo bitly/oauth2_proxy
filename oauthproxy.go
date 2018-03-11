@@ -771,6 +771,8 @@ func genAuthorizationHeader(req *http.Request, signer *v4.Signer, upstream strin
 	// the signed request will not be accepted by AWS.
 	req.Host = upstream
 
+	log.Printf("REQ ---> %+v\n", req)
+
 	switch req.Body {
 	case nil:
 		log.Println("Signing a request with no body...")
