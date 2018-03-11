@@ -20,10 +20,6 @@ if [ ! -z ${OAUTH2_PROXY_COOKIE_SECRET+x} ] && [ ! -z $OAUTH2_PROXY_COOKIE_SECRE
    PROXY_ARGS="${PROXY_ARGS} --cookie-secret=${OAUTH2_PROXY_COOKIE_SECRET}"
 fi
 
-if [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN+x} ] && [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN} ]; then
-   PROXY_ARGS="${PROXY_ARGS} --email-domain=${OAUTH2_PROXY_EMAIL_DOMAIN}"
-fi
-
 if [ ! -z ${OAUTH2_PROXY_GITHUB_TEAM+x} ] && [ ! -z $OAUTH2_PROXY_GITHUB_TEAM ]; then
    PROXY_ARGS="${PROXY_ARGS} --github-team=${OAUTH2_PROXY_GITHUB_TEAM}"
 fi
@@ -74,7 +70,11 @@ fi
 
 if [ ! -z ${OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY+x} ] && [ ! -z $OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY ]; then
    export AWS_SECRET_ACCESS_KEY=$OAUTH2_PROXY_AWS_SECRET_ACCESS_KEY
-fi 
+fi
+
+if [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN+x} ] && [ ! -z ${OAUTH2_PROXY_EMAIL_DOMAIN} ]; then
+   PROXY_ARGS="${PROXY_ARGS} --email-domain=${OAUTH2_PROXY_EMAIL_DOMAIN}"
+fi
 
 echo "Environment:"
 set
