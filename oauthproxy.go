@@ -831,10 +831,11 @@ func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsre
 		if err != nil {
 			log.Println("Error reading request body:", err)
 		}
+		log.Println("BODY ->", b, "<-")
 		req.Body = ioutil.NopCloser(bytes.NewReader(b))
 
 		// Set the Connection header to "close", otherwise, the signature will fail.
-		req.Header.Set("Connection", "close")
+		//req.Header.Set("Connection", "close")
 
 		// Sign the request
 		_, err = signer.Sign(req, bytes.NewReader(b), awsservice, awsregion, time.Now())
