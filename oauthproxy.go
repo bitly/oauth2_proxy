@@ -811,15 +811,12 @@ func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsre
 	// the signed request will not be accepted by AWS.
 	req.Host = upstream
 
-	for name, headers := range req.Header {
-		for _, h := range headers {
-			if name == "Referer" {
-				req.Header.Del(name)
-			}
-			if strings.Contains(name, "X-Forwarded-") {
-				req.Header.Del(name)
-			}
-			fmt.Printf("%v -> %v\n", name, h)
+	for name, _ := range req.Header {
+		if name == "Referer" {
+			req.Header.Del(name)
+		}
+		if strings.Contains(name, "X-Forwarded-") {
+			req.Header.Del(name)
 		}
 	}
 
@@ -837,7 +834,6 @@ func signAWSRequest(req *http.Request, signer *v4.Signer, upstream string, awsre
 		if err != nil {
 			log.Println("Error reading request body:", err)
 		}
-		log.Println("BODY ->", b, "<-")
 		req.Body = ioutil.NopCloser(bytes.NewReader(b))
 
 		// Set the Connection header to "close", otherwise, the signature will fail.
