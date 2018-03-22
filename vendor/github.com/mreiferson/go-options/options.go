@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -30,7 +29,8 @@ import (
 //   1. Command line flag
 //   2. Deprecated command line flag
 //   3. Config file value
-//   4. Options struct default value
+//   4. Get() value (if Getter)
+//   5. Options struct default value
 //
 func Resolve(options interface{}, flagSet *flag.FlagSet, cfg map[string]interface{}) {
 	val := reflect.ValueOf(options).Elem()
@@ -81,27 +81,22 @@ func Resolve(options interface{}, flagSet *flag.FlagSet, cfg map[string]interfac
 			}
 		}
 
-		// resolve the flags with the following priority (highest to lowest):
-		//
-		// 1. command line flag
-		// 2. deprecated command line flag
-		// 3. config file option
-		// 4. default flag value
+		// resolve the flags according to priority
 		var v interface{}
-		if hasArg(flagName) {
+		if hasArg(flagSet, flagName) {
 			v = flagInst.Value.String()
-		} else if deprecatedFlagName != "" && hasArg(deprecatedFlagName) {
+		} else if deprecatedFlagName != "" && hasArg(flagSet, deprecatedFlagName) {
 			v = deprecatedFlag.Value.String()
 			log.Printf("WARNING: use of the --%s command line flag is deprecated (use --%s)",
 				deprecatedFlagName, flagName)
 		} else if cfgVal, ok := cfg[cfgName]; ok {
 			v = cfgVal
+		} else if getter, ok := flagInst.Value.(flag.Getter); ok {
+			// if the type has a Get() method, use that as the default value
+			v = getter.Get()
 		} else {
-			// if no flag arg or config file option was specified just use the default
-			// flag value
-			if getter, ok := flagInst.Value.(flag.Getter); ok {
-				v = getter.Get()
-			}
+			// otherwise, use the default value
+			v = val.Field(i).Interface()
 		}
 
 		fieldVal := val.FieldByName(field.Name)
@@ -215,7 +210,6 @@ func coerceFloat64Slice(v interface{}) ([]float64, error) {
 			tmp = append(tmp, f)
 		}
 	case []float64:
-		log.Printf("%+v", v)
 		tmp = v.([]float64)
 	}
 	return tmp, nil
@@ -289,11 +283,12 @@ func coerce(v interface{}, opt interface{}, arg string) (interface{}, error) {
 	return nil, fmt.Errorf("invalid value type %T", v)
 }
 
-func hasArg(s string) bool {
-	for _, arg := range os.Args[1:] {
-		if strings.TrimLeft(strings.SplitN(arg, "=", 2)[0], "-") == s {
-			return true
+func hasArg(fs *flag.FlagSet, s string) bool {
+	var found bool
+	fs.Visit(func(flag *flag.Flag) {
+		if flag.Name == s {
+			found = true
 		}
-	}
-	return false
+	})
+	return found
 }
