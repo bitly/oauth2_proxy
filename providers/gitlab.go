@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/bitly/oauth2_proxy/api"
 	"io/ioutil"
+	"strconv"
 )
 
 type GitLabProvider struct {
@@ -55,30 +56,44 @@ func (p *GitLabProvider) hasGroup(accessToken string) (bool, error) {
 		Group string `json:"name"`
 	}
 
-	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/api/v3/groups?access_token=" + accessToken
-	req, _ := http.NewRequest("GET", endpoint, nil)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return false, err
-	}
+	endpoint := p.ValidateURL.Scheme + "://" + p.ValidateURL.Host + "/api/v3/groups"
+	for page := 1; page != 0; {
+		req, _ := http.NewRequest("GET", endpoint, nil)
+		query := req.URL.Query()
+		query.Add("access_token", accessToken)
+		query.Add("page", strconv.Itoa(page))
+		req.URL.RawQuery = query.Encode()
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return false, err
+		}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		return false, err
-	}
-	if resp.StatusCode != 200 {
-		return false, fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
-	}
+		next := resp.Header["X-Next-Page"]
+		if len(next) == 1 {
+			page, _ = strconv.Atoi(next[0])
+		} else {
+			// Last iteration
+			page = 0
+		}
 
-	if err := json.Unmarshal(body, &groups); err != nil {
-		return false, err
-	}
+		body, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return false, err
+		}
+		if resp.StatusCode != 200 {
+			return false, fmt.Errorf("got %d from %q %s", resp.StatusCode, endpoint, body)
+		}
 
-	for _, group := range groups {
-		if p.Group == group.Group {
-			// Found the group
-			return true, nil
+		if err := json.Unmarshal(body, &groups); err != nil {
+			return false, err
+		}
+
+		for _, group := range groups {
+			if p.Group == group.Group {
+				// Found the group
+				return true, nil
+			}
 		}
 	}
 
