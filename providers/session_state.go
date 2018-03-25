@@ -10,11 +10,11 @@ import (
 )
 
 type SessionState struct {
-	AccessToken  string
-	ExpiresOn    time.Time
-	RefreshToken string
-	Email        string
-	User         string
+	AccessToken  string    `json:"access_token"`
+	ExpiresOn    time.Time `json:"expires_on"`
+	RefreshToken string    `json:"refresh_token"`
+	Email        string    `json:"email"`
+	User         string    `json:"user"`
 }
 
 func (s *SessionState) IsExpired() bool {

@@ -2,6 +2,7 @@ package main
 
 import (
 	b64 "encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -52,6 +53,7 @@ type OAuthProxy struct {
 	OAuthStartPath    string
 	OAuthCallbackPath string
 	AuthOnlyPath      string
+	OAuthTokenPath    string
 
 	redirectURL         *url.URL // the url to receive requests at
 	provider            providers.Provider
@@ -67,6 +69,7 @@ type OAuthProxy struct {
 	BasicAuthPassword   string
 	PassAccessToken     bool
 	CookieCipher        *cookie.Cipher
+	allowTokenRequest   bool
 	skipAuthRegex       []string
 	skipAuthPreflight   bool
 	compiledRegex       []*regexp.Regexp
@@ -189,6 +192,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		OAuthStartPath:    fmt.Sprintf("%s/start", opts.ProxyPrefix),
 		OAuthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
 		AuthOnlyPath:      fmt.Sprintf("%s/auth", opts.ProxyPrefix),
+		OAuthTokenPath:    fmt.Sprintf("%s/token", opts.ProxyPrefix),
 
 		ProxyPrefix:        opts.ProxyPrefix,
 		provider:           opts.provider,
@@ -196,6 +200,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		redirectURL:        redirectURL,
 		skipAuthRegex:      opts.SkipAuthRegex,
 		skipAuthPreflight:  opts.SkipAuthPreflight,
+		allowTokenRequest:  opts.AllowTokenRequest,
 		compiledRegex:      opts.CompiledRegex,
 		SetXAuthRequest:    opts.SetXAuthRequest,
 		PassBasicAuth:      opts.PassBasicAuth,
@@ -474,6 +479,8 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		p.OAuthCallback(rw, req)
 	case path == p.AuthOnlyPath:
 		p.AuthenticateOnly(rw, req)
+	case path == p.OAuthTokenPath:
+		p.OAuthToken(rw, req)
 	default:
 		p.Proxy(rw, req)
 	}
@@ -582,8 +589,25 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (p *OAuthProxy) OAuthToken(rw http.ResponseWriter, req *http.Request) {
+	if !p.allowTokenRequest {
+		http.Error(rw, "unauthorized request", http.StatusUnauthorized)
+		return
+	}
+
+	session, status := p.Authenticate(rw, req)
+	if status == http.StatusAccepted {
+		// TODO: accept header and different content-types, if required.
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		json.NewEncoder(rw).Encode(session)
+	} else {
+		http.Error(rw, "unauthorized request", http.StatusUnauthorized)
+	}
+}
+
 func (p *OAuthProxy) AuthenticateOnly(rw http.ResponseWriter, req *http.Request) {
-	status := p.Authenticate(rw, req)
+	_, status := p.Authenticate(rw, req)
 	if status == http.StatusAccepted {
 		rw.WriteHeader(http.StatusAccepted)
 	} else {
@@ -592,7 +616,7 @@ func (p *OAuthProxy) AuthenticateOnly(rw http.ResponseWriter, req *http.Request)
 }
 
 func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
-	status := p.Authenticate(rw, req)
+	_, status := p.Authenticate(rw, req)
 	if status == http.StatusInternalServerError {
 		p.ErrorPage(rw, http.StatusInternalServerError,
 			"Internal Error", "Internal Error")
@@ -607,7 +631,7 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int {
+func (p *OAuthProxy) authenticateSession(rw http.ResponseWriter, req *http.Request) (*providers.SessionState, error) {
 	var saveSession, clearSession, revalidated bool
 	remoteAddr := getRemoteAddr(req)
 
@@ -656,7 +680,7 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		err := p.SaveSession(rw, req, session)
 		if err != nil {
 			log.Printf("%s %s", remoteAddr, err)
-			return http.StatusInternalServerError
+			return nil, err
 		}
 	}
 
@@ -671,8 +695,15 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		}
 	}
 
-	if session == nil {
-		return http.StatusForbidden
+	return session, nil
+}
+
+func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) (*providers.SessionState, int) {
+	session, err := p.authenticateSession(rw, req)
+	if err != nil {
+		return nil, http.StatusInternalServerError
+	} else if session == nil {
+		return nil, http.StatusForbidden
 	}
 
 	// At this point, the user is authenticated. proxy normally
@@ -703,7 +734,7 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	} else {
 		rw.Header().Set("GAP-Auth", session.Email)
 	}
-	return http.StatusAccepted
+	return session, http.StatusAccepted
 }
 
 func (p *OAuthProxy) CheckBasicAuth(req *http.Request) (*providers.SessionState, error) {
