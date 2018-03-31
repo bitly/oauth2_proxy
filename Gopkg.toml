@@ -4,7 +4,7 @@
 #
 
 [[constraint]]
-  name = "github.com/18F/hmacauth"
+  name = "github.com/mbland/hmacauth"
   version = "~1.0.1"
 
 [[constraint]]
