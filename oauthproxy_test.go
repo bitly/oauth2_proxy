@@ -836,3 +836,18 @@ func TestRequestSignaturePostRequest(t *testing.T) {
 	assert.Equal(t, 200, st.rw.Code)
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }
+
+func TestRedirectInsecureRequest(t *testing.T) {
+	opts := NewOptions()
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Host = "example.com"
+	req.Header.Set("X-Forwarded-Proto", "http")
+	proxy.ServeHTTP(rw, req)
+
+	assert.Equal(t, http.StatusMovedPermanently, rw.Code)
+	assert.Equal(t, "https://example.com/", rw.Header().Get("Location"))
+}
