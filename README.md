@@ -141,7 +141,10 @@ Take note of your `TenantId` if applicable for your situation. The `TenantId` ca
 
 ### OpenID Connect Provider
 
-OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many major providers and several open source projects. This provider was originally built against CoreOS Dex and we will use it as an example.
+OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many major providers and several open source projects. 
+
+#### CoreOS Dex
+This provider was originally built against CoreOS Dex and we will use it as an example.
 
 1. Launch a Dex instance using the [getting started guide](https://github.com/coreos/dex/blob/master/Documentation/getting-started.md).
 2. Setup oauth2_proxy with the correct provider and using the default ports and callbacks.
@@ -154,6 +157,26 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
     -oidc-issuer-url http://127.0.0.1:5556
     -cookie-secure=false
     -email-domain example.com
+    
+#### Salesforce
+This provider has also been tested with Salesforce OpenID
+
+1. Create a [connected app](https://help.salesforce.com/articleView?id=connected_app_create.htm&type=5) and enable oauth
+2. At minimum you'll need to set the Callback URL `https://example.com/oauth2/callback`, add `openid` scope, check `Include ID Token` with `Include Standard Claims`. 
+3. Run your oauth2_proxy with the following example configuration: 
+```
+./oauth2_proxy \
+  -provider=oidc \
+  -redirect-url=https://example.com/oauth2/callback \
+  -email-domain=* \
+  -client-id=<copy from result of step #2> \
+  -client-secret=<copy from result of step #2> \
+  -cookie-secret=...
+  -scope=openid \
+  -oidc-issuer-url=https://login.salesforce.com \
+  -upstream=http://internal.example.com:80 &
+```
+
 
 ## Email Authentication
 
