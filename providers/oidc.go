@@ -30,7 +30,7 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 			TokenURL: p.RedeemURL.String(),
 		},
 		RedirectURL: redirectURL,
-	}
+		Scopes: []string{"openid", "email", "profile"}}
 	token, err := c.Exchange(ctx, code)
 	if err != nil {
 		return nil, fmt.Errorf("token exchange: %v", err)
@@ -68,6 +68,7 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 		RefreshToken: token.RefreshToken,
 		ExpiresOn:    token.Expiry,
 		Email:        claims.Email,
+		IdToken:			rawIDToken,
 	}
 
 	return
