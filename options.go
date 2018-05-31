@@ -34,6 +34,7 @@ type Options struct {
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
+	SlackTeam                string   `flag:"slack-team" cfg:"slack_team"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
@@ -278,6 +279,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		} else {
 			p.Verifier = o.oidcVerifier
 		}
+	case *providers.SlackProvider:
+		p.SetTeamID(o.SlackTeam)
 	}
 	return msgs
 }
