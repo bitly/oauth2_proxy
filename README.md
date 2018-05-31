@@ -155,6 +155,21 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
     -cookie-secure=false
     -email-domain example.com
 
+### Slack Provider
+
+Register a new Slack App to get a ClientID and Client Secret:
+
+1. Go to your applications at: https://api.slack.com/applications
+2. "Create a new App" or choose an existing one
+3. In the application settings, go to "OAuth & Permissions" and add a new redirect URL, e.g. `https://internal.yourcompany.com/oauth2/callback`
+4. Get the Client ID and Client Secret from the "Basic Information" page
+
+Authentication can be restricted to a single team with the `-slack-team` command line or the `slack_team` settings entry. Both require your team's Team ID.
+
+You can get it by creating a token for your workspace: https://api.slack.com/custom-integrations/legacy-tokens
+
+With this token "Test" the auth.test method here: https://api.slack.com/methods/auth.test/test The response contains the Team ID.
+
 ## Email Authentication
 
 To authorize by email domain use `--email-domain=yourcompany.com`. To authorize individual email addresses use `--authenticated-emails-file=/path/to/file` with one email per line. To authorize all email addresses use `--email-domain=*`.
