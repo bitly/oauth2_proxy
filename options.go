@@ -131,6 +131,7 @@ func (o *Options) Validate() error {
 		insecureTransport := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 		http.DefaultClient = &http.Client{Transport: insecureTransport}
 	}
 
