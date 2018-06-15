@@ -852,7 +852,7 @@ func TestHttpBrowserXssFilterTrue(t *testing.T) {
 	assert.Equal(t, "1; mode=block", rw.HeaderMap.Get("X-XSS-Protection"))
 }
 
-func TestHttpBrowserXssFilterFalse(t *testing.T) {
+func TestHttpBrowserXssFilterFalseBydefault(t *testing.T) {
 	opts := NewOptions()
 	opts.ClientID = "bazquux"
 	opts.ClientSecret = "foobar"
