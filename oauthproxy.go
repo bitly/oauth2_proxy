@@ -118,7 +118,6 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
-
 	var auth hmacauth.HmacAuth
 	if sigData := opts.signatureData; sigData != nil {
 		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
@@ -192,7 +191,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		PublicKey: opts.HttpPublicKey,
 		ReferrerPolicy: opts.HttpReferrerPolicy,
 	})
-	
+
 	return &OAuthProxy{
 		CookieName:     opts.CookieName,
 		CSRFCookieName: fmt.Sprintf("%v_%v", opts.CookieName, "csrf"),
