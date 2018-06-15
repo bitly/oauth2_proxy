@@ -863,5 +863,6 @@ func TestHttpBrowserXssFilterFalseBydefault(t *testing.T) {
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, false, opts.HttpBrowserXssFilter)
 	assert.Equal(t, "", rw.HeaderMap.Get("X-XSS-Protection"))
 }
