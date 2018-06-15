@@ -11,7 +11,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/mreiferson/go-options"
-	"github.com/unrolled/secure"
 )
 
 func main() {
@@ -147,29 +146,8 @@ func main() {
 		}
 	}
 
-	secureMiddleware := secure.New(secure.Options{
-		AllowedHosts: opts.HttpAllowedHosts,
-		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
-		SSLRedirect: opts.HttpSSLRedirect,
-		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
-		SSLHost: opts.HttpSSLHost,
-		STSSeconds: opts.HttpSTSSeconds,
-		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
-		STSPreload: opts.HttpSTSPreload,
-		ForceSTSHeader: opts.HttpForceSTSHeader,
-		FrameDeny: opts.HttpFrameDeny,
-		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
-		ContentTypeNosniff: opts.HttpContentTypeNosniff,
-		BrowserXssFilter: opts.HttpBrowserXssFilter,
-		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
-		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
-		PublicKey: opts.HttpPublicKey,
-		ReferrerPolicy: opts.HttpReferrerPolicy,
-	})
-	h := LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat)
-
 	s := &Server{
-		Handler: secureMiddleware.Handler(h),
+		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat),
 		Opts:    opts,
 	}
 	s.ListenAndServe()

@@ -17,6 +17,7 @@ import (
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
+	"github.com/unrolled/secure"
 )
 
 const SignatureHeader = "GAP-Signature"
@@ -117,6 +118,7 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
+
 	var auth hmacauth.HmacAuth
 	if sigData := opts.signatureData; sigData != nil {
 		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
@@ -171,6 +173,26 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		}
 	}
 
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts: opts.HttpAllowedHosts,
+		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
+		SSLRedirect: opts.HttpSSLRedirect,
+		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
+		SSLHost: opts.HttpSSLHost,
+		STSSeconds: opts.HttpSTSSeconds,
+		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
+		STSPreload: opts.HttpSTSPreload,
+		ForceSTSHeader: opts.HttpForceSTSHeader,
+		FrameDeny: opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff: opts.HttpContentTypeNosniff,
+		BrowserXssFilter: opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
+		PublicKey: opts.HttpPublicKey,
+		ReferrerPolicy: opts.HttpReferrerPolicy,
+	})
+	
 	return &OAuthProxy{
 		CookieName:     opts.CookieName,
 		CSRFCookieName: fmt.Sprintf("%v_%v", opts.CookieName, "csrf"),
@@ -192,7 +214,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 
 		ProxyPrefix:        opts.ProxyPrefix,
 		provider:           opts.provider,
-		serveMux:           serveMux,
+		serveMux:           secureMiddleware.Handler(serveMux),
 		redirectURL:        redirectURL,
 		skipAuthRegex:      opts.SkipAuthRegex,
 		skipAuthPreflight:  opts.SkipAuthPreflight,

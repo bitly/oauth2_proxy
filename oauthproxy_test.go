@@ -836,3 +836,32 @@ func TestRequestSignaturePostRequest(t *testing.T) {
 	assert.Equal(t, 200, st.rw.Code)
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }
+
+func TestHttpBrowserXssFilterTrue(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.HttpBrowserXssFilter = true
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, "1; mode=block", rw.HeaderMap.Get("X-XSS-Protection"))
+}
+
+func TestHttpBrowserXssFilterFalse(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, "", rw.HeaderMap.Get("X-XSS-Protection"))
+}
