@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/mreiferson/go-options"
+	"github.com/unrolled/secure"
 )
 
 func main() {
@@ -21,6 +22,8 @@ func main() {
 	upstreams := StringArray{}
 	skipAuthRegex := StringArray{}
 	googleGroups := StringArray{}
+	httpAllowedHosts := StringArray{}
+	httpHostsProxyHeaders := StringArray{}
 
 	config := flagSet.String("config", "", "path to config file")
 	showVersion := flagSet.Bool("version", false, "print version string")
@@ -81,6 +84,25 @@ func main() {
 
 	flagSet.String("signature-key", "", "GAP-Signature request signature key (algorithm:secretkey)")
 
+	// These are options that allow you to tune various parameters for https://github.com/unrolled/secure
+	flagSet.Var(&httpAllowedHosts, "httpAllowedHosts", "a list of fully qualified domain names that are allowed. Default is empty list, which allows any and all host names.")
+	flagSet.Var(&httpHostsProxyHeaders, "httpHostsProxyHeaders", "a set of header keys that may hold a proxied hostname value for the request.")
+	flagSet.Bool("httpSSLRedirect", false, "If set to true, then only allow HTTPS requests. Default is false.")
+	flagSet.Bool("httpSSLTemporaryRedirect", false, "If true, then a 302 will be used while redirecting. Default is false (301).")
+	flagSet.String("httpSSLHost", "", "the host name that is used to redirect HTTP requests to HTTPS. Default is \"\", which indicates to use the same host.")
+	flagSet.Int64("httpSTSSeconds", 0, "The max-age of the Strict-Transport-Security header. Default is 0, which would NOT include the header.")
+	flagSet.Bool("httpSTSIncludeSubdomains", false, "If set to true, the 'includeSubdomains' will be appended to the Strict-Transport-Security header. Default is false.")
+	flagSet.Bool("httpSTSPreload", false, "If set to true, the 'preload' flag will be appended to the Strict-Transport-Security header. Default is false.")
+	flagSet.Bool("httpForceSTSHeader", false, "STS header is only included when the connection is HTTPS. If you want to force it to always be added, set to true. Default is false.")
+	flagSet.Bool("httpFrameDeny", false, "If set to true, adds the X-Frame-Options header with the value of 'DENY'. Default is false.")
+	flagSet.String("httpCustomFrameOptionsValue", "", "allows the X-Frame-Options header value to be set with a custom value. This overrides the FrameDeny option. Default is \"\".")
+	flagSet.Bool("httpContentTypeNosniff", false, "If true, adds the X-Content-Type-Options header with the value 'nosniff'. Default is false.")
+	flagSet.Bool("httpBrowserXssFilter", false, "If true, adds the X-XSS-Protection header with the value '1; mode=block'. Default is false.")
+	flagSet.String("httpCustomBrowserXssValue", "", "Allows the X-XSS-Protection header value to be set with a custom value. This overrides the BrowserXssFilter option. Default is \"\".")
+	flagSet.String("httpContentSecurityPolicy", "", "Allows the Content-Security-Policy header value to be set with a custom value. Default is \"\". Passing a template string will replace '$NONCE' with a dynamic nonce value of 16 bytes for each request which can be later retrieved using the Nonce function.")
+	flagSet.String("httpPublicKey", "", "Implements HPKP to prevent MITM attacks with forged certificates. Default is \"\".")
+	flagSet.String("httpReferrerPolicy", "", "Allows the Referrer-Policy header with the value to be set with a custom value. Default is \"\".")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
@@ -125,8 +147,29 @@ func main() {
 		}
 	}
 
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts: opts.HttpAllowedHosts,
+		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
+		SSLRedirect: opts.HttpSSLRedirect,
+		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
+		SSLHost: opts.HttpSSLHost,
+		STSSeconds: opts.HttpSTSSeconds,
+		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
+		STSPreload: opts.HttpSTSPreload,
+		ForceSTSHeader: opts.HttpForceSTSHeader,
+		FrameDeny: opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff: opts.HttpContentTypeNosniff,
+		BrowserXssFilter: opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
+		PublicKey: opts.HttpPublicKey,
+		ReferrerPolicy: opts.HttpReferrerPolicy,
+	})
+	h := LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat)
+
 	s := &Server{
-		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat),
+		Handler: secureMiddleware.Handler(h),
 		Opts:    opts,
 	}
 	s.ListenAndServe()
