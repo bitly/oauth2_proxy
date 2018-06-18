@@ -129,6 +129,23 @@ func main() {
 	}
 	validator := NewValidator(opts.EmailDomains, opts.AuthenticatedEmailsFile)
 	bareproxy := NewOAuthProxy(opts, validator)
+
+	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
+		if len(opts.EmailDomains) > 1 {
+			bareproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.EmailDomains, ", "))
+		} else if opts.EmailDomains[0] != "*" {
+			bareproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.EmailDomains[0])
+		}
+	}
+
+	if opts.HtpasswdFile != "" {
+		log.Printf("using htpasswd file %s", opts.HtpasswdFile)
+		bareproxy.HtpasswdFile, err = NewHtpasswdFromFile(opts.HtpasswdFile)
+		bareproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
+		if err != nil {
+			log.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
+		}
+	}
 	secureMiddleware := secure.New(secure.Options{
 		AllowedHosts: opts.HttpAllowedHosts,
 		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
@@ -149,24 +166,6 @@ func main() {
 		ReferrerPolicy: opts.HttpReferrerPolicy,
 	})
 	oauthproxy := secureMiddleware.Handler(bareproxy)
-
-
-	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
-		if len(opts.EmailDomains) > 1 {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.EmailDomains, ", "))
-		} else if opts.EmailDomains[0] != "*" {
-			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.EmailDomains[0])
-		}
-	}
-
-	if opts.HtpasswdFile != "" {
-		log.Printf("using htpasswd file %s", opts.HtpasswdFile)
-		oauthproxy.HtpasswdFile, err = NewHtpasswdFromFile(opts.HtpasswdFile)
-		oauthproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
-		if err != nil {
-			log.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
-		}
-	}
 
 	s := &Server{
 		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat),
