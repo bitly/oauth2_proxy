@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/mreiferson/go-options"
+	"github.com/unrolled/secure"
 )
 
 func main() {
