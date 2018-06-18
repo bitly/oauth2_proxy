@@ -127,7 +127,28 @@ func main() {
 		os.Exit(1)
 	}
 	validator := NewValidator(opts.EmailDomains, opts.AuthenticatedEmailsFile)
-	oauthproxy := NewOAuthProxy(opts, validator)
+	bareproxy := NewOAuthProxy(opts, validator)
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts: opts.HttpAllowedHosts,
+		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
+		SSLRedirect: opts.HttpSSLRedirect,
+		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
+		SSLHost: opts.HttpSSLHost,
+		STSSeconds: opts.HttpSTSSeconds,
+		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
+		STSPreload: opts.HttpSTSPreload,
+		ForceSTSHeader: opts.HttpForceSTSHeader,
+		FrameDeny: opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff: opts.HttpContentTypeNosniff,
+		BrowserXssFilter: opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
+		PublicKey: opts.HttpPublicKey,
+		ReferrerPolicy: opts.HttpReferrerPolicy,
+	})
+	oauthproxy := secureMiddleware.Handler(bareproxy)
+
 
 	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
 		if len(opts.EmailDomains) > 1 {

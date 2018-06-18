@@ -17,7 +17,6 @@ import (
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
-	"github.com/unrolled/secure"
 )
 
 const SignatureHeader = "GAP-Signature"
@@ -118,25 +117,6 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	serveMux := http.NewServeMux()
-	secureMiddleware := secure.New(secure.Options{
-		AllowedHosts: opts.HttpAllowedHosts,
-		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
-		SSLRedirect: opts.HttpSSLRedirect,
-		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
-		SSLHost: opts.HttpSSLHost,
-		STSSeconds: opts.HttpSTSSeconds,
-		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
-		STSPreload: opts.HttpSTSPreload,
-		ForceSTSHeader: opts.HttpForceSTSHeader,
-		FrameDeny: opts.HttpFrameDeny,
-		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
-		ContentTypeNosniff: opts.HttpContentTypeNosniff,
-		BrowserXssFilter: opts.HttpBrowserXssFilter,
-		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
-		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
-		PublicKey: opts.HttpPublicKey,
-		ReferrerPolicy: opts.HttpReferrerPolicy,
-	})
 	var auth hmacauth.HmacAuth
 	if sigData := opts.signatureData; sigData != nil {
 		auth = hmacauth.NewHmacAuth(sigData.hash, []byte(sigData.key),
@@ -155,15 +135,14 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 				setProxyDirector(proxy)
 			}
 			serveMux.Handle(path,
-				secureMiddleware.Handler(&UpstreamProxy{u.Host, proxy, auth}))
+				&UpstreamProxy{u.Host, proxy, auth})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
 			}
 			log.Printf("mapping path %q => file system %q", path, u.Path)
 			proxy := NewFileServer(path, u.Path)
-			serveMux.Handle(path,
-				secureMiddleware.Handler(&UpstreamProxy{path, proxy, nil}))
+			serveMux.Handle(path, &UpstreamProxy{path, proxy, nil})
 		default:
 			panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
 		}

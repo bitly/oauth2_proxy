@@ -18,6 +18,7 @@ import (
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
 	"github.com/stretchr/testify/assert"
+	"github.com/unrolled/secure"
 )
 
 func init() {
@@ -845,7 +846,27 @@ func TestHttpBrowserXssFilterTrue(t *testing.T) {
 	opts.HttpBrowserXssFilter = true
 	opts.Validate()
 
-	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	bareproxy := NewOAuthProxy(opts, func(string) bool { return true })
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts: opts.HttpAllowedHosts,
+		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
+		SSLRedirect: opts.HttpSSLRedirect,
+		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
+		SSLHost: opts.HttpSSLHost,
+		STSSeconds: opts.HttpSTSSeconds,
+		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
+		STSPreload: opts.HttpSTSPreload,
+		ForceSTSHeader: opts.HttpForceSTSHeader,
+		FrameDeny: opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff: opts.HttpContentTypeNosniff,
+		BrowserXssFilter: opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
+		PublicKey: opts.HttpPublicKey,
+		ReferrerPolicy: opts.HttpReferrerPolicy,
+	})
+	proxy := secureMiddleware.Handler(bareproxy)
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	proxy.ServeHTTP(rw, req)
@@ -859,7 +880,27 @@ func TestHttpBrowserXssFilterFalseBydefault(t *testing.T) {
 	opts.CookieSecret = "xyzzyplugh"
 	opts.Validate()
 
-	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+	bareproxy := NewOAuthProxy(opts, func(string) bool { return true })
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts: opts.HttpAllowedHosts,
+		HostsProxyHeaders: opts.HttpHostsProxyHeaders,
+		SSLRedirect: opts.HttpSSLRedirect,
+		SSLTemporaryRedirect: opts.HttpSSLTemporaryRedirect,
+		SSLHost: opts.HttpSSLHost,
+		STSSeconds: opts.HttpSTSSeconds,
+		STSIncludeSubdomains: opts.HttpSTSIncludeSubdomains,
+		STSPreload: opts.HttpSTSPreload,
+		ForceSTSHeader: opts.HttpForceSTSHeader,
+		FrameDeny: opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff: opts.HttpContentTypeNosniff,
+		BrowserXssFilter: opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue: opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy: opts.HttpContentSecurityPolicy,
+		PublicKey: opts.HttpPublicKey,
+		ReferrerPolicy: opts.HttpReferrerPolicy,
+	})
+	proxy := secureMiddleware.Handler(bareproxy)
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	proxy.ServeHTTP(rw, req)
