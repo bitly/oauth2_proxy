@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 EXIT_CODE=0
 echo "gofmt"
 diff -u <(echo -n) <(gofmt -d $(find . -type f -name '*.go' -not -path "./vendor/*")) || EXIT_CODE=1
