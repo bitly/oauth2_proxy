@@ -80,23 +80,23 @@ type Options struct {
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
 	// These are options that allow you to tune various parameters for https://github.com/unrolled/secure
-	HttpAllowedHosts			[]string	`flag:"httpAllowedHosts" cfg:"httpAllowedHosts"`
-	HttpHostsProxyHeaders		[]string	`flag:"httpHostsProxyHeaders" cfg:"httpHostsProxyHeaders"`
-	HttpSSLRedirect				bool		`flag:"httpSSLRedirect" cfg:"httpSSLRedirect"`
-	HttpSSLTemporaryRedirect	bool		`flag:"httpSSLTemporaryRedirect" cfg:"httpSSLTemporaryRedirect"`
-	HttpSSLHost					string 		`flag:"httpSSLHost" cfg:"httpSSLHost"`
-	HttpSTSSeconds				int64 		`flag:"httpSTSSeconds" cfg:"httpSTSSeconds"`
-	HttpSTSIncludeSubdomains	bool 		`flag:"httpSTSIncludeSubdomains" cfg:"httpSTSIncludeSubdomains"`
-	HttpSTSPreload				bool		`flag:"httpSTSPreload" cfg:"httpSTSPreload"`
-	HttpForceSTSHeader			bool		`flag:"httpForceSTSHeader" cfg:"httpForceSTSHeader"`
-	HttpFrameDeny				bool		`flag:"httpFrameDeny" cfg:"httpFrameDeny"`
-	HttpCustomFrameOptionsValue	string 		`flag:"httpCustomFrameOptionsValue" cfg:"httpCustomFrameOptionsValue"`
-	HttpContentTypeNosniff		bool		`flag:"httpContentTypeNosniff" cfg:"httpContentTypeNosniff"`
-	HttpBrowserXssFilter		bool		`flag:"httpBrowserXssFilter" cfg:"httpBrowserXssFilter"`
-	HttpCustomBrowserXssValue	string 		`flag:"httpCustomBrowserXssValue" cfg:"httpCustomBrowserXssValue"`
-	HttpContentSecurityPolicy	string 		`flag:"httpContentSecurityPolicy" cfg:"httpContentSecurityPolicy"`
-	HttpPublicKey				string 		`flag:"httpPublicKey" cfg:"httpPublicKey"`
-	HttpReferrerPolicy			string 		`flag:"httpReferrerPolicy" cfg:"httpReferrerPolicy"`
+	HttpAllowedHosts            []string `flag:"httpAllowedHosts" cfg:"httpAllowedHosts"`
+	HttpHostsProxyHeaders       []string `flag:"httpHostsProxyHeaders" cfg:"httpHostsProxyHeaders"`
+	HttpSSLRedirect             bool     `flag:"httpSSLRedirect" cfg:"httpSSLRedirect"`
+	HttpSSLTemporaryRedirect    bool     `flag:"httpSSLTemporaryRedirect" cfg:"httpSSLTemporaryRedirect"`
+	HttpSSLHost                 string   `flag:"httpSSLHost" cfg:"httpSSLHost"`
+	HttpSTSSeconds              int64    `flag:"httpSTSSeconds" cfg:"httpSTSSeconds"`
+	HttpSTSIncludeSubdomains    bool     `flag:"httpSTSIncludeSubdomains" cfg:"httpSTSIncludeSubdomains"`
+	HttpSTSPreload              bool     `flag:"httpSTSPreload" cfg:"httpSTSPreload"`
+	HttpForceSTSHeader          bool     `flag:"httpForceSTSHeader" cfg:"httpForceSTSHeader"`
+	HttpFrameDeny               bool     `flag:"httpFrameDeny" cfg:"httpFrameDeny"`
+	HttpCustomFrameOptionsValue string   `flag:"httpCustomFrameOptionsValue" cfg:"httpCustomFrameOptionsValue"`
+	HttpContentTypeNosniff      bool     `flag:"httpContentTypeNosniff" cfg:"httpContentTypeNosniff"`
+	HttpBrowserXssFilter        bool     `flag:"httpBrowserXssFilter" cfg:"httpBrowserXssFilter"`
+	HttpCustomBrowserXssValue   string   `flag:"httpCustomBrowserXssValue" cfg:"httpCustomBrowserXssValue"`
+	HttpContentSecurityPolicy   string   `flag:"httpContentSecurityPolicy" cfg:"httpContentSecurityPolicy"`
+	HttpPublicKey               string   `flag:"httpPublicKey" cfg:"httpPublicKey"`
+	HttpReferrerPolicy          string   `flag:"httpReferrerPolicy" cfg:"httpReferrerPolicy"`
 
 	// internal values that are set after config validation
 	redirectURL   *url.URL
