@@ -18,6 +18,7 @@ import (
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
 	"github.com/stretchr/testify/assert"
+	"github.com/unrolled/secure"
 )
 
 func init() {
@@ -835,4 +836,74 @@ func TestRequestSignaturePostRequest(t *testing.T) {
 	st.MakeRequestWithExpectedKey("POST", payload, "foobar")
 	assert.Equal(t, 200, st.rw.Code)
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
+}
+
+func TestHttpBrowserXssFilterTrue(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.HttpBrowserXssFilter = true
+	opts.Validate()
+
+	bareproxy := NewOAuthProxy(opts, func(string) bool { return true })
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts:            opts.HttpAllowedHosts,
+		HostsProxyHeaders:       opts.HttpHostsProxyHeaders,
+		SSLRedirect:             opts.HttpSSLRedirect,
+		SSLTemporaryRedirect:    opts.HttpSSLTemporaryRedirect,
+		SSLHost:                 opts.HttpSSLHost,
+		STSSeconds:              opts.HttpSTSSeconds,
+		STSIncludeSubdomains:    opts.HttpSTSIncludeSubdomains,
+		STSPreload:              opts.HttpSTSPreload,
+		ForceSTSHeader:          opts.HttpForceSTSHeader,
+		FrameDeny:               opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff:      opts.HttpContentTypeNosniff,
+		BrowserXssFilter:        opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue:   opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy:   opts.HttpContentSecurityPolicy,
+		PublicKey:               opts.HttpPublicKey,
+		ReferrerPolicy:          opts.HttpReferrerPolicy,
+	})
+	proxy := secureMiddleware.Handler(bareproxy)
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, "1; mode=block", rw.HeaderMap.Get("X-XSS-Protection"))
+}
+
+func TestHttpBrowserXssFilterFalseBydefault(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.Validate()
+
+	bareproxy := NewOAuthProxy(opts, func(string) bool { return true })
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts:            opts.HttpAllowedHosts,
+		HostsProxyHeaders:       opts.HttpHostsProxyHeaders,
+		SSLRedirect:             opts.HttpSSLRedirect,
+		SSLTemporaryRedirect:    opts.HttpSSLTemporaryRedirect,
+		SSLHost:                 opts.HttpSSLHost,
+		STSSeconds:              opts.HttpSTSSeconds,
+		STSIncludeSubdomains:    opts.HttpSTSIncludeSubdomains,
+		STSPreload:              opts.HttpSTSPreload,
+		ForceSTSHeader:          opts.HttpForceSTSHeader,
+		FrameDeny:               opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff:      opts.HttpContentTypeNosniff,
+		BrowserXssFilter:        opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue:   opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy:   opts.HttpContentSecurityPolicy,
+		PublicKey:               opts.HttpPublicKey,
+		ReferrerPolicy:          opts.HttpReferrerPolicy,
+	})
+	proxy := secureMiddleware.Handler(bareproxy)
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, false, opts.HttpBrowserXssFilter)
+	assert.Equal(t, "", rw.HeaderMap.Get("X-XSS-Protection"))
 }

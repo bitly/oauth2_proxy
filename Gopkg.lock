@@ -20,6 +20,16 @@
   version = "v0.5.0"
 
 [[projects]]
+  name = "github.com/bitly/oauth2_proxy"
+  packages = [
+    "api",
+    "cookie",
+    "providers"
+  ]
+  revision = "b90a23473f10c7bb2d84acd033f7d7ed81b95dd3"
+  version = "v2.2"
+
+[[projects]]
   branch = "v2"
   name = "github.com/coreos/go-oidc"
   packages = ["."]
@@ -30,6 +40,12 @@
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "836bfd95fecc0f1511dd66bdbf2b5b61ab8b00b6"
+  version = "v1.2.11"
 
 [[projects]]
   branch = "master"
@@ -69,6 +85,12 @@
   packages = ["assert"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/unrolled/secure"
+  packages = ["."]
+  revision = "8287f3899c8e3d490748e18fe7d438629132914e"
 
 [[projects]]
   branch = "master"
@@ -131,12 +153,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  name = "gopkg.in/fsnotify.v1"
-  packages = ["."]
-  revision = "836bfd95fecc0f1511dd66bdbf2b5b61ab8b00b6"
-  version = "v1.2.11"
-
-[[projects]]
   name = "gopkg.in/square/go-jose.v2"
   packages = [
     ".",
@@ -149,6 +165,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b502c41a61115d14d6379be26b0300f65d173bdad852f0170d387ebf2d7ec173"
+  inputs-digest = "f9ed0c5bfe9c08fe7aa500f3b8878e13494217d0b5cdbde213325fad2d544a4c"
   solver-name = "gps-cdcl"
   solver-version = 1
