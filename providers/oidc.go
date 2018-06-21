@@ -123,3 +123,13 @@ func (p *OIDCProvider) createSessionState(token *oauth2.Token, ctx context.Conte
 		Email:        claims.Email,
 	}, nil
 }
+
+func (p *OIDCProvider) ValidateSessionState(s *SessionState) bool {
+	ctx := context.Background()
+	_, err := p.Verifier.Verify(ctx, s.IdToken)
+	if err != nil {
+		return false
+	}
+
+	return true
+}
