@@ -43,8 +43,19 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 }
 
 func (p *OIDCProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
-	if s == nil || s.ExpiresOn.After(time.Now()) || s.RefreshToken == "" {
+	// Can't refresh without the refresh token
+	if s == nil || s.RefreshToken == "" {
 		return false, nil
+	}
+
+	// If id_token hasn't expired, no need to refresh, just verify
+	if s.ExpiresOn.After(time.Now()) {
+		ctx := context.Background()
+		_, err := p.Verifier.Verify(ctx, s.IdToken)
+		if err != nil {
+			return false, fmt.Errorf("unable to verify id_token: %v", err)
+		}
+		return true, nil
 	}
 
 	origExpiration := s.ExpiresOn
