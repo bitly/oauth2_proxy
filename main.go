@@ -119,6 +119,11 @@ func main() {
 	}
 	cfg.LoadEnvForStruct(opts)
 	options.Resolve(opts, flagSet, cfg)
+	err := opts.Validate()
+	if err != nil {
+		log.Printf("%s", err)
+		os.Exit(1)
+	}
 
 	validator := NewValidator(opts.EmailDomains, opts.AuthenticatedEmailsFile)
 	oauthproxy := CreateSecureProxy(opts, validator)

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -119,11 +118,7 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 
 func CreateSecureProxy(opts *Options, validator func(string) bool) http.Handler {
 	bareproxy := NewOAuthProxy(opts, validator)
-	err := opts.Validate()
-	if err != nil {
-		log.Printf("%s", err)
-		os.Exit(1)
-	}
+	var err error
 
 	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
 		if len(opts.EmailDomains) > 1 {
