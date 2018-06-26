@@ -116,7 +116,7 @@ func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 	return http.StripPrefix(path, http.FileServer(http.Dir(filesystemPath)))
 }
 
-func CreateSecureProxy(opts *Options, validator func(string) bool) http.Handler {
+func NewSecureProxy(opts *Options, validator func(string) bool) http.Handler {
 	bareproxy := NewOAuthProxy(opts, validator)
 	var err error
 

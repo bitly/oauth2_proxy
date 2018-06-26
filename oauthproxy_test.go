@@ -846,7 +846,7 @@ func TestHttpBrowserXssFilterTrue(t *testing.T) {
 	opts.HttpBrowserXssFilter = true
 	opts.Validate()
 
-	proxy := CreateSecureProxy(opts, func(string) bool { return true })
+	proxy := NewSecureProxy(opts, func(string) bool { return true })
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	proxy.ServeHTTP(rw, req)
@@ -861,7 +861,7 @@ func TestHttpBrowserXssFilterFalseByDefault(t *testing.T) {
 	opts.EmailDomains = []string{"*"}
 	opts.Validate()
 
-	proxy := CreateSecureProxy(opts, func(string) bool { return true })
+	proxy := NewSecureProxy(opts, func(string) bool { return true })
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	proxy.ServeHTTP(rw, req)
@@ -878,7 +878,7 @@ func TestSecureRobotsTxt(t *testing.T) {
 	opts.HttpBrowserXssFilter = true
 	opts.Validate()
 
-	proxy := CreateSecureProxy(opts, func(string) bool { return true })
+	proxy := NewSecureProxy(opts, func(string) bool { return true })
 	rw := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/robots.txt", nil)
 	proxy.ServeHTTP(rw, req)
