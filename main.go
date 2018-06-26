@@ -6,12 +6,10 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mreiferson/go-options"
-	"github.com/unrolled/secure"
 )
 
 func main() {
@@ -122,50 +120,8 @@ func main() {
 	cfg.LoadEnvForStruct(opts)
 	options.Resolve(opts, flagSet, cfg)
 
-	err := opts.Validate()
-	if err != nil {
-		log.Printf("%s", err)
-		os.Exit(1)
-	}
 	validator := NewValidator(opts.EmailDomains, opts.AuthenticatedEmailsFile)
-	bareproxy := NewOAuthProxy(opts, validator)
-
-	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
-		if len(opts.EmailDomains) > 1 {
-			bareproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.EmailDomains, ", "))
-		} else if opts.EmailDomains[0] != "*" {
-			bareproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.EmailDomains[0])
-		}
-	}
-
-	if opts.HtpasswdFile != "" {
-		log.Printf("using htpasswd file %s", opts.HtpasswdFile)
-		bareproxy.HtpasswdFile, err = NewHtpasswdFromFile(opts.HtpasswdFile)
-		bareproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
-		if err != nil {
-			log.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
-		}
-	}
-	secureMiddleware := secure.New(secure.Options{
-		AllowedHosts:            opts.HttpAllowedHosts,
-		HostsProxyHeaders:       opts.HttpHostsProxyHeaders,
-		SSLRedirect:             opts.HttpSSLRedirect,
-		SSLTemporaryRedirect:    opts.HttpSSLTemporaryRedirect,
-		SSLHost:                 opts.HttpSSLHost,
-		STSSeconds:              opts.HttpSTSSeconds,
-		STSIncludeSubdomains:    opts.HttpSTSIncludeSubdomains,
-		STSPreload:              opts.HttpSTSPreload,
-		ForceSTSHeader:          opts.HttpForceSTSHeader,
-		FrameDeny:               opts.HttpFrameDeny,
-		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
-		ContentTypeNosniff:      opts.HttpContentTypeNosniff,
-		BrowserXssFilter:        opts.HttpBrowserXssFilter,
-		CustomBrowserXssValue:   opts.HttpCustomBrowserXssValue,
-		ContentSecurityPolicy:   opts.HttpContentSecurityPolicy,
-		PublicKey:               opts.HttpPublicKey,
-		ReferrerPolicy:          opts.HttpReferrerPolicy,
-	})
-	oauthproxy := secureMiddleware.Handler(bareproxy)
+	oauthproxy := CreateSecureProxy(opts, validator)
 
 	s := &Server{
 		Handler: LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat),
