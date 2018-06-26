@@ -836,3 +836,53 @@ func TestRequestSignaturePostRequest(t *testing.T) {
 	assert.Equal(t, 200, st.rw.Code)
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
 }
+
+func TestHttpBrowserXssFilterTrue(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.EmailDomains = []string{"*"}
+	opts.HttpBrowserXssFilter = true
+	opts.Validate()
+
+	proxy := CreateSecureProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, "1; mode=block", rw.HeaderMap.Get("X-XSS-Protection"))
+}
+
+func TestHttpBrowserXssFilterFalseByDefault(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.EmailDomains = []string{"*"}
+	opts.Validate()
+
+	proxy := CreateSecureProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, false, opts.HttpBrowserXssFilter)
+	assert.Equal(t, "", rw.HeaderMap.Get("X-XSS-Protection"))
+}
+
+func TestSecureRobotsTxt(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	opts.EmailDomains = []string{"*"}
+	opts.HttpBrowserXssFilter = true
+	opts.Validate()
+
+	proxy := CreateSecureProxy(opts, func(string) bool { return true })
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/robots.txt", nil)
+	proxy.ServeHTTP(rw, req)
+	assert.Equal(t, 200, rw.Code)
+	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
+	assert.Equal(t, "1; mode=block", rw.HeaderMap.Get("X-XSS-Protection"))
+}
