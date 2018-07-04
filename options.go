@@ -72,6 +72,7 @@ type Options struct {
 	ProtectedResource string `flag:"resource" cfg:"resource"`
 	ValidateURL       string `flag:"validate-url" cfg:"validate_url"`
 	Scope             string `flag:"scope" cfg:"scope"`
+	UsernameClaim     string `flag:"username-claim" cfg:"username_claim"`
 	ApprovalPrompt    string `flag:"approval-prompt" cfg:"approval_prompt"`
 
 	RequestLogging       bool   `flag:"request-logging" cfg:"request_logging"`
@@ -250,6 +251,7 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		ClientID:       o.ClientID,
 		ClientSecret:   o.ClientSecret,
 		ApprovalPrompt: o.ApprovalPrompt,
+		UsernameClaim:  o.UsernameClaim,
 	}
 	p.LoginURL, msgs = parseURL(o.LoginURL, "login", msgs)
 	p.RedeemURL, msgs = parseURL(o.RedeemURL, "redeem", msgs)

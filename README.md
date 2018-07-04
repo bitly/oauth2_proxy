@@ -222,6 +222,7 @@ Usage of oauth2_proxy:
   -tls-cert string: path to certificate file
   -tls-key string: path to private key file
   -upstream value: the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
+  -username-claim string: Claim of the id_token that contains the user name when using oidc provider
   -validate-url string: Access token validation endpoint
   -version: print version string
 ```
