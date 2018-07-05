@@ -674,6 +674,36 @@ func TestAuthOnlyEndpointSetXAuthRequestHeaders(t *testing.T) {
 	assert.Equal(t, "oauth_user@example.com", pc_test.rw.HeaderMap["X-Auth-Request-Email"][0])
 }
 
+func TestAuthOnlyEndpointSetXAccessToken(t *testing.T) {
+	var pc_test ProcessCookieTest
+
+	pc_test.opts = NewOptions()
+	pc_test.opts.SetXAccessToken = true
+	pc_test.opts.CookieSecret = "0123456789abcdefghijklmnopqrstuv"
+	pc_test.opts.Validate()
+
+	pc_test.proxy = NewOAuthProxy(pc_test.opts, func(email string) bool {
+		return pc_test.validate_user
+	})
+	pc_test.proxy.provider = &TestProvider{
+		ValidToken: true,
+	}
+
+	pc_test.validate_user = true
+
+	pc_test.rw = httptest.NewRecorder()
+	pc_test.req, _ = http.NewRequest("GET",
+		pc_test.opts.ProxyPrefix+"/auth", nil)
+
+	startSession := &providers.SessionState{
+		User: "oauth_user", Email: "oauth_user@example.com", AccessToken: "oauth_token"}
+	pc_test.SaveSession(startSession, time.Now())
+
+	pc_test.proxy.ServeHTTP(pc_test.rw, pc_test.req)
+	assert.Equal(t, http.StatusAccepted, pc_test.rw.Code)
+	assert.Equal(t, "oauth_token", pc_test.rw.HeaderMap["X-Access-Token"][0])
+}
+
 func TestAuthSkippedForPreflightRequests(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
