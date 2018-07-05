@@ -56,7 +56,7 @@ func newOidcProvider() *OIDCProvider {
 
 // reusing redeemResponse from google_test
 
-func TestUserIsBlankByDefault(t *testing.T) {
+func TestOidcProviderLeavesUserlankByDefault(t *testing.T) {
 	p := newOidcProvider()
 	body, err := json.Marshal(redeemResponse{
 		AccessToken:  "a1234",
@@ -75,7 +75,7 @@ func TestUserIsBlankByDefault(t *testing.T) {
 	assert.Equal(t, "", session.User)
 }
 
-func TestUserIsBlankIfConfiguredClaimIsMissing(t *testing.T) {
+func TestOidcProviderLeavesUserBlankIfConfiguredClaimIsMissing(t *testing.T) {
 	p := newOidcProvider()
 	p.ProviderData.UsernameClaim = "username"
 	body, err := json.Marshal(redeemResponse{
@@ -95,7 +95,7 @@ func TestUserIsBlankIfConfiguredClaimIsMissing(t *testing.T) {
 	assert.Equal(t, "", session.User)
 }
 
-func TestUserIsSetFromConfiguredClaimIfPresent(t *testing.T) {
+func TestOidcProviderSetsUserFromConfiguredClaimIfPresent(t *testing.T) {
 	p := newOidcProvider()
 	p.ProviderData.UsernameClaim = "username"
 	body, err := json.Marshal(redeemResponse{
@@ -115,7 +115,7 @@ func TestUserIsSetFromConfiguredClaimIfPresent(t *testing.T) {
 	assert.Equal(t, "jd", session.User)
 }
 
-func TestAnErrorIsReturnedIfConfiguredUsernameClaimIsNotStringValued(t *testing.T) {
+func TestOidcProviderReturnsAnErrorIfConfiguredUsernameClaimIsNotStringValued(t *testing.T) {
 	p := newOidcProvider()
 	p.ProviderData.UsernameClaim = "username"
 	body, err := json.Marshal(redeemResponse{
