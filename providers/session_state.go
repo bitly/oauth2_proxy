@@ -66,6 +66,7 @@ func (s *SessionState) EncryptedString(c *cookie.Cipher) (string, error) {
 	}
 	i := s.IdToken
 	if i != "" {
+		fmt.Printf("Encrytping ID Token")
 		if i, err = c.Encrypt(i); err != nil {
 			return "", err
 		}
