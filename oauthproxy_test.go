@@ -93,57 +93,6 @@ func TestRobotsTxt(t *testing.T) {
 	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
 }
 
-func TestIsValidRedirect(t *testing.T) {
-	opts := NewOptions()
-	opts.ClientID = "bazquux"
-	opts.ClientSecret = "foobar"
-	opts.CookieSecret = "xyzzyplugh"
-	// Should match domains that are exactly foo.bar and any subdomain of bar.foo
-	opts.WhitelistDomains = []string{"foo.bar", ".bar.foo"}
-	opts.Validate()
-
-	proxy := NewOAuthProxy(opts, func(string) bool { return true })
-
-	noRD := proxy.IsValidRedirect("")
-	assert.Equal(t, false, noRD)
-
-	singleSlash := proxy.IsValidRedirect("/redirect")
-	assert.Equal(t, true, singleSlash)
-
-	doubleSlash := proxy.IsValidRedirect("//redirect")
-	assert.Equal(t, false, doubleSlash)
-
-	validHttp := proxy.IsValidRedirect("http://foo.bar/redirect")
-	assert.Equal(t, true, validHttp)
-
-	validHttps := proxy.IsValidRedirect("https://foo.bar/redirect")
-	assert.Equal(t, true, validHttps)
-
-	invalidHttpSubdomain := proxy.IsValidRedirect("http://baz.foo.bar/redirect")
-	assert.Equal(t, false, invalidHttpSubdomain)
-
-	invalidHttpsSubdomain := proxy.IsValidRedirect("https://baz.foo.bar/redirect")
-	assert.Equal(t, false, invalidHttpsSubdomain)
-
-	validHttpSubdomain := proxy.IsValidRedirect("http://baz.bar.foo/redirect")
-	assert.Equal(t, true, validHttpSubdomain)
-
-	validHttpsSubdomain := proxy.IsValidRedirect("https://baz.bar.foo/redirect")
-	assert.Equal(t, true, validHttpsSubdomain)
-
-	invalidHttp1 := proxy.IsValidRedirect("http://foo.bar.evil.corp/redirect")
-	assert.Equal(t, false, invalidHttp1)
-
-	invalidHttps1 := proxy.IsValidRedirect("https://foo.bar.evil.corp/redirect")
-	assert.Equal(t, false, invalidHttps1)
-
-	invalidHttp2 := proxy.IsValidRedirect("http://evil.corp/redirect?rd=foo.bar")
-	assert.Equal(t, false, invalidHttp2)
-
-	invalidHttps2 := proxy.IsValidRedirect("https://evil.corp/redirect?rd=foo.bar")
-	assert.Equal(t, false, invalidHttps2)
-}
-
 func randomString(length int) string {
 	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
