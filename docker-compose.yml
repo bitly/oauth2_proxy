@@ -1,0 +1,36 @@
+version: '2'
+
+# Example oauth proxy set up using gitlab provider
+# Set the following variables in runtime or in .env file:
+# oauth2_url
+# oauth2_client_id
+# oauth2_client_secret
+# oauth2_cookie_secret
+
+services:
+  reverse-proxy:
+    image: traefik # The official Traefik docker image
+    command: --api --docker # Enables the web UI and tells Træfik to listen to docker
+    ports:
+      - "80:80"     # The HTTP port
+      - "8080:8080" # The Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+
+  whoami:
+    image: emilevauge/whoami # A container that exposes an API to show its IP address
+    labels:
+      - "traefik.frontend.rule=Host:whoami.docker.localhost"
+
+  auth:
+    build: .
+    command: ["--http-address=0.0.0.0:80", "--upstream=http://upstream:80/", "-provider=\"gitlab\"", "-redirect-url=\"https://auth.docker.localhost/oauth2/callback\"", "-login-url=\"https://${oauth2_url}/oauth/authorize\"", "-redeem-url=\"https://${oauth2_url}/oauth/token\"", "-validate-url=\"https://${oauth2_url}/api/v4/user\"", "-email-domain=*", "-cookie-secure=true", "-pass-access-token=true", "-pass-basic-auth=false", "-pass-host-header=true", "-pass-user-headers=true"]
+    environment:
+      OAUTH2_PROXY_CLIENT_ID: "${oauth2_client_id}"
+      OAUTH2_PROXY_CLIENT_SECRET: "${oauth2_client_secret}"
+      OAUTH2_PROXY_COOKIE_SECRET: "${oauth2_cookie_secret}"
+    links:
+    - "whoami:upstream"
+    labels:
+      - "traefik.frontend.rule=Host:auth.docker.localhost"
+
