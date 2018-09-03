@@ -1,4 +1,5 @@
-FROM golang:1.9 AS builder
+FROM golang:1.11-alpine3.8 AS builder
+
 WORKDIR /go/src/github.com/bitly/oauth2_proxy
 COPY . .
 RUN go get -d -v; \

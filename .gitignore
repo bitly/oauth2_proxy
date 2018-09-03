@@ -29,3 +29,5 @@ _testmain.go
 
 # Editor swap/temp files
 .*.swp
+
+.idea
