@@ -102,14 +102,14 @@ The Azure AD auth provider uses `openid` as it default scope. It uses `https://g
 
 The GitHub auth provider supports two additional parameters to restrict authentication to Organization or Team level access. Restricting by org and team is normally accompanied with `--email-domain=*`
 
-    -github-org="": restrict logins to members of this organisation
-    -github-team="": restrict logins to members of any of these teams (slug), separated by a comma
+    --github-org="": restrict logins to members of this organisation
+    --github-team="": restrict logins to members of any of these teams (slug), separated by a comma
 
 If you are using GitHub enterprise, make sure you set the following to the appropriate url:
 
-    -login-url="http(s)://<enterprise github host>/login/oauth/authorize"
-    -redeem-url="http(s)://<enterprise github host>/login/oauth/access_token"
-    -validate-url="http(s)://<enterprise github host>/api/v3"
+    --login-url="http(s)://<enterprise github host>/login/oauth/authorize"
+    --redeem-url="http(s)://<enterprise github host>/login/oauth/access_token"
+    --validate-url="http(s)://<enterprise github host>/api/v3"
 
 ### GitLab Auth Provider
 
@@ -117,9 +117,9 @@ Whether you are using GitLab.com or self-hosting GitLab, follow [these steps to 
 
 If you are using self-hosted GitLab, make sure you set the following to the appropriate URL:
 
-    -login-url="<your gitlab url>/oauth/authorize"
-    -redeem-url="<your gitlab url>/oauth/token"
-    -validate-url="<your gitlab url>/api/v4/user"
+    --login-url="<your gitlab url>/oauth/authorize"
+    --redeem-url="<your gitlab url>/oauth/token"
+    --validate-url="<your gitlab url>/api/v4/user"
 
 
 ### LinkedIn Auth Provider
@@ -147,13 +147,13 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
 2. Setup oauth2_proxy with the correct provider and using the default ports and callbacks.
 3. Login with the fixture use in the dex guide and run the oauth2_proxy with the following args:
 
-    -provider oidc
-    -client-id oauth2_proxy
-    -client-secret proxy
-    -redirect-url http://127.0.0.1:4180/oauth2/callback
-    -oidc-issuer-url http://127.0.0.1:5556
-    -cookie-secure=false
-    -email-domain example.com
+    --provider oidc
+    --client-id oauth2_proxy
+    --client-secret proxy
+    --redirect-url http://127.0.0.1:4180/oauth2/callback
+    --oidc-issuer-url http://127.0.0.1:5556
+    --cookie-secure=false
+    --email-domain example.com
 
 ## Email Authentication
 
@@ -173,57 +173,57 @@ An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is i
 
 ```
 Usage of oauth2_proxy:
-  -approval-prompt string: OAuth approval_prompt (default "force")
-  -authenticated-emails-file string: authenticate against emails via file (one per line)
-  -azure-tenant string: go to a tenant-specific or common (tenant-independent) endpoint. (default "common")
-  -basic-auth-password string: the password to set when passing the HTTP Basic Auth header
-  -client-id string: the OAuth Client ID: ie: "123456.apps.googleusercontent.com"
-  -client-secret string: the OAuth Client Secret
-  -config string: path to config file
-  -cookie-domain string: an optional cookie domain to force cookies to (ie: .yourcompany.com)
-  -cookie-expire duration: expire timeframe for cookie (default 168h0m0s)
-  -cookie-httponly: set HttpOnly cookie flag (default true)
-  -cookie-name string: the name of the cookie that the oauth_proxy creates (default "_oauth2_proxy")
-  -cookie-refresh duration: refresh the cookie after this duration; 0 to disable
-  -cookie-secret string: the seed string for secure cookies (optionally base64 encoded)
-  -cookie-secure: set secure (HTTPS) cookie flag (default true)
-  -custom-templates-dir string: path to custom html templates
-  -display-htpasswd-form: display username / password login form if an htpasswd file is provided (default true)
-  -email-domain value: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
-  -footer string: custom footer string. Use "-" to disable default footer.
-  -github-org string: restrict logins to members of this organisation
-  -github-team string: restrict logins to members of any of these teams (slug), separated by a comma
-  -google-admin-email string: the google admin to impersonate for api calls
-  -google-group value: restrict logins to members of this google group (may be given multiple times).
-  -google-service-account-json string: the path to the service account json credentials
-  -htpasswd-file string: additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
-  -http-address string: [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients (default "127.0.0.1:4180")
-  -https-address string: <addr>:<port> to listen on for HTTPS clients (default ":443")
-  -login-url string: Authentication endpoint
-  -pass-access-token: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
-  -pass-basic-auth: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
-  -pass-host-header: pass the request Host Header to upstream (default true)
-  -pass-user-headers: pass X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
-  -profile-url string: Profile access endpoint
-  -provider string: OAuth provider (default "google")
-  -proxy-prefix string: the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in) (default "/oauth2")
-  -redeem-url string: Token redemption endpoint
-  -redirect-url string: the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
-  -request-logging: Log requests to stdout (default true)
-  -request-logging-format: Template for request log lines (see "Logging Format" paragraph below)
-  -resource string: The resource that is protected (Azure AD only)
-  -scope string: OAuth scope specification
-  -set-xauthrequest: set X-Auth-Request-User and X-Auth-Request-Email response headers (useful in Nginx auth_request mode)
-  -signature-key string: GAP-Signature request signature key (algorithm:secretkey)
-  -skip-auth-preflight: will skip authentication for OPTIONS requests
-  -skip-auth-regex value: bypass authentication for requests path's that match (may be given multiple times)
-  -skip-provider-button: will skip sign-in-page to directly reach the next step: oauth/start
-  -ssl-insecure-skip-verify: skip validation of certificates presented when using HTTPS
-  -tls-cert string: path to certificate file
-  -tls-key string: path to private key file
-  -upstream value: the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
-  -validate-url string: Access token validation endpoint
-  -version: print version string
+  --approval-prompt string: OAuth approval_prompt (default "force")
+  --authenticated-emails-file string: authenticate against emails via file (one per line)
+  --azure-tenant string: go to a tenant-specific or common (tenant-independent) endpoint. (default "common")
+  --basic-auth-password string: the password to set when passing the HTTP Basic Auth header
+  --client-id string: the OAuth Client ID: ie: "123456.apps.googleusercontent.com"
+  --client-secret string: the OAuth Client Secret
+  --config string: path to config file
+  --cookie-domain string: an optional cookie domain to force cookies to (ie: .yourcompany.com)
+  --cookie-expire duration: expire timeframe for cookie (default 168h0m0s)
+  --cookie-httponly: set HttpOnly cookie flag (default true)
+  --cookie-name string: the name of the cookie that the oauth_proxy creates (default "_oauth2_proxy")
+  --cookie-refresh duration: refresh the cookie after this duration; 0 to disable
+  --cookie-secret string: the seed string for secure cookies (optionally base64 encoded)
+  --cookie-secure: set secure (HTTPS) cookie flag (default true)
+  --custom-templates-dir string: path to custom html templates
+  --display-htpasswd-form: display username / password login form if an htpasswd file is provided (default true)
+  --email-domain value: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
+  --footer string: custom footer string. Use "-" to disable default footer.
+  --github-org string: restrict logins to members of this organisation
+  --github-team string: restrict logins to members of any of these teams (slug), separated by a comma
+  --google-admin-email string: the google admin to impersonate for api calls
+  --google-group value: restrict logins to members of this google group (may be given multiple times).
+  --google-service-account-json string: the path to the service account json credentials
+  --htpasswd-file string: additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
+  --http-address string: [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients (default "127.0.0.1:4180")
+  --https-address string: <addr>:<port> to listen on for HTTPS clients (default ":443")
+  --login-url string: Authentication endpoint
+  --pass-access-token: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
+  --pass-basic-auth: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
+  --pass-host-header: pass the request Host Header to upstream (default true)
+  --pass-user-headers: pass X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
+  --profile-url string: Profile access endpoint
+  --provider string: OAuth provider (default "google")
+  --proxy-prefix string: the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in) (default "/oauth2")
+  --redeem-url string: Token redemption endpoint
+  --redirect-url string: the OAuth Redirect URL. ie: "https://internalapp.yourcompany.com/oauth2/callback"
+  --request-logging: Log requests to stdout (default true)
+  --request-logging-format: Template for request log lines (see "Logging Format" paragraph below)
+  --resource string: The resource that is protected (Azure AD only)
+  --scope string: OAuth scope specification
+  --set-xauthrequest: set X-Auth-Request-User and X-Auth-Request-Email response headers (useful in Nginx auth_request mode)
+  --signature-key string: GAP-Signature request signature key (algorithm:secretkey)
+  --skip-auth-preflight: will skip authentication for OPTIONS requests
+  --skip-auth-regex value: bypass authentication for requests path's that match (may be given multiple times)
+  --skip-provider-button: will skip sign-in-page to directly reach the next step: oauth/start
+  --ssl-insecure-skip-verify: skip validation of certificates presented when using HTTPS
+  --tls-cert string: path to certificate file
+  --tls-key string: path to private key file
+  --upstream value: the http url(s) of the upstream endpoint or file:// paths for static files. Routing is based on the path
+  --validate-url string: Access token validation endpoint
+  --version: print version string
 ```
 
 See below for provider specific options
