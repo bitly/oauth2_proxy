@@ -162,9 +162,12 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 				sess.Config.Region = aws.String(opts.SignAWSRequestRegion)
 
 				signer = v4.NewSigner(sess.Config.Credentials)
+
+				serveMux.Handle(path,
+					&UpstreamProxy{u.Host, proxy, auth, signer, opts.SignAWSRequestRegion, opts.SignAWSRequestService})
+			} else {
+				serveMux.Handle(path, &UpstreamProxy{u.Host, proxy, nil, nil, "", ""})
 			}
-			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, auth, signer, opts.SignAWSRequestRegion, opts.SignAWSRequestService})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
