@@ -12,7 +12,7 @@ RUN apt-get update && \
     export GNUPGHOME="$(mktemp -d)" && \
     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
     gpg --batch --verify /gosu.asc /gosu && \
-    rm -r "$GNUPGHOME" /gosu.asc && \
+    rm -r /gosu.asc && \
     chmod +x /gosu && \
     /gosu nobody true
 
