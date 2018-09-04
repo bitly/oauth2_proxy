@@ -3,9 +3,6 @@ FROM golang:latest
 # Install dep
 RUN go get -u github.com/golang/dep/cmd/dep
 
-# Install upx, a Linux binary compression util
-RUN apt-get update && apt-get install -y upx
-
 WORKDIR /go/src
 COPY . github.com/webflow/oauth2_proxy
 WORKDIR /go/src/github.com/webflow/oauth2_proxy
@@ -15,6 +12,3 @@ RUN dep ensure -v
 
 # Build and strip our binary
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X main.Version=`git log --pretty=format:'%h' -n 1`" -a -installsuffix cgo -o oauth2_proxy .
-
-# Compress the binary with upx
-RUN upx oauth2_proxy

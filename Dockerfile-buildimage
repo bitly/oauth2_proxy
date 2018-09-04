@@ -5,7 +5,7 @@ ENV GOSU_VERSION 1.10
 RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get -y dist-upgrade && \
-    apt-get install -y curl && \
+    apt-get install -y curl gnupg && \
     dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')" && \
     curl -L -o /gosu "https://github.com/tianon/gosu/releases/download/1.10/gosu-${dpkgArch}" && \
     curl -L -o /gosu.asc "https://github.com/tianon/gosu/releases/download/1.10/gosu-${dpkgArch}.asc" && \
