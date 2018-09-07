@@ -81,6 +81,8 @@ func main() {
 
 	flagSet.String("signature-key", "", "GAP-Signature request signature key (algorithm:secretkey)")
 
+	flagSet.Bool("auth-request-mode",false, "proxy used with NGINX auth_request, so no upstream needed")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
