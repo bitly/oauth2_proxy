@@ -78,3 +78,9 @@
 # cookie_refresh = ""
 # cookie_secure = true
 # cookie_httponly = true
+
+# Additional conf required by DigntTalk provider
+# dingtalk_corpid = "ding07511073f402a4e035c2f4657eb2321f"
+# dingtalk_corpsecret = ""
+# fully qualified name of department separated by '/' if you need limit to be logged in by given departments
+# dingtalk_departments = [ "xx公司/yy部门/zz组" ]
