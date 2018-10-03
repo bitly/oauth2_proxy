@@ -49,6 +49,7 @@ type Options struct {
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 
 	Upstreams             []string `flag:"upstream" cfg:"upstreams"`
+	ForbiddenMethods      []string `flag:"forbidden-methods" cfg:"forbidden_methods"`
 	SkipAuthRegex         []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`
@@ -76,11 +77,12 @@ type Options struct {
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
 	// internal values that are set after config validation
-	redirectURL   *url.URL
-	proxyURLs     []*url.URL
-	CompiledRegex []*regexp.Regexp
-	provider      providers.Provider
-	signatureData *SignatureData
+	redirectURL          *url.URL
+	proxyURLs            []*url.URL
+	CompiledRegex        []*regexp.Regexp
+	provider             providers.Provider
+	signatureData        *SignatureData
+	ForbiddenHttpMethods map[string]string
 }
 
 type SignatureData struct {
@@ -150,6 +152,11 @@ func (o *Options) Validate() error {
 			upstreamURL.Path = "/"
 		}
 		o.proxyURLs = append(o.proxyURLs, upstreamURL)
+	}
+
+	ForbiddenHttpMethods = make(map[string]string)
+	for _, u := range o.ForbiddenMethods {
+		ForbiddenHttpMethods[u] = u
 	}
 
 	for _, u := range o.SkipAuthRegex {

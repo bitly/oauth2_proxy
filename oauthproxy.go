@@ -45,13 +45,14 @@ type OAuthProxy struct {
 	CookieRefresh  time.Duration
 	Validator      func(string) bool
 
-	RobotsPath        string
-	PingPath          string
-	SignInPath        string
-	SignOutPath       string
-	OAuthStartPath    string
-	OAuthCallbackPath string
-	AuthOnlyPath      string
+	RobotsPath           string
+	PingPath             string
+	SignInPath           string
+	SignOutPath          string
+	OAuthStartPath       string
+	OAuthCallbackPath    string
+	AuthOnlyPath         string
+	ForbiddenHttpMethods map[string]string
 
 	redirectURL         *url.URL // the url to receive requests at
 	provider            providers.Provider
@@ -186,13 +187,14 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieRefresh:  opts.CookieRefresh,
 		Validator:      validator,
 
-		RobotsPath:        "/robots.txt",
-		PingPath:          "/ping",
-		SignInPath:        fmt.Sprintf("%s/sign_in", opts.ProxyPrefix),
-		SignOutPath:       fmt.Sprintf("%s/sign_out", opts.ProxyPrefix),
-		OAuthStartPath:    fmt.Sprintf("%s/start", opts.ProxyPrefix),
-		OAuthCallbackPath: fmt.Sprintf("%s/callback", opts.ProxyPrefix),
-		AuthOnlyPath:      fmt.Sprintf("%s/auth", opts.ProxyPrefix),
+		RobotsPath:           "/robots.txt",
+		PingPath:             "/ping",
+		SignInPath:           fmt.Sprintf("%s/sign_in", opts.ProxyPrefix),
+		SignOutPath:          fmt.Sprintf("%s/sign_out", opts.ProxyPrefix),
+		OAuthStartPath:       fmt.Sprintf("%s/start", opts.ProxyPrefix),
+		OAuthCallbackPath:    fmt.Sprintf("%s/callback", opts.ProxyPrefix),
+		AuthOnlyPath:         fmt.Sprintf("%s/auth", opts.ProxyPrefix),
+		ForbiddenHttpMethods: opts.ForbiddenHttpMethods
 
 		ProxyPrefix:        opts.ProxyPrefix,
 		provider:           opts.provider,
@@ -465,7 +467,11 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.AuthOnlyPath:
 		p.AuthenticateOnly(rw, req)
 	default:
-		p.Proxy(rw, req)
+		if method, ok := ForbiddenHttpMethods[req.Method]; ok {
+			p.ErrorPage(rw, 403, "Permission Denied", "http method not allowed")
+		} else {
+			p.Proxy(rw, req)
+		}
 	}
 }
 

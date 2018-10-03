@@ -175,6 +175,7 @@ Usage of oauth2_proxy:
   -display-htpasswd-form: display username / password login form if an htpasswd file is provided (default true)
   -email-domain value: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
   -footer string: custom footer string. Use "-" to disable default footer.
+  -forbidden-methods: http method that will return a 403 forbidden (may be given multiple times)
   -github-org string: restrict logins to members of this organisation
   -github-team string: restrict logins to members of this team
   -google-admin-email string: the google admin to impersonate for api calls
