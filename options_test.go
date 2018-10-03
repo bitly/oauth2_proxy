@@ -96,6 +96,21 @@ func TestProxyURLs(t *testing.T) {
 	assert.Equal(t, expected, o.proxyURLs)
 }
 
+func TestForbiddenHttpMethods(t *testing.T) {
+	o := testOptions()
+	o.ForbiddenMethods = [2]string{"GET", "POST"}
+
+	assert.Equal(t, nil, o.Validate())
+	for _, method := range forbiddenMethods {
+		if method, ok := o.ForbiddenHttpMethods[method]; ok {
+			assert.Equal(t, true, ok)
+	}
+
+	o.ForbiddenMethods = []string{}
+	assert.Equal(t, nil, o.Validate())
+	assert.Equal(t, len(o.ForbiddenHttpMethods), 0)
+}
+
 func TestCompiledRegex(t *testing.T) {
 	o := testOptions()
 	regexps := []string{"/foo/.*", "/ba[rz]/quux"}
