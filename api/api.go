@@ -16,13 +16,14 @@ func Request(req *http.Request) (*simplejson.Json, error) {
 		log.Printf("%s %s %s", req.Method, req.URL, err)
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	log.Printf("%d %s %s %s", resp.StatusCode, req.Method, req.URL, body)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("got %d %s", resp.StatusCode, body)
 	}
 	data, err := simplejson.NewJson(body)
@@ -38,13 +39,14 @@ func RequestJson(req *http.Request, v interface{}) error {
 		log.Printf("%s %s %s", req.Method, req.URL, err)
 		return err
 	}
+	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	log.Printf("%d %s %s %s", resp.StatusCode, req.Method, req.URL, body)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("got %d %s", resp.StatusCode, body)
 	}
 	return json.Unmarshal(body, v)
