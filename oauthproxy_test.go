@@ -92,6 +92,57 @@ func TestRobotsTxt(t *testing.T) {
 	assert.Equal(t, "User-agent: *\nDisallow: /", rw.Body.String())
 }
 
+func TestIsValidRedirect(t *testing.T) {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "foobar"
+	opts.CookieSecret = "xyzzyplugh"
+	// Should match domains that are exactly foo.bar and any subdomain of bar.foo
+	opts.WhitelistDomains = []string{"foo.bar", ".bar.foo"}
+	opts.Validate()
+
+	proxy := NewOAuthProxy(opts, func(string) bool { return true })
+
+	noRD := proxy.IsValidRedirect("")
+	assert.Equal(t, false, noRD)
+
+	singleSlash := proxy.IsValidRedirect("/redirect")
+	assert.Equal(t, true, singleSlash)
+
+	doubleSlash := proxy.IsValidRedirect("//redirect")
+	assert.Equal(t, false, doubleSlash)
+
+	validHttp := proxy.IsValidRedirect("http://foo.bar/redirect")
+	assert.Equal(t, true, validHttp)
+
+	validHttps := proxy.IsValidRedirect("https://foo.bar/redirect")
+	assert.Equal(t, true, validHttps)
+
+	invalidHttpSubdomain := proxy.IsValidRedirect("http://baz.foo.bar/redirect")
+	assert.Equal(t, false, invalidHttpSubdomain)
+
+	invalidHttpsSubdomain := proxy.IsValidRedirect("https://baz.foo.bar/redirect")
+	assert.Equal(t, false, invalidHttpsSubdomain)
+
+	validHttpSubdomain := proxy.IsValidRedirect("http://baz.bar.foo/redirect")
+	assert.Equal(t, true, validHttpSubdomain)
+
+	validHttpsSubdomain := proxy.IsValidRedirect("https://baz.bar.foo/redirect")
+	assert.Equal(t, true, validHttpsSubdomain)
+
+	invalidHttp1 := proxy.IsValidRedirect("http://foo.bar.evil.corp/redirect")
+	assert.Equal(t, false, invalidHttp1)
+
+	invalidHttps1 := proxy.IsValidRedirect("https://foo.bar.evil.corp/redirect")
+	assert.Equal(t, false, invalidHttps1)
+
+	invalidHttp2 := proxy.IsValidRedirect("http://evil.corp/redirect?rd=foo.bar")
+	assert.Equal(t, false, invalidHttp2)
+
+	invalidHttps2 := proxy.IsValidRedirect("https://evil.corp/redirect?rd=foo.bar")
+	assert.Equal(t, false, invalidHttps2)
+}
+
 type TestProvider struct {
 	*providers.ProviderData
 	EmailAddress string
@@ -504,7 +555,7 @@ func NewProcessCookieTestWithDefaults() *ProcessCookieTest {
 	})
 }
 
-func (p *ProcessCookieTest) MakeCookie(value string, ref time.Time) *http.Cookie {
+func (p *ProcessCookieTest) MakeCookie(value string, ref time.Time) []*http.Cookie {
 	return p.proxy.MakeSessionCookie(p.req, value, p.opts.CookieExpire, ref)
 }
 
@@ -513,7 +564,9 @@ func (p *ProcessCookieTest) SaveSession(s *providers.SessionState, ref time.Time
 	if err != nil {
 		return err
 	}
-	p.req.AddCookie(p.proxy.MakeSessionCookie(p.req, value, p.proxy.CookieExpire, ref))
+	for _, c := range p.proxy.MakeSessionCookie(p.req, value, p.proxy.CookieExpire, ref) {
+		p.req.AddCookie(c)
+	}
 	return nil
 }
 
@@ -802,8 +855,9 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	if err != nil {
 		panic(err)
 	}
-	cookie := proxy.MakeSessionCookie(req, value, proxy.CookieExpire, time.Now())
-	req.AddCookie(cookie)
+	for _, c := range proxy.MakeSessionCookie(req, value, proxy.CookieExpire, time.Now()) {
+		req.AddCookie(c)
+	}
 	// This is used by the upstream to validate the signature.
 	st.authenticator.auth = hmacauth.NewHmacAuth(
 		crypto.SHA1, []byte(key), SignatureHeader, SignatureHeaders)
