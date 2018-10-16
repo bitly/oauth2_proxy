@@ -1,6 +1,8 @@
 steps:
   - label : ":oauth2_proxy: Build Binary"
     command: "./.buildkite/build-binary.sh"
+    agents:
+      queue: 'autoscaling-build-cluster'
 
   - wait
 
@@ -9,3 +11,5 @@ steps:
     env:
       IMAGE_NAME: 024376647576.dkr.ecr.us-east-1.amazonaws.com/oauth2_proxy
       AWS_ECR_LOGIN: true
+    agents:
+      queue: 'autoscaling-build-cluster'

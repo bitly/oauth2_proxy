@@ -10,6 +10,8 @@ if [ -z "$DOCKERFILE" ]; then
   DOCKERFILE="Dockerfile-buildimage"
 fi
 
+eval $(aws ecr get-login --no-include-email --region us-east-1) 
+
 # Pull the latest branch tag for caching, if it exists
 IMAGE_EXISTS=1
 docker pull $IMAGE_NAME:$IMAGE_TAG || IMAGE_EXISTS=0
@@ -38,6 +40,7 @@ buildkite-agent artifact download oauth2_proxy .
 
 # Build the new image
 docker build \
+  --network host \
   --cache-from $IMAGE_NAME:$CACHE_TAG \
   --tag $IMAGE_NAME:$IMAGE_TAG \
   $EXTRA_TAGS \
