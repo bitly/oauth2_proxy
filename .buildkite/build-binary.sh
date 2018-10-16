@@ -21,7 +21,7 @@ git log -1 > build/public/REVISION.txt
 
 # Build the new image
 docker build \
-  --network host
+  --network host \
   --cache-from $IMAGE_NAME:$CACHE_TAG \
   --tag $IMAGE_NAME:$IMAGE_TAG \
   $EXTRA_TAGS \
