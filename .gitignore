@@ -29,3 +29,6 @@ _testmain.go
 
 # Editor swap/temp files
 .*.swp
+
+# Docker Compose environment variables
+.env
