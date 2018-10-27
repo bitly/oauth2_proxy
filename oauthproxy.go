@@ -16,6 +16,8 @@ import (
 
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/gorilla/websocket"
+	"github.com/koding/websocketproxy"
 	"github.com/mbland/hmacauth"
 )
 
@@ -89,10 +91,27 @@ func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	u.handler.ServeHTTP(w, r)
 }
 
-func NewReverseProxy(target *url.URL) (proxy *httputil.ReverseProxy) {
-	return httputil.NewSingleHostReverseProxy(target)
+type ReverseProxy struct {
+	*httputil.ReverseProxy
+	wsProxy *websocketproxy.WebsocketProxy
 }
-func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
+
+func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	if websocket.IsWebSocketUpgrade(req) {
+		p.wsProxy.ServeHTTP(rw, req)
+	} else {
+		p.ReverseProxy.ServeHTTP(rw, req)
+	}
+}
+
+func NewReverseProxy(target *url.URL) *ReverseProxy {
+	return &ReverseProxy{
+		ReverseProxy: httputil.NewSingleHostReverseProxy(target),
+		wsProxy:      websocketproxy.NewProxy(target),
+	}
+}
+
+func setProxyUpstreamHostHeader(proxy *ReverseProxy, target *url.URL) {
 	director := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		director(req)
@@ -102,7 +121,7 @@ func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
 		req.URL.RawQuery = ""
 	}
 }
-func setProxyDirector(proxy *httputil.ReverseProxy) {
+func setProxyDirector(proxy *ReverseProxy) {
 	director := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		director(req)
