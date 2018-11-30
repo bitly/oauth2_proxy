@@ -469,7 +469,7 @@ func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	case path == p.SignOutPath:
 		p.SignOut(rw, req)
 	case path == p.OAuthStartPath:
-		p.OAuthStart(rw, req)
+		p.OAuthStart(rw, req, "")
 	case path == p.OAuthCallbackPath:
 		p.OAuthCallback(rw, req)
 	case path == p.AuthOnlyPath:
@@ -493,7 +493,7 @@ func (p *OAuthProxy) SignIn(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, redirect, 302)
 	} else {
 		if p.SkipProviderButton {
-			p.OAuthStart(rw, req)
+			p.OAuthStart(rw, req, "")
 		} else {
 			p.SignInPage(rw, req, http.StatusOK)
 		}
@@ -505,17 +505,20 @@ func (p *OAuthProxy) SignOut(rw http.ResponseWriter, req *http.Request) {
 	http.Redirect(rw, req, "/", 302)
 }
 
-func (p *OAuthProxy) OAuthStart(rw http.ResponseWriter, req *http.Request) {
+func (p *OAuthProxy) OAuthStart(rw http.ResponseWriter, req *http.Request, redirect string) {
 	nonce, err := cookie.Nonce()
 	if err != nil {
 		p.ErrorPage(rw, 500, "Internal Error", err.Error())
 		return
 	}
 	p.SetCSRFCookie(rw, req, nonce)
-	redirect, err := p.GetRedirect(req)
-	if err != nil {
-		p.ErrorPage(rw, 500, "Internal Error", err.Error())
-		return
+	// If not explicitly told where to redirect, try to get it from form parameters.
+	if redirect == "" {
+		redirect, err = p.GetRedirect(req)
+		if err != nil {
+			p.ErrorPage(rw, 500, "Internal Error", err.Error())
+			return
+		}
 	}
 	redirectURI := p.GetRedirectURI(req.Host)
 	http.Redirect(rw, req, p.provider.GetLoginURL(redirectURI, fmt.Sprintf("%v:%v", nonce, redirect)), 302)
@@ -598,7 +601,8 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 			"Internal Error", "Internal Error")
 	} else if status == http.StatusForbidden {
 		if p.SkipProviderButton {
-			p.OAuthStart(rw, req)
+			// Start OAuth but redirect back to this URI when complete
+			p.OAuthStart(rw, req, req.URL.RequestURI())
 		} else {
 			p.SignInPage(rw, req, http.StatusForbidden)
 		}

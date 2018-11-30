@@ -440,11 +440,19 @@ func TestSignInPageSkipProvider(t *testing.T) {
 		t.Fatal("Did not find pattern in body: " +
 			signInSkipProvider + "\nBody:\n" + body)
 	}
+
+	// State is a hex nonce, a colon (encoded as %3A), plus an escaped redirect path.
+	source_page_re := regexp.MustCompile("state=[0-9a-f]+%3A" + url.PathEscape(endpoint) + `[;"]`)
+	source_page_match := source_page_re.FindStringSubmatch(body)
+	if source_page_match == nil {
+		t.Fatal("Callback state should include redirect to original endpoint: " +
+			source_page_re.String() + "\nBody:\n" + body)
+	}
 }
 
 func TestSignInPageSkipProviderDirect(t *testing.T) {
 	sip_test := NewSignInPageTest(true)
-	const endpoint = "/sign_in"
+	const endpoint = "/oauth2/sign_in"
 
 	code, body := sip_test.GetEndpoint(endpoint)
 	assert.Equal(t, 302, code)
@@ -453,6 +461,14 @@ func TestSignInPageSkipProviderDirect(t *testing.T) {
 	if match == nil {
 		t.Fatal("Did not find pattern in body: " +
 			signInSkipProvider + "\nBody:\n" + body)
+	}
+
+	// State is a hex nonce, a colon (encoded as %3A), plus an escaped redirect path.
+	source_page_re := regexp.MustCompile(`state=[0-9a-f]+%3A%2F[;"]`)
+	source_page_match := source_page_re.FindStringSubmatch(body)
+	if source_page_match == nil {
+		t.Fatal("Callback state should include redirect to /: " +
+			source_page_re.String() + "\nBody:\n" + body)
 	}
 }
 
