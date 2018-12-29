@@ -4,16 +4,59 @@ oauth2_proxy
 A reverse proxy and static file server that provides authentication using Providers (Google, GitHub, and others)
 to validate accounts by email, domain or group.
 
-[![Build Status](https://secure.travis-ci.org/bitly/oauth2_proxy.svg?branch=master)](http://travis-ci.org/bitly/oauth2_proxy)
-
-
 ![Sign In Page](https://cloud.githubusercontent.com/assets/45028/4970624/7feb7dd8-6886-11e4-93e0-c9904af44ea8.png)
+
+## Forked from bitly
+
+This is a fork of https://github.com/bitly project, from master branch.  
+We have added for now : 
+ - Decathlon FEDID support through new provider code.
+ - Dockerfile
+
+## Installation (from dktunited repo)
+
+### Using Docker
+
+```
+git clone git@github.com:dktunited/oauth2_proxy.git
+cd oauth2_proxy
+docker build -f docker/Dockerfile -t decathlon/oauth2_proxy:latest .
+docker run -p 4180:4180 \ 
+           -e OAUTH2_PROXY_COOKIE_SECRET=my-cookie-secret \
+           -e OAUTH2_PROXY_CLIENT_ID=my-client-id \
+           -e OAUTH2_PROXY_CLIENT_SECRET=my-clientid-secret \
+           --name oauth2_proxy \
+           decathlon/oauth2_proxy:latest
+```
+
+### Using Golang 
+
+> Requirements : git, docker
+> * Golang: https://golang.org/doc/install
+```
+git clone --origin dktunited git@github.com:dktunited/oauth2_proxy.git $GOPATH/src/github.com/bitly/oauth2_proxy
+cd $GOPATH/src/github.com/bitly/oauth2_proxy
+git remote add origin https://github.com/bitly/oauth2_proxy.git
+go install
+$GOPATH/bin/oauth2_proxy \
+  --upstream=http://localhost:8000/ \
+  --provider=decathlon \
+  --skip-provider-button=true \
+  --oidc-issuer-url=https://preprod.idpdecathlon.oxylane.com \
+  --email-domain="decathlon.com"  \
+  --email-domain="oxylane.com"  \
+  --http-address=0.0.0.0:4180 \
+  --cookie-secure=false \
+  --cookie-secret="my-cookie-secret" \
+  --client-id=my-client-id \
+  --client-secret=my-client-secret 
+```
 
 ## Architecture
 
 ![OAuth2 Proxy Architecture](https://cloud.githubusercontent.com/assets/45028/8027702/bd040b7a-0d6a-11e5-85b9-f8d953d04f39.png)
 
-## Installation
+## Installation (from original repo)
 
 1. Download [Prebuilt Binary](https://github.com/bitly/oauth2_proxy/releases) (current release is `v2.2`) or build with `$ go get github.com/bitly/oauth2_proxy` which will put the binary in `$GOROOT/bin`
 Prebuilt binaries can be validated by extracting the file and verifying it against the `sha256sum.txt` checksum file provided for each release starting with version `v2.3`.
