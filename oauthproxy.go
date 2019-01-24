@@ -75,18 +75,22 @@ type OAuthProxy struct {
 }
 
 type UpstreamProxy struct {
-	upstream string
+	upstream url.URL
 	handler  http.Handler
 	auth     hmacauth.HmacAuth
 }
 
 func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("GAP-Upstream-Address", u.upstream)
+	w.Header().Set("GAP-Upstream-Address", u.upstream.Host)
 	if u.auth != nil {
 		r.Header.Set("GAP-Auth", w.Header().Get("GAP-Auth"))
 		u.auth.SignRequest(r)
 	}
-	u.handler.ServeHTTP(w, r)
+	if isWebsocketRequest(r) {
+		u.handleWebsocket(w, r)
+	} else {
+		u.handler.ServeHTTP(w, r)
+	}
 }
 
 func NewReverseProxy(target *url.URL) (proxy *httputil.ReverseProxy) {
@@ -135,14 +139,14 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 				setProxyDirector(proxy)
 			}
 			serveMux.Handle(path,
-				&UpstreamProxy{u.Host, proxy, auth})
+				&UpstreamProxy{*u, proxy, auth})
 		case "file":
 			if u.Fragment != "" {
 				path = u.Fragment
 			}
 			log.Printf("mapping path %q => file system %q", path, u.Path)
 			proxy := NewFileServer(path, u.Path)
-			serveMux.Handle(path, &UpstreamProxy{path, proxy, nil})
+			serveMux.Handle(path, &UpstreamProxy{*u, proxy, nil})
 		default:
 			panic(fmt.Sprintf("unknown upstream protocol %s", u.Scheme))
 		}
