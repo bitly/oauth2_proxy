@@ -17,6 +17,7 @@ import (
 	"github.com/bitly/oauth2_proxy/cookie"
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
+	"github.com/unrolled/secure"
 )
 
 const SignatureHeader = "GAP-Signature"
@@ -113,6 +114,49 @@ func setProxyDirector(proxy *httputil.ReverseProxy) {
 }
 func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 	return http.StripPrefix(path, http.FileServer(http.Dir(filesystemPath)))
+}
+
+func NewSecureProxy(opts *Options, validator func(string) bool) http.Handler {
+	bareproxy := NewOAuthProxy(opts, validator)
+	var err error
+
+	if len(opts.EmailDomains) != 0 && opts.AuthenticatedEmailsFile == "" {
+		if len(opts.EmailDomains) > 1 {
+			bareproxy.SignInMessage = fmt.Sprintf("Authenticate using one of the following domains: %v", strings.Join(opts.EmailDomains, ", "))
+		} else if opts.EmailDomains[0] != "*" {
+			bareproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.EmailDomains[0])
+		}
+	}
+
+	if opts.HtpasswdFile != "" {
+		log.Printf("using htpasswd file %s", opts.HtpasswdFile)
+		bareproxy.HtpasswdFile, err = NewHtpasswdFromFile(opts.HtpasswdFile)
+		bareproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
+		if err != nil {
+			log.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
+		}
+	}
+
+	secureMiddleware := secure.New(secure.Options{
+		AllowedHosts:            opts.HttpAllowedHosts,
+		HostsProxyHeaders:       opts.HttpHostsProxyHeaders,
+		SSLRedirect:             opts.HttpSSLRedirect,
+		SSLTemporaryRedirect:    opts.HttpSSLTemporaryRedirect,
+		SSLHost:                 opts.HttpSSLHost,
+		STSSeconds:              opts.HttpSTSSeconds,
+		STSIncludeSubdomains:    opts.HttpSTSIncludeSubdomains,
+		STSPreload:              opts.HttpSTSPreload,
+		ForceSTSHeader:          opts.HttpForceSTSHeader,
+		FrameDeny:               opts.HttpFrameDeny,
+		CustomFrameOptionsValue: opts.HttpCustomFrameOptionsValue,
+		ContentTypeNosniff:      opts.HttpContentTypeNosniff,
+		BrowserXssFilter:        opts.HttpBrowserXssFilter,
+		CustomBrowserXssValue:   opts.HttpCustomBrowserXssValue,
+		ContentSecurityPolicy:   opts.HttpContentSecurityPolicy,
+		PublicKey:               opts.HttpPublicKey,
+		ReferrerPolicy:          opts.HttpReferrerPolicy,
+	})
+	return secureMiddleware.Handler(bareproxy)
 }
 
 func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
