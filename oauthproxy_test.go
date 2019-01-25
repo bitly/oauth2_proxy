@@ -3,6 +3,7 @@ package main
 import (
 	"crypto"
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +19,7 @@ import (
 	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -470,17 +472,23 @@ type ProcessCookieTestOpts struct {
 	provider_validate_cookie_response bool
 }
 
-func NewProcessCookieTest(opts ProcessCookieTestOpts) *ProcessCookieTest {
-	var pc_test ProcessCookieTest
-
-	pc_test.opts = NewOptions()
-	pc_test.opts.ClientID = "bazquux"
-	pc_test.opts.ClientSecret = "xyzzyplugh"
-	pc_test.opts.CookieSecret = "0123456789abcdefabcd"
+func defaultOpts() *Options {
+	opts := NewOptions()
+	opts.ClientID = "bazquux"
+	opts.ClientSecret = "xyzzyplugh"
+	opts.CookieSecret = "0123456789abcdefabcd"
 	// First, set the CookieRefresh option so proxy.AesCipher is created,
 	// needed to encrypt the access_token.
-	pc_test.opts.CookieRefresh = time.Hour
-	pc_test.opts.Validate()
+	opts.CookieRefresh = time.Hour
+	return opts
+}
+func NewProcessCookieTest(testOpts ProcessCookieTestOpts) *ProcessCookieTest {
+	return NewProcessCookieTestWithOpts(testOpts, defaultOpts())
+}
+func NewProcessCookieTestWithOpts(opts ProcessCookieTestOpts, pc_test_opts *Options) *ProcessCookieTest {
+	pc_test_opts.Validate()
+	var pc_test ProcessCookieTest
+	pc_test.opts = pc_test_opts
 
 	pc_test.proxy = NewOAuthProxy(pc_test.opts, func(email string) bool {
 		return pc_test.validate_user
@@ -589,6 +597,15 @@ func TestProcessCookieFailIfRefreshSetAndCookieExpired(t *testing.T) {
 	}
 }
 
+func NewOAuthTokenEndpointTest(allow bool) *ProcessCookieTest {
+	opts := defaultOpts()
+	opts.AllowTokenRequest = allow
+	pc_test := NewProcessCookieTestWithOpts(ProcessCookieTestOpts{provider_validate_cookie_response: true}, opts)
+	pc_test.req, _ = http.NewRequest("GET",
+		pc_test.opts.ProxyPrefix+"/token", nil)
+	return pc_test
+}
+
 func NewAuthOnlyEndpointTest() *ProcessCookieTest {
 	pc_test := NewProcessCookieTestWithDefaults()
 	pc_test.req, _ = http.NewRequest("GET",
@@ -672,6 +689,35 @@ func TestAuthOnlyEndpointSetXAuthRequestHeaders(t *testing.T) {
 	assert.Equal(t, http.StatusAccepted, pc_test.rw.Code)
 	assert.Equal(t, "oauth_user", pc_test.rw.HeaderMap["X-Auth-Request-User"][0])
 	assert.Equal(t, "oauth_user@example.com", pc_test.rw.HeaderMap["X-Auth-Request-Email"][0])
+}
+
+func TestOAuthTokenEndpoint(t *testing.T) {
+	t.Run("NotAllowed", func(t *testing.T) {
+		test := NewOAuthTokenEndpointTest(false)
+		startSession := &providers.SessionState{User: "zach", Email: "zach@example.com", AccessToken: "my_access_token"}
+		test.SaveSession(startSession, time.Now())
+
+		test.proxy.ServeHTTP(test.rw, test.req)
+		assert.Equal(t, http.StatusUnauthorized, test.rw.Code)
+		bodyBytes, err := ioutil.ReadAll(test.rw.Body)
+		require.NoError(t, err, "failed to read token response body")
+		assert.Equal(t, "unauthorized request\n", string(bodyBytes))
+	})
+	t.Run("Allowed", func(t *testing.T) {
+		test := NewOAuthTokenEndpointTest(true)
+		startSession := &providers.SessionState{User: "zach", Email: "zach@example.com", AccessToken: "my_access_token"}
+		test.SaveSession(startSession, time.Now())
+
+		test.proxy.ServeHTTP(test.rw, test.req)
+		assert.Equal(t, http.StatusOK, test.rw.Code)
+		rb := map[string]interface{}{}
+		err := json.Unmarshal(test.rw.Body.Bytes(), &rb)
+		require.NoError(t, err, "failed to unmarshal token response (%#v)", test.rw.Body.String())
+		assert.Equal(t, "application/json", test.rw.Header().Get("Content-Type"), "token content-type header incorrect")
+		assert.Equal(t, startSession.User, rb["user"].(string), "token user incorrect (%#v)", rb)
+		assert.Equal(t, startSession.Email, rb["email"].(string), "token email incorrect (%#v)", rb)
+		assert.Equal(t, startSession.AccessToken, rb["access_token"].(string), "token access_token incorrect (%#v)", rb)
+	})
 }
 
 func TestAuthSkippedForPreflightRequests(t *testing.T) {
