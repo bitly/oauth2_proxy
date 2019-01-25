@@ -29,6 +29,8 @@ type Options struct {
 	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
 	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file"`
 
+	AudienceClientID string `flag:"audience-client-id" cfg:"audience_client_id" env:"OAUTH2_PROXY_AUDIENCE_CLIENT_ID"`
+
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
@@ -155,8 +157,15 @@ func (o *Options) Validate() error {
 		if err != nil {
 			return err
 		}
+
+		ClientID := o.AudienceClientID
+
+		if ClientID == "" {
+			ClientID = o.ClientID
+		}
+
 		o.oidcVerifier = provider.Verifier(&oidc.Config{
-			ClientID: o.ClientID,
+			ClientID: ClientID,
 		})
 		o.LoginURL = provider.Endpoint().AuthURL
 		o.RedeemURL = provider.Endpoint().TokenURL
