@@ -19,7 +19,10 @@ import (
 	"github.com/mbland/hmacauth"
 )
 
-const SignatureHeader = "GAP-Signature"
+const (
+	SignatureHeader       = "GAP-Signature"
+	XForwardedProtoHeader = "X-Forwarded-Proto"
+)
 
 var SignatureHeaders []string = []string{
 	"Content-Length",
@@ -457,6 +460,7 @@ func getRemoteAddr(req *http.Request) (s string) {
 }
 
 func (p *OAuthProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	p.redirectInsecureRequest(rw, req)
 	switch path := req.URL.Path; {
 	case path == p.RobotsPath:
 		p.RobotsTxt(rw)
@@ -604,6 +608,12 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		p.serveMux.ServeHTTP(rw, req)
+	}
+}
+
+func (p *OAuthProxy) redirectInsecureRequest(rw http.ResponseWriter, req *http.Request) {
+	if req.Header.Get(XForwardedProtoHeader) == "http" {
+		http.Redirect(rw, req, fmt.Sprintf("https://%v%v", req.Host, req.URL), http.StatusMovedPermanently)
 	}
 }
 
