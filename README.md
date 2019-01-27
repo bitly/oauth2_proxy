@@ -167,6 +167,18 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
     -cookie-secure=false
     -email-domain example.com
 
+### Openshift Auth Provider
+
+For Openshift, you need to create new [OAuth Client](https://docs.openshift.org/latest/architecture/additional_concepts/authentication.html). Appropriate URLs are:
+
+    -login-url="http(s)://<openshift host>/oauth/authorize"
+    -redeem-url="http(s)://<openshift host>/oauth/token"
+    -validate-url="http(s)://<openshift host>/"
+
+If you want to restrict access only to members of specific openshift project, add
+    
+    -openshift-project="<openshift project>"
+
 ## Email Authentication
 
 To authorize by email domain use `--email-domain=yourcompany.com`. To authorize individual email addresses use `--authenticated-emails-file=/path/to/file` with one email per line. To authorize all email addresses use `--email-domain=*`.
@@ -205,6 +217,7 @@ Usage of oauth2_proxy:
   -footer string: custom footer string. Use "-" to disable default footer.
   -github-org string: restrict logins to members of this organisation
   -github-team string: restrict logins to members of any of these teams (slug), separated by a comma
+  -openshift-project string restrict logins to members of this project
   -google-admin-email string: the google admin to impersonate for api calls
   -google-group value: restrict logins to members of this google group (may be given multiple times).
   -google-service-account-json string: the path to the service account json credentials
