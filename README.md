@@ -181,7 +181,10 @@ To generate a strong cookie secret use `python -c 'import os,base64; print base6
 
 An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is in the contrib directory. It can be used by specifying `-config=/etc/oauth2_proxy.cfg`
 
-### Command Line Options
+### Command Line/Config File Options
+
+Note: Config file parameter words are delimited with underscores while command line flags are delimited using hyphens
+e.g. command line flag would be `-approval-prompt="force"` and config file parameter would be `approval_prompt="force"`
 
 ```
 Usage of oauth2_proxy:
@@ -237,6 +240,8 @@ Usage of oauth2_proxy:
   -validate-url string: Access token validation endpoint
   -version: print version string
 ```
+
+Values defined in [options.go](options.go)
 
 See below for provider specific options
 

@@ -20,18 +20,18 @@ import (
 
 // Configuration Options that can be set by Command Line Flag, or Config File
 type Options struct {
-	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy-prefix"`
+	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy_prefix"`
 	HttpAddress  string `flag:"http-address" cfg:"http_address"`
 	HttpsAddress string `flag:"https-address" cfg:"https_address"`
 	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url"`
 	ClientID     string `flag:"client-id" cfg:"client_id" env:"OAUTH2_PROXY_CLIENT_ID"`
 	ClientSecret string `flag:"client-secret" cfg:"client_secret" env:"OAUTH2_PROXY_CLIENT_SECRET"`
-	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert_file"`
-	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key_file"`
+	TLSCertFile  string `flag:"tls-cert" cfg:"tls_cert"`
+	TLSKeyFile   string `flag:"tls-key" cfg:"tls_key"`
 
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
-	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
+	EmailDomains             []string `flag:"email-domain" cfg:"email_domain"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
@@ -50,7 +50,7 @@ type Options struct {
 	CookieSecure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
 	CookieHttpOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 
-	Upstreams             []string `flag:"upstream" cfg:"upstreams"`
+	Upstreams             []string `flag:"upstream" cfg:"upstream"`
 	SkipAuthRegex         []string `flag:"skip-auth-regex" cfg:"skip_auth_regex"`
 	PassBasicAuth         bool     `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	BasicAuthPassword     string   `flag:"basic-auth-password" cfg:"basic_auth_password"`

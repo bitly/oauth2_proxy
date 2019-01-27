@@ -6,15 +6,15 @@
 # https_address = ":443"
 
 ## TLS Settings
-# tls_cert_file = ""
-# tls_key_file = ""
+# tls_cert = ""
+# tls_key = ""
 
 ## the OAuth Redirect URL.
 # defaults to the "https://" + requested host header + "/oauth2/callback"
 # redirect_url = "https://internalapp.yourcompany.com/oauth2/callback"
 
 ## the http url(s) of the upstream endpoint. If multiple, routing is based on path
-# upstreams = [
+# upstream = [
 #     "http://127.0.0.1:8080/"
 # ]
 
@@ -29,9 +29,9 @@
 # pass_host_header = true 
 
 ## Email Domains to allow authentication for (this authorizes any email on this domain)
-## for more granular authorization use `authenticated_emails_file`
+## for more granular authorization use `authenticated-emails-file`
 ## To authorize any email addresses use "*"
-# email_domains = [
+# email_domain = [
 #     "yourcompany.com"
 # ]
 
