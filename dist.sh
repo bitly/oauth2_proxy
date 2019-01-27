@@ -16,7 +16,7 @@ sha256sum=()
 echo "... running tests"
 ./test.sh
 
-for os in windows linux darwin; do
+for os in windows linux darwin freebsd; do
     echo "... building v$version for $os/$arch"
     EXT=
     if [ $os = windows ]; then
