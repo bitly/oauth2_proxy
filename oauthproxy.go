@@ -54,6 +54,7 @@ type OAuthProxy struct {
 	AuthOnlyPath      string
 
 	redirectURL         *url.URL // the url to receive requests at
+	allowedURL          string
 	provider            providers.Provider
 	ProxyPrefix         string
 	SignInMessage       string
@@ -194,6 +195,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		provider:           opts.provider,
 		serveMux:           serveMux,
 		redirectURL:        redirectURL,
+		allowedURL:         opts.AllowedURL,
 		skipAuthRegex:      opts.SkipAuthRegex,
 		skipAuthPreflight:  opts.SkipAuthPreflight,
 		compiledRegex:      opts.CompiledRegex,
@@ -424,12 +426,11 @@ func (p *OAuthProxy) GetRedirect(req *http.Request) (redirect string, err error)
 	if err != nil {
 		return
 	}
-
-	redirect = req.Form.Get("rd")
-	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
-		redirect = "/"
+	redirect, err = p.getValidatedRedirect(req.Form.Get("rd"))
+	if err != nil {
+		log.Printf("failed to validate redirect %s", err)
+		return redirect, err
 	}
-
 	return
 }
 
@@ -500,6 +501,26 @@ func (p *OAuthProxy) SignIn(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (p *OAuthProxy) getValidatedRedirect(redirect string) (string, error) {
+	fallbackRedirect := "/"
+	// We using 2 types of validation - basic checks or based on allowedURLs
+	switch {
+	case redirect == "":
+		return fallbackRedirect, nil
+	case p.allowedURL != "":
+		matched, err := regexp.MatchString(p.allowedURL, redirect)
+		if err != nil {
+			return fallbackRedirect, err
+		}
+		if !matched {
+			return fallbackRedirect, err
+		}
+	case !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//"):
+		return fallbackRedirect, nil
+	}
+	return redirect, nil
+}
+
 func (p *OAuthProxy) SignOut(rw http.ResponseWriter, req *http.Request) {
 	p.ClearSessionCookie(rw, req)
 	http.Redirect(rw, req, "/", 302)
@@ -549,7 +570,12 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	nonce := s[0]
-	redirect := s[1]
+	redirect, err := p.getValidatedRedirect(s[1])
+	if err != nil {
+		log.Printf("failed to validate redirect %s", err)
+		p.ErrorPage(rw, 500, "Internal Error", "Internal Error")
+		return
+	}
 	c, err := req.Cookie(p.CSRFCookieName)
 	if err != nil {
 		p.ErrorPage(rw, 403, "Permission Denied", err.Error())
@@ -561,11 +587,6 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		p.ErrorPage(rw, 403, "Permission Denied", "csrf failed")
 		return
 	}
-
-	if !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
-		redirect = "/"
-	}
-
 	// set cookie, or deny
 	if p.Validator(session.Email) && p.provider.ValidateGroup(session.Email) {
 		log.Printf("%s authentication complete %s", remoteAddr, session)
