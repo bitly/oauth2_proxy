@@ -37,6 +37,7 @@ type Options struct {
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
+	OktaDomain               string   `flag:"okta-domain" cfg:"okta_domain"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
 	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
@@ -278,6 +279,8 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		} else {
 			p.Verifier = o.oidcVerifier
 		}
+	case *providers.OktaProvider:
+		p.SetOktaDomain(o.OktaDomain)
 	}
 	return msgs
 }
