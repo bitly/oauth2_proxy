@@ -34,6 +34,9 @@ type Options struct {
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
+	DingTalkDepartments      []string `flag:"dingtalk-departments" cfg:"dingtalk_departments"`
+	DingTalkCorpID           string   `flag:"dingtalk-corpid" cfg:"dingtalk_corpid" env:"OAUTH2_PROXY_DINGTALK_CORPID"`
+	DingTalkCorpSecret       string   `flag:"dingtalk-corpsecret" cfg:"dingtalk_corpsecret" env:"OAUTH2_PROXY_DINGTALK_CORPSECRET"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
@@ -277,6 +280,11 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 			msgs = append(msgs, "oidc provider requires an oidc issuer URL")
 		} else {
 			p.Verifier = o.oidcVerifier
+		}
+	case *providers.DingTalkProvider:
+		err := p.SetCorpInfoAndDepartments(o.DingTalkCorpID, o.DingTalkCorpSecret, o.DingTalkDepartments)
+		if err != nil {
+			msgs = append(msgs, "invalid DingTalk corp configuration: "+err.Error())
 		}
 	}
 	return msgs

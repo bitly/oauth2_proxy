@@ -49,6 +49,7 @@ Valid providers are :
 * [GitHub](#github-auth-provider)
 * [GitLab](#gitlab-auth-provider)
 * [LinkedIn](#linkedin-auth-provider)
+* [DingTalk](#dingtalk-auth-provider)
 
 The provider can be selected using the `provider` configuration value.
 
@@ -166,6 +167,20 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
     -oidc-issuer-url http://127.0.0.1:5556
     -cookie-secure=false
     -email-domain example.com
+
+### DingTalk Auth Provider
+
+For DingTalk, the registration steps are:
+
+1. Create a new qrcode login application: https://open-dev.dingtalk.com/#/loginAndShareApp
+2. Get corpid and corpsecret of your organization: https://open-dev.dingtalk.com/#/corpAuthInfo
+3. Run the oauth2_proxy with the following args:
+
+    -provider dingtalk
+    -client-id oauth2_proxy
+    -client-secret proxy
+    -dingtalk-corpid corpid
+    -dingtalk-corpsecret corpsecret
 
 ## Email Authentication
 
