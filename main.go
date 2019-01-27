@@ -14,7 +14,11 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	if os.Getenv("DYNO") != "" {
+		log.SetFlags(log.Lshortfile)
+	} else {
+		log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+	}
 	flagSet := flag.NewFlagSet("oauth2_proxy", flag.ExitOnError)
 
 	emailDomains := StringArray{}
