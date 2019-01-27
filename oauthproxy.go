@@ -111,6 +111,17 @@ func setProxyDirector(proxy *httputil.ReverseProxy) {
 		req.URL.RawQuery = ""
 	}
 }
+func setRewritePrepend(proxy *httputil.ReverseProxy, prepend string) {
+	director := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		director(req)
+		// prepend string to RequestURI
+		if !strings.HasPrefix(req.RequestURI, prepend) {
+			req.RequestURI = prepend + req.RequestURI
+		}
+	}
+}
+
 func NewFileServer(path string, filesystemPath string) (proxy http.Handler) {
 	return http.StripPrefix(path, http.FileServer(http.Dir(filesystemPath)))
 }
@@ -129,6 +140,9 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 			u.Path = ""
 			log.Printf("mapping path %q => upstream %q", path, u)
 			proxy := NewReverseProxy(u)
+			if opts.RewritePrepend != "" {
+				setRewritePrepend(proxy, opts.RewritePrepend)
+			}
 			if !opts.PassHostHeader {
 				setProxyUpstreamHostHeader(proxy, u)
 			} else {
