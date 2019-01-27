@@ -596,6 +596,24 @@ func NewAuthOnlyEndpointTest() *ProcessCookieTest {
 	return pc_test
 }
 
+func TestAuthOnlyEndpointAcceptedForWhitelisted(t *testing.T) {
+	test := NewAuthOnlyEndpointTest()
+	test.proxy.skipAuthRegex = []string{"/white"}
+	for _, u := range test.proxy.skipAuthRegex {
+		CompiledRegex, err := regexp.Compile(u)
+		if err != nil {
+			continue
+		}
+		test.proxy.compiledRegex = append(test.proxy.compiledRegex, CompiledRegex)
+	}
+	test.req.Header.Add("X-Original-URI", "/white")
+
+	test.proxy.ServeHTTP(test.rw, test.req)
+	assert.Equal(t, http.StatusAccepted, test.rw.Code)
+	bodyBytes, _ := ioutil.ReadAll(test.rw.Body)
+	assert.Equal(t, "", string(bodyBytes))
+}
+
 func TestAuthOnlyEndpointAccepted(t *testing.T) {
 	test := NewAuthOnlyEndpointTest()
 	startSession := &providers.SessionState{
