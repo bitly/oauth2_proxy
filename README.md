@@ -133,6 +133,17 @@ If you are using self-hosted GitLab, make sure you set the following to the appr
     -redeem-url="<your gitlab url>/oauth/token"
     -validate-url="<your gitlab url>/api/v4/user"
 
+### Cisco Spark Auth Provider
+
+Use membership in a Cisco Spark space to grant access to resources.  You will need to create an integration [here])https://developer.ciscospark.com/add-integration.html).  You can find more inforamtion on Spark OAuth in the [documentation](https://developer.ciscospark.com/authentication.html).  You must ensure the oAuth integration has **spark:people_read** and **spark:rooms_read** scopes.
+
+At a minimum you must set the following config items in order for the Spark integration to work.
+
+  --provider=spark
+  --scope='spark:people_read spark:rooms_read' 
+  --client-id=abc123
+  --client-secret=cde456
+  --spark-space-id=abcdefg123456
 
 ### LinkedIn Auth Provider
 
@@ -208,6 +219,7 @@ Usage of oauth2_proxy:
   -google-admin-email string: the google admin to impersonate for api calls
   -google-group value: restrict logins to members of this google group (may be given multiple times).
   -google-service-account-json string: the path to the service account json credentials
+  -spark-space-id string: the Cisco spark spaceID the user must be a member of for access
   -htpasswd-file string: additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
   -http-address string: [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients (default "127.0.0.1:4180")
   -https-address string: <addr>:<port> to listen on for HTTPS clients (default ":443")
