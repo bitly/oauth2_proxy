@@ -18,22 +18,29 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 		return
 	}
 
+	var req *http.Request
+
 	params := url.Values{}
 	params.Add("redirect_uri", redirectURL)
 	params.Add("client_id", p.ClientID)
-	params.Add("client_secret", p.ClientSecret)
 	params.Add("code", code)
 	params.Add("grant_type", "authorization_code")
 	if p.ProtectedResource != nil && p.ProtectedResource.String() != "" {
 		params.Add("resource", p.ProtectedResource.String())
 	}
+	if !p.HTTPBasicAuth {
+		params.Add("client_secret", p.ClientSecret)
+	}
 
-	var req *http.Request
 	req, err = http.NewRequest("POST", p.RedeemURL.String(), bytes.NewBufferString(params.Encode()))
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	if p.HTTPBasicAuth {
+		req.SetBasicAuth(p.ClientID, p.ClientSecret)
+	}
 
 	var resp *http.Response
 	resp, err = http.DefaultClient.Do(req)

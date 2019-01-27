@@ -5,6 +5,7 @@ import (
 )
 
 type ProviderData struct {
+	HTTPBasicAuth     bool
 	ProviderName      string
 	ClientID          string
 	ClientSecret      string
