@@ -57,6 +57,7 @@ type Options struct {
 	PassAccessToken       bool     `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassHostHeader        bool     `flag:"pass-host-header" cfg:"pass_host_header"`
 	SkipProviderButton    bool     `flag:"skip-provider-button" cfg:"skip_provider_button"`
+	RewriteTarget         string   `flag:"rewrite-target" cfg:"rewrite_target"`
 	PassUserHeaders       bool     `flag:"pass-user-headers" cfg:"pass_user_headers"`
 	SSLInsecureSkipVerify bool     `flag:"ssl-insecure-skip-verify" cfg:"ssl_insecure_skip_verify"`
 	SetXAuthRequest       bool     `flag:"set-xauthrequest" cfg:"set_xauthrequest"`
@@ -110,6 +111,7 @@ func NewOptions() *Options {
 		PassUserHeaders:      true,
 		PassAccessToken:      false,
 		PassHostHeader:       true,
+		RewriteTarget:        "",
 		ApprovalPrompt:       "force",
 		RequestLogging:       true,
 		RequestLoggingFormat: defaultRequestLoggingFormat,
