@@ -72,6 +72,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	RedirectDomains     []string
 }
 
 type UpstreamProxy struct {
@@ -206,6 +207,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		RedirectDomains:    opts.RedirectDomains,
 	}
 }
 
@@ -377,6 +379,8 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	redirect_url := req.URL.RequestURI()
 	if req.Header.Get("X-Auth-Request-Redirect") != "" {
 		redirect_url = req.Header.Get("X-Auth-Request-Redirect")
+	} else if req.URL.Query().Get("rd") != "" {
+		redirect_url = req.URL.Query().Get("rd")
 	}
 	if redirect_url == p.SignInPath {
 		redirect_url = "/"
@@ -426,9 +430,6 @@ func (p *OAuthProxy) GetRedirect(req *http.Request) (redirect string, err error)
 	}
 
 	redirect = req.Form.Get("rd")
-	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
-		redirect = "/"
-	}
 
 	return
 }
@@ -521,6 +522,20 @@ func (p *OAuthProxy) OAuthStart(rw http.ResponseWriter, req *http.Request) {
 	http.Redirect(rw, req, p.provider.GetLoginURL(redirectURI, fmt.Sprintf("%v:%v", nonce, redirect)), 302)
 }
 
+func (p *OAuthProxy) isValidRedirectDomain(domain string) bool {
+	if domain == "" {
+		// No domain - an absolute URL - always permitted.
+		return true
+	}
+
+	for _, validDomain := range p.RedirectDomains {
+		if validDomain == "*" || domain == validDomain {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 	remoteAddr := getRemoteAddr(req)
 
@@ -562,7 +577,9 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
+	u, err := url.Parse(redirect)
+	if err != nil || !strings.HasPrefix(u.Path, "/") || !p.isValidRedirectDomain(u.Host) {
+		log.Printf("redirect URL '%s' not permitted - redirecting to /", redirect)
 		redirect = "/"
 	}
 
