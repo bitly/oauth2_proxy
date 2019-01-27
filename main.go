@@ -56,6 +56,7 @@ func main() {
 	flagSet.Bool("display-htpasswd-form", true, "display username / password login form if an htpasswd file is provided")
 	flagSet.String("custom-templates-dir", "", "path to custom html templates")
 	flagSet.String("footer", "", "custom footer string. Use \"-\" to disable default footer.")
+	flagSet.String("signin-message", "", "custom message string")
 	flagSet.String("proxy-prefix", "/oauth2", "the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in)")
 
 	flagSet.String("cookie-name", "_oauth2_proxy", "the name of the cookie that the oauth_proxy creates")
@@ -114,6 +115,8 @@ func main() {
 		} else if opts.EmailDomains[0] != "*" {
 			oauthproxy.SignInMessage = fmt.Sprintf("Authenticate using %v", opts.EmailDomains[0])
 		}
+	} else {
+		oauthproxy.SignInMessage = opts.SignInMessage
 	}
 
 	if opts.HtpasswdFile != "" {
