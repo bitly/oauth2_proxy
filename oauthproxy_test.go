@@ -400,7 +400,7 @@ func TestSignInPageIncludesTargetRedirect(t *testing.T) {
 	const endpoint = "/some/random/endpoint"
 
 	code, body := sip_test.GetEndpoint(endpoint)
-	assert.Equal(t, 403, code)
+	assert.Equal(t, 401, code)
 
 	match := sip_test.sign_in_regexp.FindStringSubmatch(body)
 	if match == nil {

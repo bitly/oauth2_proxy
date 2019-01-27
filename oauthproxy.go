@@ -600,7 +600,7 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		if p.SkipProviderButton {
 			p.OAuthStart(rw, req)
 		} else {
-			p.SignInPage(rw, req, http.StatusForbidden)
+			p.SignInPage(rw, req, http.StatusUnauthorized)
 		}
 	} else {
 		p.serveMux.ServeHTTP(rw, req)
