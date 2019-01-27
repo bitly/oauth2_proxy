@@ -339,6 +339,7 @@ OAuth2 Proxy responds directly to the following endpoints. All other endpoints w
 * /oauth2/start - a URL that will redirect to start the OAuth cycle
 * /oauth2/callback - the URL used at the end of the OAuth cycle. The oauth app will be configured with this as the callback url.
 * /oauth2/auth - only returns a 202 Accepted response or a 401 Unauthorized response; for use with the [Nginx `auth_request` directive](#nginx-auth-request)
+* /oauth2/sign_out - signs out (clears cookies)
 
 ## Request signatures
 
