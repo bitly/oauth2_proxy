@@ -167,6 +167,45 @@ OpenID Connect is a spec for OAUTH 2.0 + identity that is implemented by many ma
     -cookie-secure=false
     -email-domain example.com
 
+## Simple OAuth2 Provider
+
+Simple OAuth2 provider requires one endpoint to be implemented on the side of the provider. The steps are:
+
+1. Obtain the auth and token URLs for your application (`login-url` and `redeem-url` below). You will also need to add one endpoint to your application, for
+which the URL can be configured (`profile-url` below). You could for example add an endpoint at `/api/user`. The endpoint should be accessible
+using OAuth2 credentials. It should return JSON data with at least two keys: `username` and `email`. Your application
+should accept the OAuth2 token in the `Authentication` header with token type `Bearer`. So, an example of a request made
+to your application could look like this:
+
+```
+GET /api/user HTTP/1.1
+Host: example.com
+Authorization: Bearer NWJlODM4YzZkZjAxZTUyMmRhMWFjNGEyMTkyM2Y2ODA0ZTMwYmVkOTI5ZTdhM2MxNjQ2MzA4ZWFmNTNmNTE1Ng
+```
+
+Your server would then respond with:
+
+```
+{
+    "username": "John Doe",
+    "email": "john.doe@example.com"
+}
+```
+2. Run oauth2_proxy with the correct settings:
+
+```
+    -provider simple
+    -client-id oauth2_proxy
+    -client-secret proxy
+    -login-url http://localhost:8080/oauth/v2/auth
+    -redeem-url http://localhost:8080/oauth/v2/token
+    -profile-url http://localhost:8080/api/user
+    -redirect-url http://127.0.0.1:4180/oauth2/callback
+    -cookie-secret mysecret
+    -cookie-secure=false
+    -email-domain *
+```
+
 ## Email Authentication
 
 To authorize by email domain use `--email-domain=yourcompany.com`. To authorize individual email addresses use `--authenticated-emails-file=/path/to/file` with one email per line. To authorize all email addresses use `--email-domain=*`.

@@ -31,6 +31,8 @@ func New(provider string, p *ProviderData) Provider {
 		return NewGitLabProvider(p)
 	case "oidc":
 		return NewOIDCProvider(p)
+	case "simple":
+		return NewSimpleProvider(p)
 	default:
 		return NewGoogleProvider(p)
 	}
