@@ -608,6 +608,19 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int {
+	// if any of the internal urls necessary for the oauth2 flow is called, allow the request
+	// This is necessary to use oauth2_proxy as auth_request server for nginx based k8s ingresses
+	originalRequestUri := req.Header.Get("X-Original-URI")
+	for _, allowedUrl := range []string{
+		p.SignInPath,
+		p.SignOutPath,
+		p.OAuthCallbackPath,
+		p.OAuthStartPath,
+	} {
+		if strings.HasPrefix(originalRequestUri, allowedUrl) {
+			return http.StatusAccepted
+		}
+	}
 	var saveSession, clearSession, revalidated bool
 	remoteAddr := getRemoteAddr(req)
 
