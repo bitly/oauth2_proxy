@@ -79,6 +79,8 @@ type Options struct {
 
 	SignatureKey string `flag:"signature-key" cfg:"signature_key" env:"OAUTH2_PROXY_SIGNATURE_KEY"`
 
+	AuthRequestMode bool `flag:"auth-request-mode" cfg:"auth_request_mode" env:"OAUTH2_PROXY_AUTH_REQUEST_MODE"`
+
 	// internal values that are set after config validation
 	redirectURL   *url.URL
 	proxyURLs     []*url.URL
@@ -167,15 +169,17 @@ func (o *Options) Validate() error {
 
 	o.redirectURL, msgs = parseURL(o.RedirectURL, "redirect", msgs)
 
-	for _, u := range o.Upstreams {
-		upstreamURL, err := url.Parse(u)
-		if err != nil {
-			msgs = append(msgs, fmt.Sprintf("error parsing upstream: %s", err))
-		} else {
-			if upstreamURL.Path == "" {
-				upstreamURL.Path = "/"
+	if o.AuthRequestMode == false {
+		for _, u := range o.Upstreams {
+			upstreamURL, err := url.Parse(u)
+			if err != nil {
+				msgs = append(msgs, fmt.Sprintf("error parsing upstream: %s", err))
+			} else {
+				if upstreamURL.Path == "" {
+					upstreamURL.Path = "/"
+				}
+				o.proxyURLs = append(o.proxyURLs, upstreamURL)
 			}
-			o.proxyURLs = append(o.proxyURLs, upstreamURL)
 		}
 	}
 
