@@ -20,7 +20,7 @@ import (
 
 // Configuration Options that can be set by Command Line Flag, or Config File
 type Options struct {
-	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy-prefix"`
+	ProxyPrefix  string `flag:"proxy-prefix" cfg:"proxy_prefix"`
 	HttpAddress  string `flag:"http-address" cfg:"http_address"`
 	HttpsAddress string `flag:"https-address" cfg:"https_address"`
 	RedirectURL  string `flag:"redirect-url" cfg:"redirect_url"`
