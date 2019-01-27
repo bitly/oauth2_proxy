@@ -15,6 +15,7 @@ type ProviderData struct {
 	ValidateURL       *url.URL
 	Scope             string
 	ApprovalPrompt    string
+	UsernameClaim     string
 }
 
 func (p *ProviderData) Data() *ProviderData { return p }
