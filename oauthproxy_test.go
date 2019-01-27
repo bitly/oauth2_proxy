@@ -806,7 +806,7 @@ func (st *SignatureTest) MakeRequestWithExpectedKey(method, body, key string) {
 	req.AddCookie(cookie)
 	// This is used by the upstream to validate the signature.
 	st.authenticator.auth = hmacauth.NewHmacAuth(
-		crypto.SHA1, []byte(key), SignatureHeader, SignatureHeaders)
+		crypto.SHA256, []byte(key), SignatureHeader, SignatureHeaders)
 	proxy.ServeHTTP(st.rw, req)
 }
 
@@ -821,7 +821,7 @@ func TestNoRequestSignature(t *testing.T) {
 func TestRequestSignatureGetRequest(t *testing.T) {
 	st := NewSignatureTest()
 	defer st.Close()
-	st.opts.SignatureKey = "sha1:foobar"
+	st.opts.SignatureKey = "sha256:foobar"
 	st.MakeRequestWithExpectedKey("GET", "", "foobar")
 	assert.Equal(t, 200, st.rw.Code)
 	assert.Equal(t, st.rw.Body.String(), "signatures match")
@@ -830,7 +830,7 @@ func TestRequestSignatureGetRequest(t *testing.T) {
 func TestRequestSignaturePostRequest(t *testing.T) {
 	st := NewSignatureTest()
 	defer st.Close()
-	st.opts.SignatureKey = "sha1:foobar"
+	st.opts.SignatureKey = "sha256:foobar"
 	payload := `{ "hello": "world!" }`
 	st.MakeRequestWithExpectedKey("POST", payload, "foobar")
 	assert.Equal(t, 200, st.rw.Code)
