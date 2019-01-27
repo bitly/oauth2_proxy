@@ -1,8 +1,6 @@
 package providers
 
-import (
-	"github.com/bitly/oauth2_proxy/cookie"
-)
+import "github.com/bitly/oauth2_proxy/cookie"
 
 type Provider interface {
 	Data() *ProviderData
