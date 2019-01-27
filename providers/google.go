@@ -113,14 +113,15 @@ func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err 
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
+
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	if err != nil {
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("got %d from %q %s", resp.StatusCode, p.RedeemURL.String(), body)
 		return
 	}
@@ -289,14 +290,15 @@ func (p *GoogleProvider) redeemRefreshToken(refreshToken string) (token string, 
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
+
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	if err != nil {
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("got %d from %q %s", resp.StatusCode, p.RedeemURL.String(), body)
 		return
 	}

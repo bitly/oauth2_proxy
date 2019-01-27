@@ -61,12 +61,12 @@ func validateToken(p Provider, access_token string, header http.Header) bool {
 		log.Printf("token validation request failed: %s", err)
 		return false
 	}
+	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	log.Printf("%d GET %s %s", resp.StatusCode, stripToken(endpoint), body)
 
-	if resp.StatusCode == 200 {
+	if resp.StatusCode == http.StatusOK {
 		return true
 	}
 	log.Printf("token validation request failed: status %d - %s", resp.StatusCode, body)

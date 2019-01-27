@@ -86,13 +86,13 @@ func (p *GitHubProvider) hasOrg(accessToken string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		defer resp.Body.Close()
 
 		body, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
 		if err != nil {
 			return false, err
 		}
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			return false, fmt.Errorf(
 				"got %d from %q %s", resp.StatusCode, endpoint.String(), body)
 		}
@@ -150,13 +150,13 @@ func (p *GitHubProvider) hasOrgAndTeam(accessToken string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	if err != nil {
 		return false, err
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf(
 			"got %d from %q %s", resp.StatusCode, endpoint.String(), body)
 	}
@@ -225,13 +225,13 @@ func (p *GitHubProvider) GetEmailAddress(s *SessionState) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	if err != nil {
 		return "", err
 	}
-
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("got %d from %q %s",
 			resp.StatusCode, endpoint.String(), body)
 	}
@@ -273,14 +273,14 @@ func (p *GitHubProvider) GetUserName(s *SessionState) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		return "", err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("got %d from %q %s",
 			resp.StatusCode, endpoint.String(), body)
 	}

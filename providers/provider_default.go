@@ -40,14 +40,15 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+
 	var body []byte
 	body, err = ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
 	if err != nil {
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("got %d from %q %s", resp.StatusCode, p.RedeemURL.String(), body)
 		return
 	}
