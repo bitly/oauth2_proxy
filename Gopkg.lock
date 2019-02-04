@@ -58,10 +58,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/pquerna/cachecontrol"
-  packages = [
-    ".",
-    "cacheobject"
-  ]
+  packages = [".","cacheobject"]
   revision = "0dec1b30a0215bb68605dfc568e8855066c9202d"
 
 [[projects]]
@@ -73,82 +70,61 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "bcrypt",
-    "blowfish",
-    "ed25519",
-    "ed25519/internal/edwards25519"
-  ]
+  packages = ["bcrypt","blowfish","ed25519","ed25519/internal/edwards25519"]
   revision = "9f005a07e0d31d45e6656d241bb5c0f2efd4bc94"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "context/ctxhttp"
-  ]
+  packages = ["context","context/ctxhttp"]
   revision = "9dfe39835686865bff950a07b394c12a98ddc811"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "google",
-    "internal",
-    "jws",
-    "jwt"
-  ]
+  packages = [".","google","internal","jws","jwt"]
   revision = "9ff8ebcc8e241d46f52ecc5bff0e5a2f2dbef402"
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/sync"
+  packages = ["semaphore"]
+  revision = "37e7f081c4d4c64e13b10787722085407fe5d15f"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "302c3dd5f1cc82baae8e44d9c3178e89b6e2b345"
+
+[[projects]]
+  branch = "master"
   name = "google.golang.org/api"
-  packages = [
-    "admin/directory/v1",
-    "gensupport",
-    "googleapi",
-    "googleapi/internal/uritemplates"
-  ]
+  packages = ["admin/directory/v1","bigquery/v2","books/v1","calendar/v3","compute/v1","drive/v2","fitness/v1","gensupport","gmail/v1","googleapi","googleapi/internal/uritemplates","iterator","iterator/testing","mirror/v1","prediction/v1.6","pubsub/v1beta2","storage/v1","tasks/v1","urlshortener/v1","youtube/v3"]
   revision = "8791354e7ab150705ede13637a18c1fcc16b62e8"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [
-    ".",
-    "internal",
-    "internal/app_identity",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/modules",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch"
-  ]
+  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
 [[projects]]
   name = "gopkg.in/fsnotify.v1"
   packages = ["."]
-  revision = "836bfd95fecc0f1511dd66bdbf2b5b61ab8b00b6"
-  version = "v1.2.11"
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
+  version = "v1.4.7"
 
 [[projects]]
   name = "gopkg.in/square/go-jose.v2"
-  packages = [
-    ".",
-    "cipher",
-    "json"
-  ]
+  packages = [".","cipher","json"]
   revision = "f8f38de21b4dcd69d0413faf231983f5fd6634b1"
   version = "v2.1.3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b502c41a61115d14d6379be26b0300f65d173bdad852f0170d387ebf2d7ec173"
+  inputs-digest = "cfa015a3f81770b9204b35318aca2c57890d00e73549742a231f255923727773"
   solver-name = "gps-cdcl"
   solver-version = 1

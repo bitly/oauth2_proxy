@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -15,13 +16,15 @@ import (
 func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err error) {
 	if code == "" {
 		err = errors.New("missing code")
-		return
+		return nil, err
 	}
 
 	params := url.Values{}
 	params.Add("redirect_uri", redirectURL)
 	params.Add("client_id", p.ClientID)
-	params.Add("client_secret", p.ClientSecret)
+	if p.ClientSecret != "" {
+		params.Add("client_secret", p.ClientSecret)
+	}
 	params.Add("code", code)
 	params.Add("grant_type", "authorization_code")
 	if p.ProtectedResource != nil && p.ProtectedResource.String() != "" {
@@ -31,25 +34,27 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 	var req *http.Request
 	req, err = http.NewRequest("POST", p.RedeemURL.String(), bytes.NewBufferString(params.Encode()))
 	if err != nil {
-		return
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	var resp *http.Response
-	resp, err = http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
+	resp, c_err := http.DefaultClient.Do(req)
+	if c_err != nil {
+		return nil, c_err
 	}
 	var body []byte
-	body, err = ioutil.ReadAll(resp.Body)
+	body, b_err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	if err != nil {
-		return
+	if b_err != nil {
+		log.Printf("headers from failed redemption are %s", resp.Header)
+		log.Printf("body from failed redemption is %s", body)
+		return nil, b_err
 	}
 
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("got %d from %q %s", resp.StatusCode, p.RedeemURL.String(), body)
-		return
+		return nil, err
 	}
 
 	// blindly try json and x-www-form-urlencoded
@@ -61,20 +66,20 @@ func (p *ProviderData) Redeem(redirectURL, code string) (s *SessionState, err er
 		s = &SessionState{
 			AccessToken: jsonResponse.AccessToken,
 		}
-		return
+		return s, nil
 	}
 
 	var v url.Values
 	v, err = url.ParseQuery(string(body))
 	if err != nil {
-		return
+		return nil, err
 	}
 	if a := v.Get("access_token"); a != "" {
 		s = &SessionState{AccessToken: a}
 	} else {
 		err = fmt.Errorf("no access token found %s", body)
 	}
-	return
+	return s, err
 }
 
 // GetLoginURL with typical oauth parameters
@@ -102,8 +107,8 @@ func (p *ProviderData) SessionFromCookie(v string, c *cookie.Cipher) (s *Session
 	return DecodeSessionState(v, c)
 }
 
-func (p *ProviderData) GetEmailAddress(s *SessionState) (string, error) {
-	return "", errors.New("not implemented")
+func (p *ProviderData) GetUserDetails(s *SessionState) (map[string]string, error) {
+	return map[string]string{}, errors.New("not implemented")
 }
 
 // GetUserName returns the Account username
@@ -111,10 +116,19 @@ func (p *ProviderData) GetUserName(s *SessionState) (string, error) {
 	return "", errors.New("not implemented")
 }
 
+func (p *ProviderData) GetGroups(s *SessionState, f string) (map[string]string, error) {
+	return map[string]string{}, errors.New("not implemented")
+}
+
 // ValidateGroup validates that the provided email exists in the configured provider
 // email group(s).
-func (p *ProviderData) ValidateGroup(email string) bool {
+func (p *ProviderData) ValidateGroup(s *SessionState) bool {
 	return true
+}
+
+// ValidateExemptions checks if we can allow user login dispite group membership returned failure
+func (p *ProviderData) ValidateExemptions(s *SessionState) (bool, string) {
+	return false, ""
 }
 
 func (p *ProviderData) ValidateSessionState(s *SessionState) bool {

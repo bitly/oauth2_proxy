@@ -243,10 +243,10 @@ func fetchGroupMembers(service *admin.Service, group string) ([]*admin.Member, e
 	return members, nil
 }
 
-// ValidateGroup validates that the provided email exists in the configured Google
-// group(s).
-func (p *GoogleProvider) ValidateGroup(email string) bool {
-	return p.GroupValidator(email)
+//ValidateGroup validates that the provided email exists in the configured Google
+//group(s).
+func (p *GoogleProvider) ValidateGroup(s *SessionState) bool {
+	return p.GroupValidator(s.Email)
 }
 
 func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
@@ -260,7 +260,7 @@ func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	}
 
 	// re-check that the user is in the proper google group(s)
-	if !p.ValidateGroup(s.Email) {
+	if !p.ValidateGroup(s) {
 		return false, fmt.Errorf("%s is no longer in the group(s)", s.Email)
 	}
 

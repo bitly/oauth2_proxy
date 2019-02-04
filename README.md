@@ -147,9 +147,25 @@ For LinkedIn, the registration steps are:
 
 ### Microsoft Azure AD Provider
 
-For adding an application to the Microsoft Azure AD follow [these steps to add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/).
+1. [Add an application](https://azure.microsoft.com/en-us/documentation/articles/active-directory-integrating-applications/) to your Azure Active Directory tenant.
+2. On the App properties page provide the correct Sign-On URL ie `https://internal.yourcompany.com/oauth2/callback`
+3. Delegate permission to "Access the Directory as the Signed-In User".
+4. If applicable take note of your `TenantID` and provide it via the `--azure-tenant=<YOUR TENANT ID>` commandline option. Default the `common` tenant is used.
+5. Take note of your application's `Application ID`; this is used as the `client_id` (the OAuth2 'public' client). You do not need a `client_secret`.
 
-Take note of your `TenantId` if applicable for your situation. The `TenantId` can be used to override the default `common` authorization server with a tenant specific server.
+The Azure AD auth provider uses `openid` as it default scope. It uses `https://graph.microsoft.com` as a default protected resource. It uses the [Microsoft Graph API](https://developer.microsoft.com/en-us/graph/) to obtain the user's email address, and optionally gather group membership information.
+
+#### Group Support
+
+The Azure provider supports passing (optionally filtered) group membership information, as well as doing basic authorization checking based on group membership.
+
+Set the `pass-groups` flag to enable an additional X-Forwarded-Groups header that contains a pipe-separated list of groups to which the user belongs.
+
+The `filter-groups` flag enables a simple filter that will elide any groups that do not contain that string. For example, if the `filter-groups` flag were set to `admins`, the X-Forwarded-Groups header for a user in groups `[foo-admins, bar-admins, users-foo-group]` would be `foo-admins|bar-admins`. If the flag were set to `foo`, the header would be `foo-admins|users-foo-group`.
+
+The `permit-groups` flag requires that a user belong to a group that contains the specified string (or one of the specified strings). The X-Forwarded-Group header is checked for a `strings.Contains` match for each item in the list.
+
+The 'group-delimiter' flag reflects how multiple group names will be represented in X-Forwarded-Groups header. By default group names will be delimited with '|' symbol
 
 ### OpenID Connect Provider
 
@@ -185,7 +201,7 @@ An example [oauth2_proxy.cfg](contrib/oauth2_proxy.cfg.example) config file is i
 
 ```
 Usage of oauth2_proxy:
-  -approval-prompt string: OAuth approval_prompt (default "force")
+  -approval-prompt string: OAuth approval_prompt. Possible options: "", "force|consent", "login" [for AAD], "select_account" [for Google] (default "")
   -authenticated-emails-file string: authenticate against emails via file (one per line)
   -azure-tenant string: go to a tenant-specific or common (tenant-independent) endpoint. (default "common")
   -basic-auth-password string: the password to set when passing the HTTP Basic Auth header
@@ -202,20 +218,25 @@ Usage of oauth2_proxy:
   -custom-templates-dir string: path to custom html templates
   -display-htpasswd-form: display username / password login form if an htpasswd file is provided (default true)
   -email-domain value: authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email
+  -filter-groups string: only pass groups in the X-Forwarded-Groups header that contain this string
+  -groups-delimiter string: delimiter that will be used between group names in X-Forwarded-Groups header
   -footer string: custom footer string. Use "-" to disable default footer.
   -github-org string: restrict logins to members of this organisation
   -github-team string: restrict logins to members of any of these teams (slug), separated by a comma
   -google-admin-email string: the google admin to impersonate for api calls
-  -google-group value: restrict logins to members of this google group (may be given multiple times).
+  -google-group value: restrict logins to members of this google group (may be given multiple times). Depricated. Please use `permit-groups` instead.
   -google-service-account-json string: the path to the service account json credentials
   -htpasswd-file string: additionally authenticate against a htpasswd file. Entries must be created with "htpasswd -s" for SHA encryption
   -http-address string: [http://]<addr>:<port> or unix://<path> to listen on for HTTP clients (default "127.0.0.1:4180")
   -https-address string: <addr>:<port> to listen on for HTTPS clients (default ":443")
   -login-url string: Authentication endpoint
-  -pass-access-token: pass OAuth access_token to upstream via X-Forwarded-Access-Token header
+  -pass-access-token: pass OAuth access_token to upstream via X-Forwarded-Access-Token header (default false)
   -pass-basic-auth: pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
   -pass-host-header: pass the request Host Header to upstream (default true)
   -pass-user-headers: pass X-Forwarded-User and X-Forwarded-Email information to upstream (default true)
+  -pass-groups boolean: pass a pipe-separated list of groups to which the user belongs in the X-Forwarded-Groups header
+  -permit-groups string: The user groups to which a user must belong in order to use the proxy (see also filter-groups)
+  -permit-users string: Map of users that could authorize in case if groups check fails. In such case they will have map value as their group membership
   -profile-url string: Profile access endpoint
   -provider string: OAuth provider (default "google")
   -proxy-prefix string: the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in) (default "/oauth2")
